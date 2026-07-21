@@ -1,0 +1,371 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Seeds;
+
+use Core\Database\Connection;
+use Core\Database\QueryBuilder;
+use Core\Security\Hash;
+
+/**
+ * Seeds baseline data: roles, permissions, role-permission map, demo users,
+ * academic structure, grading scale, and default settings.
+ * Idempotent where practical (checks before inserting core singletons).
+ */
+final class DatabaseSeeder
+{
+    public function run(): void
+    {
+        Connection::instance()->transaction(function (): void {
+            $this->seedRoles();
+            $this->seedPermissions();
+            $this->mapRolePermissions();
+            $this->seedAcademic();
+            $this->seedGrades();
+            $this->seedExamTypes();
+            $this->seedFeeCategories();
+            $this->seedLeaveTypes();
+            $this->seedSettings();
+            $this->seedUsers();
+        });
+    }
+
+    /** @var array<string,int> role slug => id */
+    private array $roleIds = [];
+
+    /** @var array<string,int> permission slug => id */
+    private array $permIds = [];
+
+    private function now(): string
+    {
+        return date('Y-m-d H:i:s');
+    }
+
+    private function seedRoles(): void
+    {
+        $roles = [
+            ['super_admin', 'Super Administrator', 'Full unrestricted access'],
+            ['school_admin', 'School Administrator', 'Manages the whole school'],
+            ['principal', 'Principal', 'Head of the institution'],
+            ['vice_principal', 'Vice Principal', 'Assists the principal'],
+            ['teacher', 'Teacher', 'Teaching staff'],
+            ['class_teacher', 'Class Teacher', 'Teacher in charge of a section'],
+            ['accountant', 'Accountant', 'Manages fees and finances'],
+            ['librarian', 'Librarian', 'Manages the library'],
+            ['receptionist', 'Receptionist', 'Front desk operations'],
+            ['transport_manager', 'Transport Manager', 'Manages transport'],
+            ['hr', 'HR Manager', 'Human resources & payroll'],
+            ['student', 'Student', 'Enrolled student'],
+            ['parent', 'Parent/Guardian', 'Guardian of a student'],
+        ];
+
+        foreach ($roles as [$slug, $name, $desc]) {
+            $existing = QueryBuilder::table('roles')->where('slug', $slug)->first();
+            if ($existing) {
+                $this->roleIds[$slug] = (int) $existing['id'];
+                continue;
+            }
+            $this->roleIds[$slug] = QueryBuilder::table('roles')->insert([
+                'slug' => $slug, 'name' => $name, 'description' => $desc,
+                'is_system' => 1, 'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+    }
+
+    private function seedPermissions(): void
+    {
+        $modules = [
+            'students'      => ['view', 'create', 'update', 'delete'],
+            'teachers'      => ['view', 'create', 'update', 'delete'],
+            'staff'         => ['view', 'create', 'update', 'delete'],
+            'academic'      => ['view', 'manage'],
+            'attendance'    => ['view', 'mark'],
+            'exams'         => ['view', 'manage'],
+            'fees'          => ['view', 'manage', 'collect'],
+            'library'       => ['view', 'manage'],
+            'transport'     => ['view', 'manage'],
+            'hostel'        => ['view', 'manage'],
+            'inventory'     => ['view', 'manage'],
+            'hr'            => ['view', 'manage'],
+            'communication' => ['view', 'send'],
+            'reports'       => ['view'],
+            'roles'         => ['view', 'manage'],
+            'settings'      => ['view', 'manage'],
+        ];
+
+        foreach ($modules as $module => $actions) {
+            foreach ($actions as $action) {
+                $slug = "{$module}.{$action}";
+                $existing = QueryBuilder::table('permissions')->where('slug', $slug)->first();
+                if ($existing) {
+                    $this->permIds[$slug] = (int) $existing['id'];
+                    continue;
+                }
+                $this->permIds[$slug] = QueryBuilder::table('permissions')->insert([
+                    'slug'   => $slug,
+                    'name'   => ucfirst($action) . ' ' . ucfirst($module),
+                    'module' => $module,
+                    'created_at' => $this->now(), 'updated_at' => $this->now(),
+                ]);
+            }
+        }
+    }
+
+    private function assign(string $role, array $permSlugs): void
+    {
+        $roleId = $this->roleIds[$role] ?? null;
+        if ($roleId === null) {
+            return;
+        }
+        foreach ($permSlugs as $slug) {
+            $permId = $this->permIds[$slug] ?? null;
+            if ($permId === null) {
+                continue;
+            }
+            $exists = QueryBuilder::table('role_permissions')
+                ->where('role_id', $roleId)->where('permission_id', $permId)->first();
+            if (!$exists) {
+                QueryBuilder::table('role_permissions')->insert([
+                    'role_id' => $roleId, 'permission_id' => $permId,
+                ]);
+            }
+        }
+    }
+
+    private function mapRolePermissions(): void
+    {
+        $all = array_keys($this->permIds);
+
+        // super_admin bypasses in code but also gets all rows for completeness.
+        $this->assign('super_admin', $all);
+        $this->assign('school_admin', $all);
+        $this->assign('principal', $all);
+        $this->assign('vice_principal', array_filter($all, fn ($p) => !str_starts_with($p, 'settings') && !str_starts_with($p, 'roles')));
+
+        $this->assign('teacher', ['students.view', 'attendance.view', 'attendance.mark', 'exams.view', 'exams.manage', 'academic.view', 'communication.view', 'reports.view']);
+        $this->assign('class_teacher', ['students.view', 'students.update', 'attendance.view', 'attendance.mark', 'exams.view', 'exams.manage', 'academic.view', 'communication.view', 'communication.send', 'reports.view']);
+        $this->assign('accountant', ['fees.view', 'fees.manage', 'fees.collect', 'students.view', 'reports.view']);
+        $this->assign('librarian', ['library.view', 'library.manage', 'students.view']);
+        $this->assign('receptionist', ['students.view', 'students.create', 'communication.view', 'communication.send']);
+        $this->assign('transport_manager', ['transport.view', 'transport.manage', 'students.view']);
+        $this->assign('hr', ['staff.view', 'staff.create', 'staff.update', 'hr.view', 'hr.manage', 'reports.view']);
+        $this->assign('student', []);
+        $this->assign('parent', []);
+    }
+
+    private function createUser(string $name, string $email, string $username, string $role): int
+    {
+        $existing = QueryBuilder::table('users')->where('email', $email)->first();
+        if ($existing) {
+            $userId = (int) $existing['id'];
+        } else {
+            $userId = QueryBuilder::table('users')->insert([
+                'name'       => $name,
+                'email'      => $email,
+                'username'   => $username,
+                'password'   => Hash::make('Password123!'),
+                'is_active'  => 1,
+                'email_verified_at' => $this->now(),
+                'created_at' => $this->now(),
+                'updated_at' => $this->now(),
+            ]);
+        }
+
+        $roleId = $this->roleIds[$role] ?? null;
+        if ($roleId !== null) {
+            $link = QueryBuilder::table('user_roles')->where('user_id', $userId)->where('role_id', $roleId)->first();
+            if (!$link) {
+                QueryBuilder::table('user_roles')->insert(['user_id' => $userId, 'role_id' => $roleId]);
+            }
+        }
+        return $userId;
+    }
+
+    private function seedUsers(): void
+    {
+        $this->createUser('Super Admin', 'superadmin@school.test', 'superadmin', 'super_admin');
+        $this->createUser('School Admin', 'admin@school.test', 'admin', 'school_admin');
+        $this->createUser('Principal', 'principal@school.test', 'principal', 'principal');
+        $this->createUser('Accountant', 'accountant@school.test', 'accountant', 'accountant');
+        $this->createUser('Librarian', 'librarian@school.test', 'librarian', 'librarian');
+        $teacherUser = $this->createUser('Demo Teacher', 'teacher@school.test', 'teacher', 'teacher');
+        $studentUser = $this->createUser('Demo Student', 'student@school.test', 'student', 'student');
+        $parentUser  = $this->createUser('Demo Parent', 'parent@school.test', 'parent', 'parent');
+
+        // Link demo teacher to a staff record.
+        if (!QueryBuilder::table('staff')->where('user_id', $teacherUser)->first()) {
+            QueryBuilder::table('staff')->insert([
+                'user_id' => $teacherUser, 'employee_code' => 'EMP-0001',
+                'first_name' => 'Demo', 'last_name' => 'Teacher', 'staff_type' => 'teaching',
+                'designation' => 'Senior Teacher', 'gender' => 'female', 'email' => 'teacher@school.test',
+                'joining_date' => date('Y-m-d'), 'basic_salary' => 45000, 'status' => 'active',
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+
+        // Link demo student to class/section.
+        if (!QueryBuilder::table('students')->where('user_id', $studentUser)->first()) {
+            $classId = (int) (QueryBuilder::table('classes')->orderBy('numeric_level')->value('id') ?? 0);
+            $sectionId = (int) (QueryBuilder::table('sections')->value('id') ?? 0);
+            $yearId = (int) (QueryBuilder::table('academic_years')->where('is_current', 1)->value('id') ?? 0);
+            $studentId = QueryBuilder::table('students')->insert([
+                'user_id' => $studentUser, 'admission_no' => 'ADM-0001', 'roll_no' => '1',
+                'first_name' => 'Demo', 'last_name' => 'Student', 'gender' => 'male',
+                'dob' => '2012-05-10', 'email' => 'student@school.test',
+                'class_id' => $classId ?: null, 'section_id' => $sectionId ?: null,
+                'academic_year_id' => $yearId ?: null, 'admission_date' => date('Y-m-d'),
+                'status' => 'active', 'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+
+            // Guardian.
+            $guardianId = QueryBuilder::table('guardians')->insert([
+                'user_id' => $parentUser, 'name' => 'Demo Parent', 'relation' => 'father',
+                'email' => 'parent@school.test', 'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+            QueryBuilder::table('student_guardians')->insert([
+                'student_id' => $studentId, 'guardian_id' => $guardianId, 'is_primary' => 1,
+            ]);
+        }
+    }
+
+    private function seedAcademic(): void
+    {
+        if (!QueryBuilder::table('academic_years')->where('is_current', 1)->first()) {
+            $start = (int) date('Y');
+            QueryBuilder::table('academic_years')->insert([
+                'name' => $start . '-' . ($start + 1),
+                'start_date' => $start . '-04-01', 'end_date' => ($start + 1) . '-03-31',
+                'is_current' => 1, 'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+
+        // Classes 1..10.
+        if (QueryBuilder::table('classes')->count() === 0) {
+            for ($i = 1; $i <= 10; $i++) {
+                $classId = QueryBuilder::table('classes')->insert([
+                    'name' => 'Class ' . $i, 'numeric_level' => $i,
+                    'created_at' => $this->now(), 'updated_at' => $this->now(),
+                ]);
+                foreach (['A', 'B'] as $sec) {
+                    QueryBuilder::table('sections')->insert([
+                        'class_id' => $classId, 'name' => $sec, 'capacity' => 40,
+                        'created_at' => $this->now(), 'updated_at' => $this->now(),
+                    ]);
+                }
+            }
+        }
+
+        // Subjects.
+        if (QueryBuilder::table('subjects')->count() === 0) {
+            $subjects = [
+                ['English', 'ENG'], ['Mathematics', 'MATH'], ['Science', 'SCI'],
+                ['Social Studies', 'SST'], ['Computer Science', 'CS'], ['Physical Education', 'PE'],
+            ];
+            foreach ($subjects as [$name, $code]) {
+                QueryBuilder::table('subjects')->insert([
+                    'name' => $name, 'code' => $code, 'type' => 'theory',
+                    'created_at' => $this->now(), 'updated_at' => $this->now(),
+                ]);
+            }
+        }
+
+        // Timetable slots (periods).
+        if (QueryBuilder::table('timetable_slots')->count() === 0) {
+            $slots = [
+                ['Period 1', '09:00:00', '09:45:00', 0], ['Period 2', '09:45:00', '10:30:00', 0],
+                ['Break', '10:30:00', '10:45:00', 1], ['Period 3', '10:45:00', '11:30:00', 0],
+                ['Period 4', '11:30:00', '12:15:00', 0], ['Lunch', '12:15:00', '13:00:00', 1],
+                ['Period 5', '13:00:00', '13:45:00', 0], ['Period 6', '13:45:00', '14:30:00', 0],
+            ];
+            $order = 1;
+            foreach ($slots as [$name, $s, $e, $break]) {
+                QueryBuilder::table('timetable_slots')->insert([
+                    'name' => $name, 'start_time' => $s, 'end_time' => $e,
+                    'is_break' => $break, 'sort_order' => $order++,
+                ]);
+            }
+        }
+    }
+
+    private function seedGrades(): void
+    {
+        if (QueryBuilder::table('grades')->count() > 0) {
+            return;
+        }
+        $grades = [
+            ['A+', 90, 100, 4.0, 'Outstanding'], ['A', 80, 89.99, 3.6, 'Excellent'],
+            ['B+', 70, 79.99, 3.2, 'Very Good'], ['B', 60, 69.99, 2.8, 'Good'],
+            ['C', 50, 59.99, 2.4, 'Satisfactory'], ['D', 33, 49.99, 1.6, 'Pass'],
+            ['F', 0, 32.99, 0.0, 'Fail'],
+        ];
+        foreach ($grades as [$name, $min, $max, $gpa, $remark]) {
+            QueryBuilder::table('grades')->insert([
+                'name' => $name, 'min_percent' => $min, 'max_percent' => $max,
+                'gpa' => $gpa, 'remark' => $remark,
+            ]);
+        }
+    }
+
+    private function seedExamTypes(): void
+    {
+        if (QueryBuilder::table('exam_types')->count() > 0) {
+            return;
+        }
+        foreach ([['Unit Test', 10], ['Midterm', 30], ['Final', 60]] as [$name, $weight]) {
+            QueryBuilder::table('exam_types')->insert([
+                'name' => $name, 'weightage' => $weight,
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+    }
+
+    private function seedFeeCategories(): void
+    {
+        if (QueryBuilder::table('fee_categories')->count() > 0) {
+            return;
+        }
+        foreach ([['Tuition Fee', 1], ['Admission Fee', 0], ['Exam Fee', 1], ['Transport Fee', 1], ['Library Fee', 1]] as [$name, $recurring]) {
+            QueryBuilder::table('fee_categories')->insert([
+                'name' => $name, 'is_recurring' => $recurring,
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+    }
+
+    private function seedLeaveTypes(): void
+    {
+        if (QueryBuilder::table('leave_types')->count() > 0) {
+            return;
+        }
+        foreach ([['Casual Leave', 12, 1], ['Sick Leave', 10, 1], ['Earned Leave', 15, 1], ['Unpaid Leave', 0, 0]] as [$name, $days, $paid]) {
+            QueryBuilder::table('leave_types')->insert([
+                'name' => $name, 'days_allowed' => $days, 'is_paid' => $paid,
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+    }
+
+    private function seedSettings(): void
+    {
+        $defaults = [
+            ['general', 'school_name', 'Greenfield International School', 'string'],
+            ['general', 'school_email', 'info@school.test', 'string'],
+            ['general', 'school_phone', '+1 555 010 2020', 'string'],
+            ['general', 'school_address', '123 Education Lane, Knowledge City', 'string'],
+            ['general', 'currency', '₹', 'string'],
+            ['general', 'timezone', 'Asia/Kolkata', 'string'],
+            ['academic', 'week_start', 'Monday', 'string'],
+            ['academic', 'attendance_type', 'daily', 'string'],
+        ];
+        foreach ($defaults as [$group, $key, $value, $type]) {
+            if (QueryBuilder::table('settings')->where('key', $key)->first()) {
+                continue;
+            }
+            QueryBuilder::table('settings')->insert([
+                'group' => $group, 'key' => $key, 'value' => $value, 'type' => $type,
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+    }
+}

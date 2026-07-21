@@ -1,0 +1,122 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Application bootstrap.
+ *
+ * Registers the autoloader, loads environment + configuration, binds core
+ * services into the container, starts the session, and returns the Application.
+ */
+
+use Core\Application;
+use Core\Config\Config;
+use Core\Http\Request;
+use Core\Http\Session;
+use Core\Auth\Auth;
+use Core\View\View;
+use Core\Support\Autoloader;
+use Core\Support\Env;
+use Core\Support\Logger;
+use Core\Routing\Router;
+
+$root = dirname(__DIR__);
+
+// --- Autoloading -----------------------------------------------------------
+// Prefer Composer's autoloader if present; otherwise use the built-in one.
+if (is_file($root . '/vendor/autoload.php')) {
+    require $root . '/vendor/autoload.php';
+} else {
+    require $root . '/core/Support/Autoloader.php';
+    $autoloader = new Autoloader();
+    $autoloader->addNamespace('App', $root . '/app');
+    $autoloader->addNamespace('Core', $root . '/core');
+    $autoloader->addNamespace('Database', $root . '/database');
+    $autoloader->addFile($root . '/core/Support/helpers.php');
+    $autoloader->register();
+}
+
+// --- Environment & Configuration -------------------------------------------
+Env::load($root . '/.env');
+Config::load($root . '/config');
+
+date_default_timezone_set((string) Config::get('app.timezone', 'UTC'));
+
+// --- Error & Exception handling --------------------------------------------
+$debug = (bool) Config::get('app.debug', false);
+error_reporting($debug ? E_ALL : E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+ini_set('display_errors', $debug ? '1' : '0');
+ini_set('log_errors', '1');
+
+// --- Application container --------------------------------------------------
+$app = new Application($root);
+
+$app->singleton(Logger::class, fn (): Logger => new Logger());
+$app->singleton(Request::class, fn (): Request => Request::capture());
+$app->singleton(Session::class, fn (): Session => new Session());
+$app->singleton(View::class, fn (): View => new View());
+$app->singleton(Auth::class, fn (Application $a): Auth => new Auth($a->make(Session::class)));
+$app->singleton(Router::class, fn (): Router => new Router());
+
+// --- Global exception handler ----------------------------------------------
+set_exception_handler(static function (\Throwable $e) use ($debug): void {
+    // Validation exceptions from API requests become 422 JSON responses.
+    if ($e instanceof \Core\Validation\ValidationException) {
+        if (!headers_sent()) {
+            http_response_code(422);
+            header('Content-Type: application/json; charset=UTF-8');
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => $e->getMessage(),
+            'errors'  => $e->errors(),
+        ]);
+        return;
+    }
+
+    try {
+        app(Logger::class)->error($e->getMessage(), [
+            'exception' => get_class($e),
+            'file'      => $e->getFile(),
+            'line'      => $e->getLine(),
+        ]);
+    } catch (\Throwable) {
+        // ignore logging failures
+    }
+
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/html; charset=UTF-8');
+    }
+
+    if ($debug) {
+        echo '<pre style="padding:20px;font-family:monospace;">';
+        echo 'Uncaught ' . get_class($e) . ': ' . htmlspecialchars($e->getMessage()) . "\n\n";
+        echo htmlspecialchars($e->getFile()) . ':' . $e->getLine() . "\n\n";
+        echo htmlspecialchars($e->getTraceAsString());
+        echo '</pre>';
+    } else {
+        $view = Config::get('paths.views') . '/errors/generic.php';
+        if (is_file($view)) {
+            try {
+                echo view('errors.generic', ['code' => 500, 'title' => 'Server Error', 'message' => 'Something went wrong. Please try again later.']);
+            } catch (\Throwable) {
+                echo '<h1>500 Server Error</h1>';
+            }
+        } else {
+            echo '<h1>500 Server Error</h1>';
+        }
+    }
+    exit;
+});
+
+// --- Session ----------------------------------------------------------------
+$app->make(Session::class)->start();
+
+// --- Share common view data -------------------------------------------------
+$view = $app->make(View::class);
+$view->share('appName', Config::get('app.name', 'School ERP'));
+$view->share('appUrl', Config::get('app.url'));
+$view->share('appVersion', Config::get('app.version', '1.0.0'));
+
+return $app;

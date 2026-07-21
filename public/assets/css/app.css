@@ -1,0 +1,162 @@
+/* ==========================================================================
+   School ERP - Application styles
+   Supplemental styles layered on top of Tailwind (loaded via CDN).
+   Light mode only, neutral palette, minimal shadows.
+   ========================================================================== */
+
+:root {
+    --brand: #2563eb;
+    --brand-dark: #1d4ed8;
+}
+
+html { scroll-behavior: smooth; }
+
+/* Accessible focus ring for keyboard users. */
+:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+/* Custom scrollbar (subtle). */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Reusable component classes. */
+.btn {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .5rem 1rem; border-radius: .5rem; font-weight: 600; font-size: .875rem;
+    transition: background-color .15s ease, box-shadow .15s ease; cursor: pointer;
+}
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-dark); }
+.btn-secondary { background: #fff; color: #334155; border: 1px solid #e2e8f0; }
+.btn-secondary:hover { background: #f8fafc; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: .75rem; }
+
+.form-input, .form-select, .form-textarea {
+    width: 100%; border: 1px solid #cbd5e1; border-radius: .5rem;
+    padding: .55rem .75rem; font-size: .875rem; background: #fff; color: #0f172a;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,.15); outline: none;
+}
+.form-label { display: block; font-size: .8125rem; font-weight: 600; color: #334155; margin-bottom: .35rem; }
+.form-error { color: #dc2626; font-size: .8125rem; margin-top: .25rem; }
+.required::after { content: " *"; color: #dc2626; }
+
+.badge { display: inline-flex; align-items: center; padding: .15rem .6rem; border-radius: 9999px; font-size: .75rem; font-weight: 600; }
+.badge-green { background: #dcfce7; color: #166534; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-amber { background: #fef3c7; color: #92400e; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+.badge-slate { background: #f1f5f9; color: #334155; }
+
+/* Table helpers */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: #64748b; padding: .75rem 1rem; border-bottom: 1px solid #e2e8f0; }
+.data-table td { padding: .75rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: .875rem; }
+.data-table tr:hover td { background: #f8fafc; }
+
+/* Print styles for receipts/report cards. */
+@media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+}
+
+
+/* ==========================================================================
+   Design tokens — single source of truth for the visual language.
+   ========================================================================== */
+:root {
+    /* Color palette (neutral + brand). */
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-border: #e2e8f0;
+    --color-text: #0f172a;
+    --color-text-muted: #64748b;
+    --color-success: #16a34a;
+    --color-danger: #dc2626;
+    --color-warning: #d97706;
+    --color-info: #2563eb;
+
+    /* Typography scale (fluid, clamp-based). */
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --fs-caption: 0.75rem;      /* 12px */
+    --fs-sm: 0.8125rem;         /* 13px */
+    --fs-body: 0.875rem;        /* 14px */
+    --fs-base: 1rem;            /* 16px */
+    --fs-h3: clamp(1.05rem, 1rem + 0.4vw, 1.25rem);
+    --fs-h2: clamp(1.25rem, 1.1rem + 0.8vw, 1.5rem);
+    --fs-h1: clamp(1.5rem, 1.3rem + 1.2vw, 2rem);
+    --fs-display: clamp(2rem, 1.6rem + 2vw, 3rem);
+    --lh-tight: 1.25;
+    --lh-normal: 1.6;
+    --fw-normal: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+
+    /* Spacing / radius / shadow / motion. */
+    --radius-sm: 0.375rem; --radius: 0.5rem; --radius-lg: 0.75rem; --radius-xl: 1rem;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+    --touch-target: 44px;
+}
+
+/* Base typography */
+body { font-family: var(--font-sans); font-size: var(--fs-body); line-height: var(--lh-normal); color: var(--color-text); }
+h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); font-weight: var(--fw-bold); }
+h2 { font-size: var(--fs-h2); line-height: var(--lh-tight); font-weight: var(--fw-semibold); }
+h3 { font-size: var(--fs-h3); line-height: var(--lh-tight); font-weight: var(--fw-semibold); }
+small, .caption { font-size: var(--fs-caption); color: var(--color-text-muted); }
+
+/* ==========================================================================
+   Accessible touch targets (WCAG 2.5.5) — min 44x44 on touch devices.
+   ========================================================================== */
+@media (pointer: coarse) {
+    .btn, button, [role="button"], .data-table a, nav a, select, .form-input, .form-select {
+        min-height: var(--touch-target);
+    }
+    .btn, button[type="submit"] { padding-top: .625rem; padding-bottom: .625rem; }
+}
+
+/* ==========================================================================
+   Responsive tables — opt-in card view on small screens.
+   Add class="table-cards" to a .data-table and data-label="Column" to each td.
+   ========================================================================== */
+@media (max-width: 640px) {
+    table.table-cards thead { display: none; }
+    table.table-cards, table.table-cards tbody, table.table-cards tr, table.table-cards td { display: block; width: 100%; }
+    table.table-cards tr {
+        margin-bottom: .75rem; border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg); overflow: hidden; background: var(--color-surface);
+    }
+    table.table-cards td {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 1rem; padding: .625rem .875rem; border-bottom: 1px solid var(--color-border);
+        text-align: right;
+    }
+    table.table-cards td:last-child { border-bottom: 0; }
+    table.table-cards td::before {
+        content: attr(data-label); font-weight: var(--fw-semibold);
+        color: var(--color-text-muted); font-size: var(--fs-caption);
+        text-transform: uppercase; letter-spacing: .03em; text-align: left;
+    }
+    table.table-cards td[data-label=""]::before { content: ""; }
+}
+
+/* Prevent layout overflow on very small screens. */
+img, svg, video, canvas { max-width: 100%; height: auto; }
+.container-safe { width: 100%; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+
+/* Client-side validation feedback. */
+.field-invalid { border-color: var(--color-danger) !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important; }
+.field-error-msg { color: var(--color-danger); font-size: var(--fs-caption); margin-top: .25rem; }
+
+/* Ultra-wide: cap content width so 4K/ultrawide don't stretch text lines. */
+@media (min-width: 1920px) {
+    main { max-width: 1800px; margin-inline: auto; }
+}

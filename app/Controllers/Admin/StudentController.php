@@ -1,0 +1,296 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers\Admin;
+
+use App\Models\AcademicYear;
+use App\Models\ClassModel;
+use App\Models\Guardian;
+use App\Models\Section;
+use App\Models\Student;
+use App\Models\User;
+use App\Services\AuditLogger;
+use Core\Database\Connection;
+use Core\Database\QueryBuilder;
+use Core\Http\Request;
+use Core\Http\Response;
+use Core\Routing\Controller;
+use Core\Security\Hash;
+
+/**
+ * Admin management of students: admission, profile, documents, promotion.
+ */
+final class StudentController extends Controller
+{
+    private const UPLOAD_DIR = '/storage/uploads/students';
+
+    public function index(Request $request): Response
+    {
+        $filters = [
+            'search'     => (string) $request->query('search', ''),
+            'class_id'   => (int) $request->query('class_id', 0),
+            'section_id' => (int) $request->query('section_id', 0),
+            'status'     => (string) $request->query('status', ''),
+        ];
+
+        $page = max(1, (int) $request->query('page', 1));
+        $result = Student::paginate($page, (int) config('app.per_page', 15), Student::filtered($filters));
+
+        return $this->view('admin.students.index', [
+            'title'    => 'Students',
+            'students' => $result['data'],
+            'meta'     => $result['meta'],
+            'classes'  => ClassModel::ordered(),
+            'filters'  => $filters,
+        ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        return $this->view('admin.students.create', [
+            'title'        => 'Admit Student',
+            'classes'      => ClassModel::ordered(),
+            'sections'     => Section::withClass(),
+            'years'        => AcademicYear::all(),
+            'admissionNo'  => Student::generateAdmissionNo(),
+        ]);
+    }
+
+    public function store(Request $request): Response
+    {
+        $data = $this->validate($request, [
+            'first_name'    => 'required|string|max:80',
+            'last_name'     => 'required|string|max:80',
+            'gender'        => 'required|in:male,female,other',
+            'dob'           => 'nullable|date',
+            'email'         => 'nullable|email|max:190',
+            'phone'         => 'nullable|phone',
+            'class_id'      => 'nullable|integer',
+            'section_id'    => 'nullable|integer',
+            'academic_year_id' => 'nullable|integer',
+            'guardian_name' => 'nullable|string|max:150',
+            'guardian_phone'=> 'nullable|phone',
+            'create_login'  => 'nullable|boolean',
+        ]);
+
+        $photo = $this->handlePhoto($request);
+
+        try {
+            $studentId = Connection::instance()->transaction(function () use ($data, $request, $photo): int {
+                $userId = null;
+
+                // Optionally create a login account for the student.
+                if ($request->boolean('create_login') && !empty($data['email'])) {
+                    $userId = User::create([
+                        'name'      => $data['first_name'] . ' ' . $data['last_name'],
+                        'email'     => $data['email'],
+                        'username'  => strtolower($data['first_name']) . random_int(100, 999),
+                        'password'  => Hash::make('Password123!'),
+                        'is_active' => 1,
+                    ]);
+                    User::assignRole($userId, 'student');
+                }
+
+                $studentId = Student::create([
+                    'user_id'          => $userId,
+                    'admission_no'     => Student::generateAdmissionNo(),
+                    'roll_no'          => $request->input('roll_no'),
+                    'first_name'       => $data['first_name'],
+                    'last_name'        => $data['last_name'],
+                    'gender'           => $data['gender'],
+                    'dob'              => $data['dob'] ?: null,
+                    'blood_group'      => $request->input('blood_group'),
+                    'email'            => $data['email'] ?: null,
+                    'phone'            => $data['phone'] ?: null,
+                    'address'          => $request->input('address'),
+                    'class_id'         => $data['class_id'] ?: null,
+                    'section_id'       => $data['section_id'] ?: null,
+                    'academic_year_id' => $data['academic_year_id'] ?: null,
+                    'admission_date'   => date('Y-m-d'),
+                    'photo'            => $photo,
+                    'status'           => 'active',
+                ]);
+
+                // Optionally create + link a guardian.
+                if (!empty($data['guardian_name'])) {
+                    $guardianId = Guardian::create([
+                        'name'  => $data['guardian_name'],
+                        'phone' => $data['guardian_phone'] ?: null,
+                        'relation' => 'guardian',
+                    ]);
+                    QueryBuilder::table('student_guardians')->insert([
+                        'student_id' => $studentId, 'guardian_id' => $guardianId, 'is_primary' => 1,
+                    ]);
+                }
+
+                return $studentId;
+            });
+        } catch (\Throwable $e) {
+            logger()->error('Student creation failed: ' . $e->getMessage());
+            return $this->back(['general' => ['Could not save the student. Please try again.']], $request->all());
+        }
+
+        AuditLogger::log('student.created', 'student', $studentId, 'Admitted student ' . $data['first_name']);
+
+        return $this->redirect('/admin/students/' . $studentId, ['success' => 'Student admitted successfully.']);
+    }
+
+    public function show(Request $request, string $id): Response
+    {
+        $student = Student::profile((int) $id);
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+
+        $documents = [];
+        try {
+            $documents = QueryBuilder::table('student_documents')->where('student_id', (int) $id)->get();
+        } catch (\Throwable) {
+        }
+
+        return $this->view('admin.students.show', [
+            'title'     => $student['first_name'] . ' ' . $student['last_name'],
+            'student'   => $student,
+            'guardians' => Guardian::forStudent((int) $id),
+            'documents' => $documents,
+        ]);
+    }
+
+    public function edit(Request $request, string $id): Response
+    {
+        $student = Student::find((int) $id);
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+
+        return $this->view('admin.students.edit', [
+            'title'    => 'Edit Student',
+            'student'  => $student,
+            'classes'  => ClassModel::ordered(),
+            'sections' => Section::withClass(),
+            'years'    => AcademicYear::all(),
+        ]);
+    }
+
+    public function update(Request $request, string $id): Response
+    {
+        $student = Student::find((int) $id);
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+
+        $data = $this->validate($request, [
+            'first_name' => 'required|string|max:80',
+            'last_name'  => 'required|string|max:80',
+            'gender'     => 'required|in:male,female,other',
+            'dob'        => 'nullable|date',
+            'email'      => 'nullable|email|max:190',
+            'phone'      => 'nullable|phone',
+            'class_id'   => 'nullable|integer',
+            'section_id' => 'nullable|integer',
+            'status'     => 'required|in:active,inactive,graduated,transferred,alumni',
+        ]);
+
+        $update = [
+            'first_name' => $data['first_name'],
+            'last_name'  => $data['last_name'],
+            'gender'     => $data['gender'],
+            'dob'        => $data['dob'] ?: null,
+            'email'      => $data['email'] ?: null,
+            'phone'      => $data['phone'] ?: null,
+            'roll_no'    => $request->input('roll_no'),
+            'address'    => $request->input('address'),
+            'blood_group'=> $request->input('blood_group'),
+            'class_id'   => $data['class_id'] ?: null,
+            'section_id' => $data['section_id'] ?: null,
+            'status'     => $data['status'],
+        ];
+
+        $photo = $this->handlePhoto($request);
+        if ($photo !== null) {
+            $update['photo'] = $photo;
+        }
+
+        Student::updateById((int) $id, $update);
+        AuditLogger::log('student.updated', 'student', (int) $id, 'Updated student');
+
+        return $this->redirect('/admin/students/' . $id, ['success' => 'Student updated successfully.']);
+    }
+
+    public function destroy(Request $request, string $id): Response
+    {
+        $student = Student::find((int) $id);
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+
+        Student::deleteById((int) $id);
+        AuditLogger::log('student.deleted', 'student', (int) $id, 'Soft-deleted student');
+
+        return $this->redirect('/admin/students', ['success' => 'Student removed.']);
+    }
+
+    /**
+     * Bulk-promote students from one class/section to another.
+     */
+    public function promote(Request $request): Response
+    {
+        $ids = array_map('intval', (array) $request->input('student_ids', []));
+        $toClass = (int) $request->input('to_class_id', 0);
+        $toSection = (int) $request->input('to_section_id', 0);
+
+        if ($ids === [] || $toClass === 0) {
+            return $this->back(['promote' => ['Select students and a destination class.']]);
+        }
+
+        $count = 0;
+        foreach ($ids as $sid) {
+            $student = Student::find($sid);
+            if ($student === null) {
+                continue;
+            }
+            QueryBuilder::table('student_promotions')->insert([
+                'student_id'      => $sid,
+                'from_class_id'   => $student['class_id'],
+                'to_class_id'     => $toClass,
+                'from_section_id' => $student['section_id'],
+                'to_section_id'   => $toSection ?: null,
+                'result'          => 'promoted',
+                'promoted_by'     => auth()->id(),
+                'created_at'      => date('Y-m-d H:i:s'),
+            ]);
+            Student::updateById($sid, ['class_id' => $toClass, 'section_id' => $toSection ?: null]);
+            $count++;
+        }
+
+        AuditLogger::log('student.promoted', 'student', null, "Promoted {$count} students");
+
+        return $this->redirect('/admin/students', ['success' => "Promoted {$count} student(s)."]);
+    }
+
+    /**
+     * Validate and store an uploaded photo; returns the stored filename or null.
+     */
+    private function handlePhoto(Request $request): ?string
+    {
+        $file = $request->file('photo');
+        if ($file === null) {
+            return null;
+        }
+
+        $allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
+        $maxSize = (int) config('app.upload_max_size', 5242880);
+
+        if (!$file->isValid() || !in_array($file->mimeType(), $allowedMime, true) || $file->size() > $maxSize) {
+            return null;
+        }
+
+        try {
+            return $file->store(base_path(self::UPLOAD_DIR));
+        } catch (\Throwable $e) {
+            logger()->warning('Photo upload failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+}

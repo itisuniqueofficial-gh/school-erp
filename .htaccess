@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If the document root is the project root (not /public), forward all
+    # requests into the public directory. On correctly configured hosts you
+    # should point the docroot directly at /public and this file is ignored.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Prevent direct browsing of application source.
+<FilesMatch "\.(env|md|json|lock|sql|log)$">
+    Require all denied
+</FilesMatch>

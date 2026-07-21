@@ -1,0 +1,165 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * ===========================================================================
+ * School ERP - Console
+ * ---------------------------------------------------------------------------
+ * Usage:
+ *   php bin/console migrate          Run pending migrations
+ *   php bin/console migrate:fresh    Drop all tables and re-run migrations
+ *   php bin/console migrate:status   Show migration status
+ *   php bin/console seed             Seed baseline data
+ *   php bin/console key:generate     Generate & write APP_KEY into .env
+ *   php bin/console backup           Dump the database to storage/backups
+ * ===========================================================================
+ */
+
+use Core\Config\Config;
+use Core\Database\Connection;
+use Database\Migrator;
+use Database\Seeds\DatabaseSeeder;
+
+$root = dirname(__DIR__);
+
+/** @var \Core\Application $app */
+$app = require $root . '/bootstrap/app.php';
+
+$command = $argv[1] ?? 'help';
+
+/** Small colored output helpers. */
+$out = static function (string $msg, string $color = ''): void {
+    $colors = ['green' => "\033[32m", 'red' => "\033[31m", 'yellow' => "\033[33m", 'cyan' => "\033[36m"];
+    $reset = "\033[0m";
+    $prefix = $colors[$color] ?? '';
+    echo $prefix . $msg . ($prefix ? $reset : '') . PHP_EOL;
+};
+
+try {
+    switch ($command) {
+        case 'migrate':
+            $ran = (new Migrator())->migrate();
+            if ($ran === []) {
+                $out('Nothing to migrate. Database is up to date.', 'yellow');
+            } else {
+                foreach ($ran as $m) {
+                    $out("Migrated: {$m}", 'green');
+                }
+            }
+            break;
+
+        case 'migrate:fresh':
+            $out('Dropping all tables...', 'yellow');
+            $migrator = new Migrator();
+            $migrator->fresh();
+            $ran = $migrator->migrate();
+            foreach ($ran as $m) {
+                $out("Migrated: {$m}", 'green');
+            }
+            $out('Fresh migration complete.', 'green');
+            break;
+
+        case 'migrate:status':
+            $status = (new Migrator())->status();
+            $out('Applied migrations:', 'cyan');
+            foreach ($status['applied'] as $m) {
+                $out("  [x] {$m}");
+            }
+            $out('Pending migrations:', 'cyan');
+            foreach ($status['pending'] as $m) {
+                $out("  [ ] {$m}", 'yellow');
+            }
+            if ($status['pending'] === []) {
+                $out('  (none)', 'green');
+            }
+            break;
+
+        case 'seed':
+            $out('Seeding database...', 'cyan');
+            (new DatabaseSeeder())->run();
+            $out('Seeding complete.', 'green');
+            $out('Default login: superadmin@school.test / Password123!', 'yellow');
+            break;
+
+        case 'key:generate':
+            $key = bin2hex(random_bytes(16));
+            $envFile = $root . '/.env';
+            if (!is_file($envFile)) {
+                copy($root . '/.env.example', $envFile);
+            }
+            $contents = (string) file_get_contents($envFile);
+            if (preg_match('/^APP_KEY=.*$/m', $contents)) {
+                $contents = preg_replace('/^APP_KEY=.*$/m', 'APP_KEY=' . $key, $contents) ?? $contents;
+            } else {
+                $contents .= "\nAPP_KEY={$key}\n";
+            }
+            file_put_contents($envFile, $contents);
+            $out('Application key set successfully.', 'green');
+            break;
+
+        case 'backup':
+            $out('Running database backup...', 'cyan');
+            $file = (new \App\Services\BackupService())->create();
+            if ($file !== null) {
+                $out("Backup written to: {$file}", 'green');
+            } else {
+                $out('Backup failed. Ensure mysqldump is installed and credentials are correct.', 'red');
+            }
+            break;
+
+        case 'reminders':
+            $out('Generating reminders...', 'cyan');
+            $counts = (new \App\Services\ReminderService())->run();
+            foreach ($counts as $type => $n) {
+                $out("  {$type}: {$n}", 'green');
+            }
+            $out('Reminders generated.', 'green');
+            break;
+
+        case 'cleanup:logs':
+            $n = (new \App\Services\BackupService())->cleanupLogs((int) ($argv[2] ?? 30));
+            $out("Removed {$n} old log file(s).", 'green');
+            break;
+
+        case 'cleanup:sessions':
+            $n = (new \App\Services\BackupService())->cleanupSessions();
+            $out("Removed {$n} expired session file(s).", 'green');
+            break;
+
+        case 'install':
+            // Non-interactive install: migrate + seed (for CLI/CI provisioning).
+            $out('Running migrations...', 'cyan');
+            (new Migrator())->migrate();
+            $out('Seeding baseline data...', 'cyan');
+            (new DatabaseSeeder())->run();
+            $out('Installation complete. Default login: superadmin@school.test / Password123!', 'green');
+            break;
+
+        case 'help':
+        default:
+            $out('School ERP Console', 'cyan');
+            $out('Available commands:');
+            $out('  migrate            Run pending migrations');
+            $out('  migrate:fresh      Drop all tables and re-run migrations');
+            $out('  migrate:status     Show migration status');
+            $out('  seed               Seed baseline data');
+            $out('  install            Migrate + seed in one step');
+            $out('  key:generate       Generate & write APP_KEY into .env');
+            $out('  backup             Dump the database to storage/backups');
+            $out('  reminders          Generate birthday/fee/exam/holiday reminders');
+            $out('  cleanup:logs [days] Delete log files older than N days (default 30)');
+            $out('  cleanup:sessions   Delete expired session files');
+            break;
+    }
+} catch (\Throwable $e) {
+    $out('Error: ' . $e->getMessage(), 'red');
+    if ((bool) Config::get('app.debug')) {
+        $out($e->getFile() . ':' . $e->getLine());
+        $out($e->getTraceAsString());
+    }
+    exit(1);
+}
+
+exit(0);

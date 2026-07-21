@@ -1,0 +1,68 @@
+# ==========================================================================
+# Environment & secrets  (NEVER commit real credentials)
+# ==========================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_rsa.*
+*.ppk
+
+# ==========================================================================
+# Dependencies
+# ==========================================================================
+/vendor/
+node_modules/
+
+# ==========================================================================
+# Storage & runtime (keep directory structure via .gitkeep)
+# ==========================================================================
+/storage/logs/*
+/storage/cache/*
+/storage/sessions/*
+/storage/framework/*
+/storage/uploads/*
+!/storage/**/.gitkeep
+/storage/installed.lock
+
+# Backups / database dumps (schema.sql & migrations are intentionally tracked)
+/storage/backups/*.sql
+/storage/backups/*.zip
+*.sql.gz
+*.tar
+*.tar.gz
+
+# ==========================================================================
+# Logs, cache, temp
+# ==========================================================================
+*.log
+logs/
+cache/
+tmp/
+temp/
+
+# ==========================================================================
+# Agent / tooling directories (not part of the application)
+# ==========================================================================
+.kiro/
+mcp/
+
+# ==========================================================================
+# IDE / OS
+# ==========================================================================
+.idea/
+.vscode/
+*.sublime-*
+.DS_Store
+Thumbs.db
+
+# ==========================================================================
+# Build / test artifacts
+# ==========================================================================
+/public/build/
+*.min.css.map
+*.min.js.map
+/.phpunit.cache/
+coverage/
