@@ -106,6 +106,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/attendance', AttendanceController::class . '@index')->middleware('can:attendance.view');
             $router->post('/attendance', AttendanceController::class . '@store')->middleware('can:attendance.mark');
             $router->get('/attendance/report', AttendanceController::class . '@report')->middleware('can:attendance.view');
+            $router->post('/attendance/unlock-request', AttendanceController::class . '@requestUnlock')->middleware('can:attendance.unlock_request');
+            $router->post('/attendance/unlock/{id}', AttendanceController::class . '@reviewUnlock')->middleware('can:attendance.unlock_approve');
 
             // Examinations
             $router->get('/exams', ExamController::class . '@index')->middleware('can:exams.view');
@@ -113,6 +115,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/exams/{id}/marks', ExamController::class . '@marks')->middleware('can:exams.view');
             $router->post('/exams/{id}/marks', ExamController::class . '@storeMarks')->middleware('can:exams.manage');
             $router->get('/exams/{id}/report-cards', ExamController::class . '@reportCards')->middleware('can:exams.view');
+            $router->post('/exams/{id}/marks/workflow', ExamController::class . '@marksWorkflow')->middleware('can:exams.view');
 
             // Fees
             $router->get('/fees', FeeController::class . '@index')->middleware('can:fees.view');

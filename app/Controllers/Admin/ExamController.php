@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Models\ClassModel;
 use App\Models\Exam;
 use App\Models\Subject;
+use App\Services\MarksWorkflowService;
 use App\Services\AuditLogger;
 use Core\Database\Connection;
 use Core\Database\QueryBuilder;
@@ -104,6 +105,12 @@ final class ExamController extends Controller
         }
 
         $schedule = $this->ensureSchedule($examId, $classId, $subjectId);
+
+        // Locked/approved/published marks cannot be edited by teachers.
+        if ((new MarksWorkflowService())->isLocked((int) $schedule['id'])) {
+            return $this->back(['marks' => ['These marks are locked (approved/published). Request an unlock to edit.']]);
+        }
+
         $fullMarks = (float) ($schedule['full_marks'] ?? 100);
 
         foreach ($marks as $studentId => $obtained) {
@@ -136,6 +143,25 @@ final class ExamController extends Controller
 
         AuditLogger::log('exam.marks_entered', 'exam', $examId, 'Entered marks');
         return $this->redirect("/admin/exams/{$examId}/marks?class_id={$classId}&subject_id={$subjectId}", ['success' => 'Marks saved.']);
+    }
+
+    /**
+     * Transition a marks batch (exam + class + subject) through the workflow:
+     * submit | review | approve | reject | publish | lock | unlock.
+     */
+    public function marksWorkflow(Request $request, string $id): Response
+    {
+        $classId = (int) $request->input('class_id', 0);
+        $subjectId = (int) $request->input('subject_id', 0);
+        $action = (string) $request->input('action', '');
+        $schedule = QueryBuilder::table('exam_schedules')
+            ->where('exam_id', (int) $id)->where('class_id', $classId)->where('subject_id', $subjectId)->first();
+        if ($schedule === null) {
+            return $this->back(['marks' => ['No marks schedule found for that class/subject.']]);
+        }
+        $result = (new MarksWorkflowService())->transition((int) $schedule['id'], $action, auth()->id());
+        $back = "/admin/exams/{$id}/marks?class_id={$classId}&subject_id={$subjectId}";
+        return $this->redirect($back, [$result['ok'] ? 'success' : 'error' => $result['message']]);
     }
 
     /**

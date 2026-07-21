@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Models\ClassModel;
 use App\Models\Section;
 use App\Models\StudentAttendance;
+use App\Services\AttendanceLockService;
 use App\Services\AuditLogger;
 use Core\Database\QueryBuilder;
 use Core\Http\Request;
@@ -62,6 +63,12 @@ final class AttendanceController extends Controller
             return $this->back(['attendance' => ['Select a class, section and date, then mark students.']]);
         }
 
+        // Enforce date locking: past dates require an approved unlock.
+        $lock = new AttendanceLockService();
+        if (!$lock->isEditable($classId, $sectionId, $date)) {
+            return $this->back(['attendance' => [$lock->reason($classId, $sectionId, $date)]]);
+        }
+
         $marked = 0;
         foreach ($statuses as $studentId => $status) {
             if (!in_array($status, self::STATUSES, true)) {
@@ -109,5 +116,28 @@ final class AttendanceController extends Controller
             'daysInMonth' => $daysInMonth,
             'selected'    => ['class_id' => $classId, 'section_id' => $sectionId, 'month' => $month],
         ]);
+    }
+
+    /** Teacher requests an unlock for a locked (class, section, date). */
+    public function requestUnlock(Request $request): Response
+    {
+        $data = $this->validate($request, [
+            'class_id'   => 'required|integer',
+            'section_id' => 'required|integer',
+            'date'       => 'required|date',
+            'reason'     => 'required|string|max:255',
+        ]);
+        $result = (new AttendanceLockService())->requestUnlock(
+            (int) $data['class_id'], (int) $data['section_id'], $data['date'], $data['reason']
+        );
+        return $this->back($result['ok'] ? [] : ['unlock' => [$result['message']]]);
+    }
+
+    /** Admin approves/rejects an unlock request (server-side gated by route). */
+    public function reviewUnlock(Request $request, string $id): Response
+    {
+        $approve = $request->input('decision') === 'approve';
+        $result = (new AttendanceLockService())->review((int) $id, $approve);
+        return $this->redirect('/admin/attendance', [$result['ok'] ? 'success' : 'error' => $result['message']]);
     }
 }

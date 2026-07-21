@@ -81,8 +81,9 @@ final class DatabaseSeeder
             'teachers'      => ['view', 'create', 'update', 'delete'],
             'staff'         => ['view', 'create', 'update', 'delete'],
             'academic'      => ['view', 'manage'],
-            'attendance'    => ['view', 'mark'],
+            'attendance'    => ['view', 'mark', 'unlock_request', 'unlock_approve'],
             'exams'         => ['view', 'manage'],
+            'marks'         => ['submit', 'approve', 'publish', 'unlock'],
             'fees'          => ['view', 'manage', 'collect'],
             'library'       => ['view', 'manage'],
             'transport'     => ['view', 'manage'],
@@ -144,8 +145,8 @@ final class DatabaseSeeder
         $this->assign('principal', $all);
         $this->assign('vice_principal', array_filter($all, fn ($p) => !str_starts_with($p, 'settings') && !str_starts_with($p, 'roles')));
 
-        $this->assign('teacher', ['students.view', 'attendance.view', 'attendance.mark', 'exams.view', 'exams.manage', 'academic.view', 'communication.view', 'reports.view']);
-        $this->assign('class_teacher', ['students.view', 'students.update', 'attendance.view', 'attendance.mark', 'exams.view', 'exams.manage', 'academic.view', 'communication.view', 'communication.send', 'reports.view']);
+        $this->assign('teacher', ['students.view', 'attendance.view', 'attendance.mark', 'attendance.unlock_request', 'exams.view', 'exams.manage', 'marks.submit', 'academic.view', 'communication.view', 'reports.view']);
+        $this->assign('class_teacher', ['students.view', 'students.update', 'attendance.view', 'attendance.mark', 'attendance.unlock_request', 'exams.view', 'exams.manage', 'marks.submit', 'academic.view', 'communication.view', 'communication.send', 'reports.view']);
         $this->assign('accountant', ['fees.view', 'fees.manage', 'fees.collect', 'students.view', 'reports.view']);
         $this->assign('librarian', ['library.view', 'library.manage', 'students.view']);
         $this->assign('receptionist', ['students.view', 'students.create', 'communication.view', 'communication.send']);
