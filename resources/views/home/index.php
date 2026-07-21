@@ -82,9 +82,9 @@
 
 <?php $this->section('scripts'); ?>
 <script>
-    if (window.gsap) {
-        gsap.from('[data-animate="hero"]', { y: 24, opacity: 0, duration: 0.6, ease: 'power2.out' });
-        gsap.from('[data-animate="cards"] > div', { y: 20, opacity: 0, duration: 0.5, stagger: 0.08, delay: 0.15, ease: 'power2.out' });
+    if (window.ERPAnim) {
+        ERPAnim.fadeUp('[data-animate="hero"]', { y: 24, duration: 0.6 });
+        ERPAnim.staggerCards('[data-animate="cards"] > div', { y: 20, duration: 0.5, stagger: 0.08 });
     }
 </script>
 <?php $this->endSection(); ?>

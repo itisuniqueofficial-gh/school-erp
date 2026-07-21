@@ -24,12 +24,12 @@
             .attr('role', 'alert')
             .text(message)
             .appendTo('body');
-        if (window.gsap) {
-            gsap.from($t[0], { x: 40, opacity: 0, duration: 0.3 });
+        if (window.ERPAnim) {
+            window.ERPAnim.toastEnter($t[0]);
         }
         setTimeout(function () {
-            if (window.gsap) {
-                gsap.to($t[0], { x: 40, opacity: 0, duration: 0.3, onComplete: () => $t.remove() });
+            if (window.ERPAnim) {
+                window.ERPAnim.toastExit($t[0], function () { $t.remove(); });
             } else {
                 $t.remove();
             }
@@ -87,9 +87,9 @@
                 .html('<i class="fa-solid fa-spinner fa-spin"></i> Please wait...');
         });
 
-        // --- Entrance animations ------------------------------------------
-        if (window.gsap) {
-            gsap.from('[data-animate-card]', { y: 16, opacity: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' });
+        // --- Entrance animations (safe: content is visible by default) ----
+        if (window.ERPAnim) {
+            window.ERPAnim.staggerCards('[data-animate-card]');
         }
     });
 })(jQuery);

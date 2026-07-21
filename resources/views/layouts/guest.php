@@ -52,9 +52,9 @@
 <?php // Combine the layout's own animations with any page-specific scripts. ?>
 <?php $this->section('scripts'); ?>
 <script>
-    if (window.gsap) {
-        gsap.from('[data-animate="form"]', { y: 20, opacity: 0, duration: 0.5, ease: 'power2.out' });
-        gsap.from('[data-animate="brand"]', { y: 20, opacity: 0, duration: 0.6, delay: 0.1, ease: 'power2.out' });
+    if (window.ERPAnim) {
+        ERPAnim.fadeUp('[data-animate="form"]', { y: 20, duration: 0.5 });
+        ERPAnim.fadeUp('[data-animate="brand"]', { y: 20, duration: 0.6, delay: 0.1 });
     }
 </script>
 <?= $this->yield('form_scripts') ?>

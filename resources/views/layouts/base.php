@@ -43,6 +43,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="<?= e(asset('assets/js/animations.js')) ?>"></script>
     <script src="<?= e(asset('assets/js/app.js')) ?>"></script>
     <?= $this->yield('scripts') ?>
 </body>

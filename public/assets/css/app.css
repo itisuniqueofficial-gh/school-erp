@@ -160,3 +160,51 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 @media (min-width: 1920px) {
     main { max-width: 1800px; margin-inline: auto; }
 }
+
+
+/* ==========================================================================
+   Animation safety & accessibility
+   --------------------------------------------------------------------------
+   Content is visible by default; GSAP only enhances. These rules guarantee
+   that a failed/interrupted animation can never permanently hide content.
+   ========================================================================== */
+[data-animate-card],
+[data-animate],
+[data-animate] > * {
+    opacity: 1;                 /* visible by default — JS enhances, never hides */
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+    [data-animate-card], [data-animate], [data-animate] > * { opacity: 1 !important; transform: none !important; }
+}
+
+/* ==========================================================================
+   Global overflow prevention (no horizontal scrolling from 320px → 4K)
+   ========================================================================== */
+html, body { max-width: 100%; overflow-x: hidden; }
+*, *::before, *::after { min-width: 0; }   /* let flex/grid children shrink */
+
+/* Consistent page container used by content areas. */
+.page-container {
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 2vw, 2rem);
+}
+
+/* Any horizontal scroll region (tables/charts) must not push the page wider. */
+.overflow-x-auto { max-width: 100%; }
+canvas { max-width: 100%; }
+
+/* Responsive dashboard grid helper (auto-fit, stays readable). */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 1rem;
+}

@@ -29,5 +29,5 @@ return [
 
     // Directory holding migration files.
     'migrations_path' => dirname(__DIR__) . '/database/migrations',
-    'seeds_path'      => dirname(__DIR__) . '/database/seeds',
+    'seeds_path'      => dirname(__DIR__) . '/database/Seeds',
 ];
