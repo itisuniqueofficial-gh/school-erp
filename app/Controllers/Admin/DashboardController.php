@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Services\StatsService;
+use App\Services\IntegrityService;
 use Core\Http\Request;
 use Core\Http\Response;
 use Core\Routing\Controller;
@@ -26,6 +27,19 @@ final class DashboardController extends Controller
             'studentsByClass'=> $stats->studentsByClass(),
             'activity'       => $stats->recentActivity(),
             'notices'        => $stats->notices(),
+        ]);
+    }
+
+    /**
+     * Academic management health dashboard (integrity checks).
+     */
+    public function academicHealth(Request $request): Response
+    {
+        $svc = new IntegrityService();
+        return $this->view('admin.academic.health', [
+            'title'  => 'Academic Health',
+            'checks' => $svc->checks(),
+            'status' => $svc->status(),
         ]);
     }
 

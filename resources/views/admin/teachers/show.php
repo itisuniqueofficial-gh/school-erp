@@ -42,5 +42,47 @@ $name = $teacher['first_name'] . ' ' . $teacher['last_name'];
         <div class="flex flex-wrap gap-2"><?php foreach ($subjects as $s): ?><span class="badge badge-blue"><?= e((string) ($s['subject_name'] ?? '')) ?> — <?= e((string) ($s['class_name'] ?? '')) ?></span><?php endforeach; ?></div>
         <?php endif; ?>
     </div>
+
+    <!-- Teaching assignments (year → class → section → subject) -->
+    <div class="card p-6 lg:col-span-3" id="assignments">
+        <h2 class="mb-4 font-semibold text-slate-800">Teaching Assignments</h2>
+        <div class="overflow-x-auto">
+            <table class="data-table table-cards">
+                <thead><tr><th>Year</th><th>Class</th><th>Section</th><th>Subject</th><th>Role</th><th class="text-right">Action</th></tr></thead>
+                <tbody>
+                <?php if (empty($assignments)): ?>
+                    <tr><td colspan="6" class="py-6 text-center text-slate-400">No teaching assignments yet.</td></tr>
+                <?php else: foreach ($assignments as $a): ?>
+                    <tr>
+                        <td data-label="Year"><?= e((string) ($a['year_name'] ?? '—')) ?></td>
+                        <td data-label="Class"><?= e((string) ($a['class_name'] ?? '—')) ?></td>
+                        <td data-label="Section"><?= e((string) ($a['section_name'] ?? '—')) ?></td>
+                        <td data-label="Subject" class="font-medium text-slate-800"><?= e((string) ($a['subject_name'] ?? '—')) ?></td>
+                        <td data-label="Role"><span class="badge badge-slate"><?= e(str_replace('_', ' ', (string) $a['role'])) ?></span></td>
+                        <td data-label="" class="text-right">
+                            <?php if (auth()->can('teachers.update')): ?>
+                            <form method="POST" action="<?= e(url('/admin/teachers/' . $teacher['id'] . '/assignments/' . $a['id'])) ?>" class="inline">
+                                <?= csrf_field() ?><?= method_field('DELETE') ?>
+                                <button class="text-red-600 hover:text-red-800" data-confirm="Remove this assignment?" aria-label="Remove assignment"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php if (auth()->can('teachers.update')): ?>
+        <form method="POST" action="<?= e(url('/admin/teachers/' . $teacher['id'] . '/assignments')) ?>" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" data-loading>
+            <?= csrf_field() ?>
+            <select name="academic_year_id" class="form-select" required><option value="">Year</option><?php foreach($years as $y):?><option value="<?=(int)$y['id']?>"><?=e((string)$y['name'])?></option><?php endforeach;?></select>
+            <select name="class_id" class="form-select" required><option value="">Class</option><?php foreach($classes as $c):?><option value="<?=(int)$c['id']?>"><?=e((string)$c['name'])?></option><?php endforeach;?></select>
+            <select name="section_id" class="form-select" required><option value="">Section</option><?php foreach($sections as $sec):?><option value="<?=(int)$sec['id']?>"><?=e((string)($sec['class_name'].' - '.$sec['name']))?></option><?php endforeach;?></select>
+            <select name="subject_id" class="form-select" required><option value="">Subject</option><?php foreach($allSubjects as $su):?><option value="<?=(int)$su['id']?>"><?=e((string)$su['name'])?></option><?php endforeach;?></select>
+            <select name="role" class="form-select"><option value="subject_teacher">Subject Teacher</option><option value="assistant_teacher">Assistant</option></select>
+            <button class="btn btn-primary justify-center"><i class="fa-solid fa-plus"></i> Assign</button>
+        </form>
+        <?php endif; ?>
+    </div>
 </div>
 <?php $this->endSection(); ?>

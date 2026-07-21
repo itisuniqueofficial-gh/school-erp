@@ -61,6 +61,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
         $router->group(['prefix' => 'admin', 'middleware' => ['role:super_admin,school_admin,principal,vice_principal,receptionist,hr,accountant']], function ($router): void {
             $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
             $router->get('/dashboard/stats', DashboardController::class . '@stats')->name('admin.dashboard.stats');
+            $router->get('/academic/health', DashboardController::class . '@academicHealth')->middleware('can:academic.view');
 
             // Students
             $router->get('/students', StudentController::class . '@index')->middleware('can:students.view');
@@ -80,6 +81,10 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/teachers/{id}/edit', TeacherController::class . '@edit')->middleware('can:teachers.update');
             $router->put('/teachers/{id}', TeacherController::class . '@update')->middleware('can:teachers.update');
             $router->delete('/teachers/{id}', TeacherController::class . '@destroy')->middleware('can:teachers.delete');
+            // Teaching assignments (year → class → section → subject → teacher)
+            $router->post('/teachers/{id}/assignments', TeacherController::class . '@storeAssignment')->middleware('can:teachers.update');
+            $router->delete('/teachers/{id}/assignments/{assignmentId}', TeacherController::class . '@removeAssignment')->middleware('can:teachers.update');
+            $router->post('/teachers/{id}/class-teacher', TeacherController::class . '@assignClassTeacher')->middleware('can:teachers.update');
 
             // Staff
             $router->get('/staff', StaffController::class . '@index')->middleware('can:staff.view');

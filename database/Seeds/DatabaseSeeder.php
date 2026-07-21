@@ -28,6 +28,7 @@ final class DatabaseSeeder
             $this->seedLeaveTypes();
             $this->seedSettings();
             $this->seedUsers();
+            $this->seedAcademicSystem();
         });
     }
 
@@ -364,6 +365,78 @@ final class DatabaseSeeder
             }
             QueryBuilder::table('settings')->insert([
                 'group' => $group, 'key' => $key, 'value' => $value, 'type' => $type,
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+    }
+
+    /**
+     * Backfill permanent public IDs and seed one demo enrollment + teacher
+     * assignment so the academic workflows have coherent starting data.
+     */
+    private function seedAcademicSystem(): void
+    {
+        $year = (int) date('Y');
+
+        // Backfill public_id for records that lack one (never reused).
+        $backfill = function (string $table, string $prefix) use ($year): void {
+            $rows = QueryBuilder::table($table)->whereNull('public_id')->orderBy('id')->get();
+            $n = 1;
+            foreach ($rows as $row) {
+                QueryBuilder::table($table)->where('id', (int) $row['id'])->update([
+                    'public_id' => sprintf('%s-%d-%05d', $prefix, $year, $n++),
+                ]);
+            }
+        };
+        $backfill('users', 'USR');
+        $backfill('students', 'STU');
+        $backfill('guardians', 'PAR');
+        // Teachers vs non-teaching staff get different prefixes.
+        foreach (QueryBuilder::table('staff')->whereNull('public_id')->orderBy('id')->get() as $i => $s) {
+            $prefix = ($s['staff_type'] ?? 'teaching') === 'teaching' ? 'TCH' : 'STF';
+            QueryBuilder::table('staff')->where('id', (int) $s['id'])->update([
+                'public_id' => sprintf('%s-%d-%05d', $prefix, $year, $i + 1),
+            ]);
+        }
+
+        // Seed id_sequences so future generated IDs continue after the demo data.
+        foreach (['STU' => 2, 'TCH' => 2, 'STF' => 2, 'PAR' => 2, 'USR' => 9] as $prefix => $nextVal) {
+            if (!QueryBuilder::table('id_sequences')->where('prefix', $prefix)->where('year', $year)->first()) {
+                QueryBuilder::table('id_sequences')->insert(['prefix' => $prefix, 'year' => $year, 'next_value' => $nextVal]);
+            }
+        }
+
+        $yearId = (int) (QueryBuilder::table('academic_years')->where('is_current', 1)->value('id') ?? 0);
+        $student = QueryBuilder::table('students')->where('admission_no', 'ADM-0001')->first();
+        $teacher = QueryBuilder::table('staff')->where('employee_code', 'EMP-0001')->first();
+
+        // Demo student enrollment (roll 1) for the current year.
+        if ($yearId && $student && (int) ($student['class_id'] ?? 0) && (int) ($student['section_id'] ?? 0)
+            && !QueryBuilder::table('student_enrollments')->where('academic_year_id', $yearId)->where('student_id', (int) $student['id'])->first()) {
+            QueryBuilder::table('student_enrollments')->insert([
+                'student_id' => (int) $student['id'], 'academic_year_id' => $yearId,
+                'class_id' => (int) $student['class_id'], 'section_id' => (int) $student['section_id'],
+                'roll_no' => 1, 'status' => 'active',
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
+
+        // Demo teacher assignment: Math for the demo student's class/section.
+        $subject = QueryBuilder::table('subjects')->where('code', 'MATH')->first();
+        if ($yearId && $teacher && $subject && $student && (int) ($student['class_id'] ?? 0) && (int) ($student['section_id'] ?? 0)
+            && !QueryBuilder::table('teacher_assignments')
+                ->where('academic_year_id', $yearId)->where('class_id', (int) $student['class_id'])
+                ->where('section_id', (int) $student['section_id'])->where('subject_id', (int) $subject['id'])
+                ->where('staff_id', (int) $teacher['id'])->first()) {
+            QueryBuilder::table('teacher_assignments')->insert([
+                'academic_year_id' => $yearId, 'class_id' => (int) $student['class_id'],
+                'section_id' => (int) $student['section_id'], 'subject_id' => (int) $subject['id'],
+                'staff_id' => (int) $teacher['id'], 'role' => 'subject_teacher',
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+            QueryBuilder::table('class_teachers')->insert([
+                'academic_year_id' => $yearId, 'class_id' => (int) $student['class_id'],
+                'section_id' => (int) $student['section_id'], 'staff_id' => (int) $teacher['id'],
                 'created_at' => $this->now(), 'updated_at' => $this->now(),
             ]);
         }

@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Models\Staff;
+use App\Models\TeacherAssignment;
+use App\Models\ClassModel;
+use App\Models\Section;
 use App\Models\Subject;
-use App\Models\User;
+use App\Models\AcademicYear;
+use App\Services\TeacherAssignmentService;
 use App\Services\AuditLogger;
 use Core\Database\Connection;
 use Core\Database\QueryBuilder;
@@ -112,7 +116,56 @@ final class TeacherController extends Controller
             'teacher'        => $teacher,
             'qualifications' => Staff::qualifications((int) $id),
             'subjects'       => Staff::subjects((int) $id),
+            'assignments'    => TeacherAssignment::forTeacher((int) $id),
+            'years'          => AcademicYear::all(),
+            'classes'        => ClassModel::ordered(),
+            'sections'       => Section::withClass(),
+            'allSubjects'    => Subject::query()->orderBy('name')->get(),
         ]);
+    }
+
+    /**
+     * Add a teaching assignment (year → class → section → subject → teacher).
+     */
+    public function storeAssignment(Request $request, string $id): Response
+    {
+        if (Staff::find((int) $id) === null) {
+            abort(404, 'Teacher not found.');
+        }
+        $data = $this->validate($request, [
+            'academic_year_id' => 'required|integer',
+            'class_id'         => 'required|integer',
+            'section_id'       => 'required|integer',
+            'subject_id'       => 'required|integer',
+            'role'             => 'required|in:subject_teacher,assistant_teacher',
+        ]);
+        $result = (new TeacherAssignmentService())->assign(
+            (int) $data['academic_year_id'], (int) $data['class_id'], (int) $data['section_id'],
+            (int) $data['subject_id'], (int) $id, $data['role']
+        );
+        return $this->redirect('/admin/teachers/' . $id, [$result['ok'] ? 'success' : 'error' => $result['message']]);
+    }
+
+    public function removeAssignment(Request $request, string $id, string $assignmentId): Response
+    {
+        (new TeacherAssignmentService())->remove((int) $assignmentId);
+        return $this->redirect('/admin/teachers/' . $id, ['success' => 'Assignment removed.']);
+    }
+
+    public function assignClassTeacher(Request $request, string $id): Response
+    {
+        if (Staff::find((int) $id) === null) {
+            abort(404, 'Teacher not found.');
+        }
+        $data = $this->validate($request, [
+            'academic_year_id' => 'required|integer',
+            'class_id'         => 'required|integer',
+            'section_id'       => 'required|integer',
+        ]);
+        $result = (new TeacherAssignmentService())->assignClassTeacher(
+            (int) $data['academic_year_id'], (int) $data['class_id'], (int) $data['section_id'], (int) $id
+        );
+        return $this->redirect('/admin/teachers/' . $id, [$result['ok'] ? 'success' : 'error' => $result['message']]);
     }
 
     public function edit(Request $request, string $id): Response
