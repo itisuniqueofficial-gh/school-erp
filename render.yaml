@@ -1,0 +1,40 @@
+# Render Blueprint — School ERP (Docker web service).
+# Deploy: Render Dashboard → New → Blueprint → point at this repo.
+services:
+  - type: web
+    name: school-erp
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: uploads
+      mountPath: /var/www/html/storage/uploads
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_CONNECT_RETRIES
+        value: "10"
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      # Secrets — set in the Render dashboard (sync: false keeps them out of git).
+      - key: APP_KEY
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false

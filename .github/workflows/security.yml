@@ -1,0 +1,59 @@
+name: Security
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  schedule:
+    - cron: '0 3 * * 1'   # weekly, Monday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Secret hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse a tracked .env
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env must never be committed"; exit 1
+          fi
+
+      - name: Scan working tree for secrets
+        run: |
+          if git grep -nEI \
+             'ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]+|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----' \
+             -- . ':(exclude).github/**' ':(exclude)docs/**'; then
+            echo "::error::possible committed secret detected"; exit 1
+          fi
+          echo "No secrets detected in the tree."
+
+  dependency-audit:
+    name: Dependency & composer audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Validate composer manifest
+        run: composer validate --no-check-publish --no-check-lock
+
+      - name: Audit dependencies for known vulnerabilities
+        run: |
+          if [ -f composer.lock ]; then
+            composer audit
+          else
+            echo "No composer.lock — app runs on the built-in PSR-4 autoloader (no third-party runtime deps)."
+          fi
