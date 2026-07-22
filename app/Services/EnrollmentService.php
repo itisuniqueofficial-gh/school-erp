@@ -80,8 +80,9 @@ final class EnrollmentService
      *
      * @return array{ok:bool,message:string,roll_no:?int}
      */
-    public function promote(int $studentId, int $fromYearId, int $toYearId, int $toClassId, int $toSectionId): array
+    public function promote(int $studentId, int $fromYearId, int $toYearId, int $toClassId, ?int $toSectionId = null): array
     {
+        $toSectionId = $toSectionId ?: null; // 0 / '' => no section
         if ($fromYearId === $toYearId) {
             return ['ok' => false, 'message' => 'Promotion target year must differ from the source year.', 'roll_no' => null];
         }

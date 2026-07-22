@@ -1,0 +1,97 @@
+name: Auto Release
+
+# Version-driven automatic releases: when the version in config/app.php changes
+# on main (no matching tag/release yet), build all platform packages and publish
+# a GitHub Release. Self-contained (build + publish in one job) so it does not
+# rely on a tag-push chaining to another workflow.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'config/app.php'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  auto-release:
+    name: Publish release if version bumped
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read app version
+        id: ver
+        run: |
+          VERSION=$(grep -oE "'version'[^']*'[0-9]+\.[0-9]+\.[0-9]+'" config/app.php | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $VERSION"
+
+      - name: Skip if this version is already released
+        id: check
+        run: |
+          if git ls-remote --tags origin "refs/tags/${{ steps.ver.outputs.tag }}" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${{ steps.ver.outputs.tag }} already exists — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup PHP 8.3
+        if: steps.check.outputs.exists == 'false'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd
+          coverage: none
+
+      - name: Lint
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          set -e
+          while IFS= read -r f; do php -l "$f" >/dev/null; done \
+            < <(find app core config database routes public bootstrap bin -name '*.php')
+
+      - name: Build multi-platform deployment packages
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          chmod +x scripts/build-release.sh
+          scripts/build-release.sh "${{ steps.ver.outputs.tag }}"
+
+      - name: Generate release notes from CHANGELOG
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          # Extract the CHANGELOG section for this version, else fall back to commits.
+          if awk -v v="$VER" '/^## \[/{p=($0 ~ "\\["v"\\]")} p' CHANGELOG.md | grep -q .; then
+            { echo "## School ERP ${{ steps.ver.outputs.tag }}"; echo; \
+              awk -v v="$VER" '/^## \[/{if(p)exit; p=($0 ~ "\\["v"\\]"); if(p)next} p' CHANGELOG.md; } > RELEASE_NOTES.md
+          else
+            PREV=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            { echo "## School ERP ${{ steps.ver.outputs.tag }}"; echo; \
+              (git log --no-merges --pretty='- %s (%h)' ${PREV:+$PREV..HEAD}); } > RELEASE_NOTES.md
+          fi
+          {
+            echo; echo "### Upgrade (zero data loss)";
+            echo "Deploy the new code, then run \`php bin/console upgrade\` (auto backup + pending migrations only). Verify \`GET /health\` returns 200.";
+          } >> RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Publish GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: "School ERP ${{ steps.ver.outputs.tag }}"
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ contains(steps.ver.outputs.version, '-') }}
+          files: |
+            release/*.zip
+            release/*.tar.gz
+            release/SHA256SUMS.txt

@@ -40,6 +40,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">People</p>
         <div class="space-y-1">
             <?php if (auth()->can('students.view')): ?><?= $link('/admin/students', 'fa-user-graduate', 'Students') ?><?php endif; ?>
+            <?php if (auth()->can('students.update')): ?><?= $link('/admin/promotions', 'fa-arrow-up-right-dots', 'Promotion & Rollover') ?><?php endif; ?>
             <?php if (auth()->can('teachers.view')): ?><?= $link('/admin/teachers', 'fa-chalkboard-user', 'Teachers') ?><?php endif; ?>
             <?php if (auth()->can('teachers.view')): ?><?= $link('/admin/teaching-assignments', 'fa-diagram-project', 'Teaching Assignments') ?><?php endif; ?>
             <?php if (auth()->can('staff.view')): ?><?= $link('/admin/staff', 'fa-users', 'Staff') ?><?php endif; ?>

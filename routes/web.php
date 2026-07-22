@@ -16,6 +16,7 @@ declare(strict_types=1);
 use App\Controllers\Auth\LoginController;
 use App\Controllers\Auth\PasswordController;
 use App\Controllers\HomeController;
+use App\Controllers\ReportVerificationController;
 use App\Controllers\MediaController;
 use App\Controllers\AccountController;
 use App\Controllers\NotificationController;
@@ -46,6 +47,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
     // --- Public ------------------------------------------------------------
     $router->get('/', HomeController::class . '@index')->name('home');
     $router->get('/health', HomeController::class . '@health')->name('health');
+    // Public report-card QR verification (no auth; non-sensitive fields only).
+    $router->get('/verify/report-card/{code}', ReportVerificationController::class . '@show')->name('verify.report_card');
 
     // --- Guest (authentication) -------------------------------------------
     $router->group(['middleware' => ['guest']], function ($router): void {
@@ -99,6 +102,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->delete('/students/{id}', StudentController::class . '@destroy')->middleware('can:students.delete');
             $router->post('/students/promote', StudentController::class . '@promote')->middleware('can:students.update');
             $router->post('/students/bulk', StudentController::class . '@bulk')->middleware('can:students.update');
+            $router->get('/promotions', \App\Controllers\Admin\PromotionController::class . '@index')->middleware('can:students.update');
+            $router->post('/promotions/apply', \App\Controllers\Admin\PromotionController::class . '@apply')->middleware('can:students.update');
             // Student documents + sensitive government IDs
             $router->post('/students/{id}/documents', StudentController::class . '@uploadDocument')->middleware('can:students.documents');
             $router->get('/students/{id}/documents/{docId}/download', StudentController::class . '@downloadDocument')->middleware('can:students.view');
@@ -176,6 +181,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/exams/{id}/marks', ExamController::class . '@marks')->middleware('can:exams.view');
             $router->post('/exams/{id}/marks', ExamController::class . '@storeMarks')->middleware('can:exams.manage');
             $router->get('/exams/{id}/report-cards', ExamController::class . '@reportCards')->middleware('can:exams.view');
+            $router->post('/exams/{id}/report-cards/{studentId}/regenerate', ExamController::class . '@regenerateReportCard')->middleware('can:exams.manage');
             $router->post('/exams/{id}/marks/workflow', ExamController::class . '@marksWorkflow')->middleware('can:exams.view');
 
             // Fees

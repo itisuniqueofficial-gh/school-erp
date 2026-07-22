@@ -215,53 +215,34 @@ final class ExamController extends Controller
             abort(404, 'Exam not found.');
         }
 
-        // Aggregate obtained/total per student across all schedules of this exam.
-        $rows = QueryBuilder::table('exam_marks')
-            ->selectRaw('`exam_marks`.`student_id`, SUM(`exam_marks`.`marks_obtained`) AS obtained, SUM(`exam_schedules`.`full_marks`) AS total')
-            ->join('exam_schedules', 'exam_marks.exam_schedule_id', '=', 'exam_schedules.id')
-            ->where('exam_schedules.exam_id', $examId)
-            ->groupBy('exam_marks.student_id')
-            ->get();
-
+        // Ensure a versioned report card (with a unique RC id) exists for every
+        // student with marks, then load the latest cards for display.
+        $svc = new \App\Services\ReportCardService();
         $cards = [];
-        foreach ($rows as $r) {
-            $obtained = (float) $r['obtained'];
-            $total = (float) $r['total'];
-            $percent = $total > 0 ? round(($obtained / $total) * 100, 2) : 0.0;
-            $gradeId = Exam::gradeForPercentage($percent);
-            $result = $percent >= 33 ? 'pass' : 'fail';
-
-            $student = QueryBuilder::table('students')->select(['first_name', 'last_name', 'admission_no'])->where('id', (int) $r['student_id'])->first();
-
-            // Upsert report card.
-            $existing = QueryBuilder::table('report_cards')->where('exam_id', $examId)->where('student_id', (int) $r['student_id'])->first();
-            $payload = [
-                'total_marks' => $total, 'obtained_marks' => $obtained, 'percentage' => $percent,
-                'grade_id' => $gradeId, 'result' => $result, 'updated_at' => date('Y-m-d H:i:s'),
-            ];
-            if ($existing) {
-                QueryBuilder::table('report_cards')->where('id', $existing['id'])->update($payload);
-            } else {
-                $payload['exam_id'] = $examId;
-                $payload['student_id'] = (int) $r['student_id'];
-                $payload['created_at'] = date('Y-m-d H:i:s');
-                QueryBuilder::table('report_cards')->insert($payload);
-            }
-
-            $cards[] = array_merge($payload, [
-                'name' => trim(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')),
-                'admission_no' => $student['admission_no'] ?? '',
+        foreach ($svc->ensureForExam($examId) as $r) {
+            $cards[] = array_merge($r, [
+                'name'       => trim((string) (($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''))),
+                'verify_url' => url('/verify/report-card/' . $r['rc_uid']),
             ]);
         }
-
-        // Rank by percentage.
-        usort($cards, static fn ($a, $b) => $b['percentage'] <=> $a['percentage']);
 
         return $this->view('admin.exams.report-cards', [
             'title' => 'Report Cards · ' . $exam['name'],
             'exam'  => $exam,
             'cards' => $cards,
         ]);
+    }
+
+    /** Regenerate a student's report card as a new version (history preserved). */
+    public function regenerateReportCard(Request $request, string $id, string $studentId): Response
+    {
+        $examId = (int) $id;
+        if (Exam::find($examId) === null) {
+            abort(404, 'Exam not found.');
+        }
+        $reason = trim((string) $request->input('reason', '')) ?: 'Manual regeneration';
+        (new \App\Services\ReportCardService())->generate($examId, (int) $studentId, $reason);
+        return $this->redirect('/admin/exams/' . $examId . '/report-cards', ['success' => 'Report card regenerated as a new version (previous version preserved).']);
     }
 
     /**

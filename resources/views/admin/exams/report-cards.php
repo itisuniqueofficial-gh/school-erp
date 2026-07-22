@@ -14,18 +14,27 @@
         <h2 class="font-semibold text-slate-800"><?= e((string) $exam['name']) ?> — Ranked Results</h2>
     </div>
     <table class="data-table">
-        <thead><tr><th>Rank</th><th>Admission</th><th>Student</th><th>Obtained</th><th>Total</th><th>%</th><th>Result</th></tr></thead>
+        <thead><tr><th>Rank</th><th>Report Card ID</th><th>Admission</th><th>Student</th><th>Obtained</th><th>Total</th><th>%</th><th>Result</th><th class="text-right no-print">Actions</th></tr></thead>
         <tbody>
-        <?php if (empty($cards)): ?><tr><td colspan="7" class="py-8 text-center text-slate-400">No marks entered yet.</td></tr>
+        <?php if (empty($cards)): ?><tr><td colspan="9" class="py-8 text-center text-slate-400">No marks entered yet.</td></tr>
         <?php else: foreach ($cards as $i => $c): ?>
             <tr>
                 <td class="font-bold text-slate-800">#<?= $i + 1 ?></td>
+                <td class="font-mono text-xs"><?= e((string) ($c['rc_uid'] ?? '—')) ?> <span class="text-slate-400">v<?= (int) ($c['version'] ?? 1) ?></span></td>
                 <td class="font-mono text-xs"><?= e((string) $c['admission_no']) ?></td>
                 <td class="font-medium text-slate-800"><?= e((string) $c['name']) ?></td>
                 <td><?= e((string) $c['obtained_marks']) ?></td>
                 <td><?= e((string) $c['total_marks']) ?></td>
                 <td><?= e((string) $c['percentage']) ?>%</td>
                 <td><span class="badge <?= $c['result'] === 'pass' ? 'badge-green' : 'badge-red' ?>"><?= e(ucfirst((string) $c['result'])) ?></span></td>
+                <td class="text-right no-print">
+                    <a href="<?= e((string) ($c['verify_url'] ?? '#')) ?>" target="_blank" rel="noopener" class="text-brand-600 hover:underline" title="Verify"><i class="fa-solid fa-qrcode"></i> Verify</a>
+                    <?php if (auth()->can('exams.manage')): ?>
+                    <form method="POST" action="<?= e(url('/admin/exams/' . $exam['id'] . '/report-cards/' . $c['student_id'] . '/regenerate')) ?>" class="inline" data-confirm="Regenerate this report card as a new version? The previous version is preserved.">
+                        <?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-rotate"></i> Regenerate</button>
+                    </form>
+                    <?php endif; ?>
+                </td>
             </tr>
         <?php endforeach; endif; ?>
         </tbody>

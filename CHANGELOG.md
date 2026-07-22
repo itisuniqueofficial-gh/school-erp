@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.4.0] - 2026-07-23
+
+### Added
+- **Automated student promotion & academic-year rollover**: exam-based
+  eligibility engine, automatic next-class mapping (by numeric level), and a
+  review/approve/apply workflow. Transaction-safe, idempotent, history-preserving
+  (new enrolments + roll numbers; prior enrolment kept + marked promoted).
+- **Bulk student actions** (activate / deactivate / archive / restore).
+- **Report cards with unique IDs, versioning & QR verification**: each report
+  card gets an immutable `RC-YYYY-NNNNN` id; regeneration creates a new version
+  (history preserved in `report_card_versions`); a public
+  `/verify/report-card/{id}` page confirms authenticity without exposing marks.
+- **Setup Center approval-queue checks**: documents awaiting verification and
+  attendance unlock requests pending review.
+- **Automated releases**: pushing a version bump to `main` auto-publishes a
+  GitHub Release with all platform packages (`.github/workflows/auto-release.yml`).
+
+### Changed
+- Schema is now **79 tables** (added `report_card_versions`).
+
 ## [1.3.0] - 2026-07-22
 
 ### Added
