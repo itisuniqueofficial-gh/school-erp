@@ -41,6 +41,9 @@ $active = 'subjects';
                             <form method="POST" action="<?= e(url('/admin/academic/subjects/' . $s['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this subject?' : 'Archive this subject? Historical marks are preserved.' ?>">
                                 <?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button>
                             </form>
+                            <form method="POST" action="<?= e(url('/admin/academic/subjects/' . $s['id'])) ?>" class="inline" data-confirm="Delete this subject permanently? This is only allowed when it has no assignments, exams or marks.">
+                                <?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Delete</button>
+                            </form>
                             <?php endif; ?>
                         </td>
                     </tr>

@@ -33,6 +33,17 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
         </p>
         <?php endif; ?>
         <span class="badge <?= $student['status'] === 'active' ? 'badge-green' : 'badge-slate' ?> mt-2"><?= e(ucfirst((string) $student['status'])) ?></span>
+        <?php if (!empty($attendance)): ?>
+        <div class="mt-3 border-t border-slate-100 pt-3">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Attendance (<?= e((string) ($attendance['year_name'] ?? 'current')) ?>)</p>
+            <?php if (!empty($attendance['hasData'])): ?>
+                <p class="text-2xl font-bold text-slate-900"><?= number_format((float) $attendance['attendancePercentage'], 2) ?>%</p>
+                <p class="text-xs text-slate-400"><?= (int) ($attendance['present'] + $attendance['late'] + $attendance['half_day']) ?> / <?= (int) $attendance['totalClasses'] ?> classes attended</p>
+            <?php else: ?>
+                <p class="text-sm text-slate-400">No records for this year.</p>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Details -->

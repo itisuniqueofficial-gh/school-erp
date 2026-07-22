@@ -68,6 +68,22 @@ $archived = ($class['status'] ?? 'active') === 'archived';
             <?= csrf_field() ?>
             <button class="btn <?= $archived ? 'btn-primary' : 'btn-secondary' ?>"><i class="fa-solid fa-box-archive"></i> <?= $archived ? 'Restore class' : 'Archive class' ?></button>
         </form>
+        <?php $deps = $dependencies ?? ['total' => 0, 'items' => []]; ?>
+        <div class="mt-4 border-t border-slate-100 pt-4">
+            <?php if (($deps['total'] ?? 0) > 0): ?>
+                <p class="text-sm text-slate-500">This class has dependent records and <strong>cannot be permanently deleted</strong>:</p>
+                <ul class="mt-1 text-sm text-slate-600">
+                    <?php foreach ($deps['items'] as $label => $n): ?><li><i class="fa-solid fa-circle-dot mr-1 text-[6px] align-middle text-slate-300"></i> <?= (int) $n ?> <?= e(strtolower($label)) ?></li><?php endforeach; ?>
+                </ul>
+                <button class="btn btn-secondary mt-3" disabled title="Archive instead"><i class="fa-solid fa-trash"></i> Delete (blocked)</button>
+            <?php else: ?>
+                <p class="text-sm text-slate-500">This class has no dependent records and can be safely deleted.</p>
+                <form method="POST" action="<?= e(url('/admin/academic/classes/' . $class['id'])) ?>" class="mt-3" data-confirm="Permanently delete this class? This cannot be undone.">
+                    <?= csrf_field() ?><?= method_field('DELETE') ?>
+                    <button class="btn btn-secondary text-red-600"><i class="fa-solid fa-trash"></i> Delete class</button>
+                </form>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 <?php endif; ?>

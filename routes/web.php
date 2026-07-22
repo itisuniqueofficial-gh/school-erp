@@ -23,6 +23,7 @@ use App\Controllers\Admin\StudentController;
 use App\Controllers\Admin\TeacherController;
 use App\Controllers\Admin\TeachingAssignmentController;
 use App\Controllers\Admin\StaffController;
+use App\Controllers\Admin\UserController;
 use App\Controllers\Admin\AcademicController;
 use App\Controllers\Admin\AttendanceController;
 use App\Controllers\Admin\ExamController;
@@ -126,6 +127,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->put('/academic/years/{id}', AcademicController::class . '@updateYear')->middleware('can:academic.manage');
             $router->post('/academic/years/{id}/activate', AcademicController::class . '@activateYear')->middleware('can:academic.manage');
             $router->post('/academic/years/{id}/archive', AcademicController::class . '@archiveYear')->middleware('can:academic.manage');
+            $router->delete('/academic/years/{id}', AcademicController::class . '@deleteYear')->middleware('can:academic.manage');
+            $router->post('/academic/years/copy', AcademicController::class . '@copyYearSetup')->middleware('can:academic.manage');
             $router->get('/academic/class-subjects', AcademicController::class . '@classSubjects')->middleware('can:academic.view');
             $router->post('/academic/class-subjects', AcademicController::class . '@storeClassSubject')->middleware('can:academic.manage');
             $router->delete('/academic/class-subjects/{id}', AcademicController::class . '@removeClassSubject')->middleware('can:academic.manage');
@@ -134,12 +137,17 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/academic/classes/{id}', AcademicController::class . '@classDashboard')->middleware('can:academic.view');
             $router->put('/academic/classes/{id}', AcademicController::class . '@updateClass')->middleware('can:academic.manage');
             $router->post('/academic/classes/{id}/archive', AcademicController::class . '@archiveClass')->middleware('can:academic.manage');
+            $router->delete('/academic/classes/{id}', AcademicController::class . '@deleteClass')->middleware('can:academic.manage');
             $router->get('/academic/sections', AcademicController::class . '@sections')->middleware('can:academic.view');
             $router->post('/academic/sections', AcademicController::class . '@storeSection')->middleware('can:academic.manage');
+            $router->put('/academic/sections/{id}', AcademicController::class . '@updateSection')->middleware('can:academic.manage');
+            $router->post('/academic/sections/{id}/archive', AcademicController::class . '@archiveSection')->middleware('can:academic.manage');
+            $router->delete('/academic/sections/{id}', AcademicController::class . '@deleteSection')->middleware('can:academic.manage');
             $router->get('/academic/subjects', AcademicController::class . '@subjects')->middleware('can:academic.view');
             $router->post('/academic/subjects', AcademicController::class . '@storeSubject')->middleware('can:academic.manage');
             $router->put('/academic/subjects/{id}', AcademicController::class . '@updateSubject')->middleware('can:academic.manage');
             $router->post('/academic/subjects/{id}/archive', AcademicController::class . '@archiveSubject')->middleware('can:academic.manage');
+            $router->delete('/academic/subjects/{id}', AcademicController::class . '@deleteSubject')->middleware('can:academic.manage');
 
             // Attendance
             $router->get('/attendance', AttendanceController::class . '@index')->middleware('can:attendance.view');
@@ -187,6 +195,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/reports/{type}/export', ReportController::class . '@export')->middleware('can:reports.view');
 
             // Roles & Permissions (RBAC management)
+            $router->get('/users', UserController::class . '@index')->middleware('can:users.view');
+            $router->post('/users/{id}/toggle', UserController::class . '@toggleActive')->middleware('can:users.manage');
             $router->get('/roles', RoleController::class . '@index')->middleware('can:roles.view');
             $router->post('/roles', RoleController::class . '@store')->middleware('can:roles.manage');
             $router->put('/roles/{id}', RoleController::class . '@update')->middleware('can:roles.manage');
@@ -220,6 +230,9 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/results', StudentPortalController::class . '@results');
             $router->get('/fees', StudentPortalController::class . '@fees');
             $router->get('/timetable', StudentPortalController::class . '@timetable');
+            $router->get('/documents', StudentPortalController::class . '@documents');
+            $router->post('/documents', StudentPortalController::class . '@uploadDocument');
+            $router->get('/documents/{docId}/download', StudentPortalController::class . '@downloadDocument');
         });
 
         // ===== Teacher portal =============================================

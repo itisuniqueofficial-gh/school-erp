@@ -11,6 +11,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\AttendanceService;
 use App\Services\DocumentService;
 use App\Services\EnrollmentService;
 use App\Services\IdSequenceService;
@@ -187,6 +188,7 @@ final class StudentController extends Controller
             'canReveal' => auth()->can('students.reveal_id'),
             'canVerify' => auth()->can('students.verify'),
             'canDocs'   => auth()->can('students.documents'),
+            'attendance' => (new AttendanceService())->getStudentAttendanceSummary((int) $id, (int) ($student['academic_year_id'] ?? 0) ?: null),
         ]);
     }
 

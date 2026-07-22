@@ -44,6 +44,7 @@ $active = 'years';
                             </details>
                             <?php if (!$cur): ?>
                             <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this year?' : 'Archive this year? Historical records are preserved.' ?>"><?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'])) ?>" class="inline" data-confirm="Permanently delete this academic year? Only allowed when it has no enrollments, assignments or exams."><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Delete</button></form>
                             <?php endif; ?>
                             <?php endif; ?>
                         </td>
@@ -63,6 +64,20 @@ $active = 'years';
             <div><label class="form-label required" for="end_date">End date</label><input id="end_date" name="end_date" type="date" class="form-input" required></div>
             <label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="is_current" value="1" class="rounded border-slate-300 text-brand-600"> Set as current</label>
             <button class="btn btn-primary w-full justify-center"><i class="fa-solid fa-plus"></i> Add year</button>
+        </form>
+    </div>
+
+    <div class="card p-5">
+        <h2 class="font-semibold text-slate-800">Copy previous year setup</h2>
+        <p class="mb-3 mt-1 text-xs text-slate-400">Copies teacher &amp; class-teacher assignments into another year. Students, attendance, marks and fees are never copied.</p>
+        <form method="POST" action="<?= e(url('/admin/academic/years/copy')) ?>" class="space-y-3" data-loading data-confirm="Copy the selected year's teaching setup into the target year?">
+            <?= csrf_field() ?>
+            <div><label class="form-label required" for="from_year_id">Copy from</label>
+                <select id="from_year_id" name="from_year_id" class="form-select" required><option value="">Source year</option><?php foreach ($years as $y): ?><option value="<?= (int) $y['id'] ?>"><?= e((string) $y['name']) ?></option><?php endforeach; ?></select></div>
+            <div><label class="form-label required" for="to_year_id">Copy to</label>
+                <select id="to_year_id" name="to_year_id" class="form-select" required><option value="">Target year</option><?php foreach ($years as $y): ?><option value="<?= (int) $y['id'] ?>"><?= e((string) $y['name']) ?></option><?php endforeach; ?></select></div>
+            <label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="copy_teachers" value="1" checked class="rounded border-slate-300 text-brand-600"> Copy teacher assignments</label>
+            <button class="btn btn-secondary w-full justify-center"><i class="fa-solid fa-copy"></i> Copy setup</button>
         </form>
     </div>
     <?php endif; ?>

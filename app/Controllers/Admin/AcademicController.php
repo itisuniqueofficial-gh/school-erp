@@ -94,14 +94,61 @@ final class AcademicController extends Controller
             'capacity' => 'nullable|integer',
         ]);
 
-        $id = Section::create([
-            'class_id' => (int) $data['class_id'],
-            'name'     => $data['name'],
-            'capacity' => (int) ($data['capacity'] ?? 40),
-        ]);
+        // Application-level duplicate guard (DB UNIQUE(class_id,name) is the backstop).
+        if (QueryBuilder::table('sections')->where('class_id', (int) $data['class_id'])->where('name', $data['name'])->exists()) {
+            return $this->redirect('/admin/academic/sections', ['error' => 'A section with that name already exists for this class.']);
+        }
+
+        try {
+            $id = Section::create([
+                'class_id' => (int) $data['class_id'],
+                'name'     => $data['name'],
+                'capacity' => (int) ($data['capacity'] ?? 40),
+            ]);
+        } catch (\Throwable) {
+            return $this->redirect('/admin/academic/sections', ['error' => 'Duplicate section prevented by the database.']);
+        }
         Section::updateById($id, ['public_id' => sprintf('SEC-%04d', $id), 'uid' => (new IdSequenceService())->uidSection()]);
         AuditLogger::log('academic.section_created', 'section', $id, 'Created section');
         return $this->redirect('/admin/academic/sections', ['success' => 'Section added.']);
+    }
+
+    public function updateSection(Request $request, string $id): Response
+    {
+        $section = Section::find((int) $id);
+        if ($section === null) {
+            abort(404, 'Section not found.');
+        }
+        $data = $this->validate($request, [
+            'name'     => 'required|string|max:50',
+            'capacity' => 'nullable|integer',
+            'status'   => 'required|in:active,archived',
+        ]);
+        // Duplicate guard: another section in the same class with the same name.
+        $dup = QueryBuilder::table('sections')
+            ->where('class_id', (int) $section['class_id'])->where('name', $data['name'])
+            ->whereRaw('`id` != ?', [(int) $id])->exists();
+        if ($dup) {
+            return $this->redirect('/admin/academic/sections', ['error' => 'Another section with that name already exists for this class.']);
+        }
+        Section::updateById((int) $id, [
+            'name' => $data['name'], 'capacity' => (int) ($data['capacity'] ?? 40), 'status' => $data['status'],
+        ]);
+        AuditLogger::log('academic.section_updated', 'section', (int) $id, 'Updated section ' . $data['name']);
+        return $this->redirect('/admin/academic/sections', ['success' => 'Section updated.']);
+    }
+
+    /** Toggle a section between active and archived (history-safe; never a delete). */
+    public function archiveSection(Request $request, string $id): Response
+    {
+        $section = Section::find((int) $id);
+        if ($section === null) {
+            abort(404, 'Section not found.');
+        }
+        $new = ($section['status'] ?? 'active') === 'archived' ? 'active' : 'archived';
+        Section::updateById((int) $id, ['status' => $new]);
+        AuditLogger::log('academic.section_' . $new, 'section', (int) $id, ucfirst($new) . ' section');
+        return $this->redirect('/admin/academic/sections', ['success' => 'Section ' . $new . '.']);
     }
 
     // ---- Subjects ---------------------------------------------------------
@@ -224,6 +271,7 @@ final class AcademicController extends Controller
             'subjects' => $subjects,
             'teachers' => $teachers,
             'studentCount' => $studentCount,
+            'dependencies' => (new \App\Services\DependencyService())->forClass((int) $id),
         ]);
     }
 
@@ -276,8 +324,90 @@ final class AcademicController extends Controller
         return $this->redirect('/admin/academic/years', ['success' => 'Academic year ' . $new . '.']);
     }
 
-    // ---- Class-subject allocation ("configure once, reuse") ---------------
+    // ---- Dependency-aware safe delete (archive is the default; hard delete only
+    //      when zero dependents so historical data is never destroyed) ---------
 
+    public function deleteClass(Request $request, string $id): Response
+    {
+        $class = ClassModel::find((int) $id);
+        if ($class === null) {
+            abort(404, 'Class not found.');
+        }
+        $svc = new \App\Services\DependencyService();
+        $dep = $svc->forClass((int) $id);
+        if ($dep['total'] > 0) {
+            return $this->redirect('/admin/academic/classes/' . $id, ['error' => 'Cannot delete this class — it has ' . $svc->summary($dep) . '. Archive it instead.']);
+        }
+        ClassModel::deleteById((int) $id);
+        AuditLogger::log('academic.class_deleted', 'class', (int) $id, 'Deleted class ' . ($class['name'] ?? ''));
+        return $this->redirect('/admin/academic/classes', ['success' => 'Class deleted (no dependent records).']);
+    }
+
+    public function deleteSection(Request $request, string $id): Response
+    {
+        $section = Section::find((int) $id);
+        if ($section === null) {
+            abort(404, 'Section not found.');
+        }
+        $svc = new \App\Services\DependencyService();
+        $dep = $svc->forSection((int) $id);
+        if ($dep['total'] > 0) {
+            return $this->redirect('/admin/academic/sections', ['error' => 'Cannot delete this section — it has ' . $svc->summary($dep) . '. Archive it instead.']);
+        }
+        Section::deleteById((int) $id);
+        AuditLogger::log('academic.section_deleted', 'section', (int) $id, 'Deleted section');
+        return $this->redirect('/admin/academic/sections', ['success' => 'Section deleted (no dependent records).']);
+    }
+
+    public function deleteSubject(Request $request, string $id): Response
+    {
+        $subject = Subject::find((int) $id);
+        if ($subject === null) {
+            abort(404, 'Subject not found.');
+        }
+        $svc = new \App\Services\DependencyService();
+        $dep = $svc->forSubject((int) $id);
+        if ($dep['total'] > 0) {
+            return $this->redirect('/admin/academic/subjects', ['error' => 'Cannot delete this subject — it has ' . $svc->summary($dep) . '. Archive it instead.']);
+        }
+        Subject::deleteById((int) $id);
+        AuditLogger::log('academic.subject_deleted', 'subject', (int) $id, 'Deleted subject ' . ($subject['name'] ?? ''));
+        return $this->redirect('/admin/academic/subjects', ['success' => 'Subject deleted (no dependent records).']);
+    }
+
+    public function deleteYear(Request $request, string $id): Response
+    {
+        $year = AcademicYear::find((int) $id);
+        if ($year === null) {
+            abort(404, 'Academic year not found.');
+        }
+        if ((int) ($year['is_current'] ?? 0) === 1) {
+            return $this->redirect('/admin/academic/years', ['error' => 'Cannot delete the current academic year. Activate another year first.']);
+        }
+        $svc = new \App\Services\DependencyService();
+        $dep = $svc->forYear((int) $id);
+        if ($dep['total'] > 0) {
+            return $this->redirect('/admin/academic/years', ['error' => 'Cannot delete this academic year — it has ' . $svc->summary($dep) . '. Archive it instead.']);
+        }
+        AcademicYear::deleteById((int) $id);
+        AuditLogger::log('academic.year_deleted', 'academic_year', (int) $id, 'Deleted academic year ' . ($year['name'] ?? ''));
+        return $this->redirect('/admin/academic/years', ['success' => 'Academic year deleted (no dependent records).']);
+    }
+
+    /** Copy a previous academic year's setup (teacher assignments + class teachers). */
+    public function copyYearSetup(Request $request): Response
+    {
+        $data = $this->validate($request, [
+            'from_year_id' => 'required|integer',
+            'to_year_id'   => 'required|integer',
+        ]);
+        $result = (new \App\Services\AcademicYearService())->copySetup(
+            (int) $data['from_year_id'], (int) $data['to_year_id'], $request->boolean('copy_teachers')
+        );
+        return $this->redirect('/admin/academic/years', [$result['ok'] ? 'success' : 'error' => $result['message']]);
+    }
+
+    // ---- Class-subject allocation ("configure once, reuse") ---------------
     public function classSubjects(Request $request): Response
     {
         $classId = (int) $request->query('class_id', 0);

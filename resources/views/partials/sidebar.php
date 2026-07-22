@@ -70,6 +70,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">System</p>
         <div class="space-y-1">
             <?php if (auth()->can('reports.view')): ?><?= $link('/admin/reports', 'fa-chart-line', 'Reports') ?><?php endif; ?>
+            <?php if (auth()->can('users.view')): ?><?= $link('/admin/users', 'fa-users-gear', 'User Management') ?><?php endif; ?>
             <?php if (auth()->can('hr.view')): ?><?= $link('/admin/hr', 'fa-briefcase', 'HR & Payroll') ?><?php endif; ?>
             <?php if (auth()->can('roles.view')): ?><?= $link('/admin/roles', 'fa-user-shield', 'Roles & Access') ?><?php endif; ?>
             <?php if (auth()->can('settings.view')): ?><?= $link('/admin/settings', 'fa-gear', 'Settings') ?><?php endif; ?>
@@ -82,6 +83,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <?= $link('/student/profile', 'fa-id-card', 'My Profile') ?>
         <?= $link('/student/attendance', 'fa-clipboard-check', 'Attendance') ?>
         <?= $link('/student/results', 'fa-award', 'Results') ?>
+        <?= $link('/student/documents', 'fa-folder-open', 'My Documents') ?>
         <?= $link('/student/fees', 'fa-file-invoice-dollar', 'Fees') ?>
         <?= $link('/student/timetable', 'fa-calendar-days', 'Timetable') ?>
     </div>

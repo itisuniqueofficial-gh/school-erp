@@ -80,6 +80,7 @@ final class DatabaseSeeder
             'students'      => ['view', 'create', 'update', 'delete', 'documents', 'verify', 'reveal_id'],
             'teachers'      => ['view', 'create', 'update', 'delete'],
             'staff'         => ['view', 'create', 'update', 'delete'],
+            'users'         => ['view', 'manage'],
             'academic'      => ['view', 'manage'],
             'attendance'    => ['view', 'mark', 'unlock_request', 'unlock_approve'],
             'exams'         => ['view', 'manage'],

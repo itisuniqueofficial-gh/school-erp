@@ -91,6 +91,44 @@ final class DocumentService
         return QueryBuilder::table('student_documents')->where('id', $docId)->first();
     }
 
+    /** Required document types for completeness tracking. */
+    public const REQUIRED = [
+        'aadhaar' => 'Aadhaar',
+        'birth_certificate' => 'Birth Certificate',
+        'previous_marksheet' => 'Previous Marksheet',
+    ];
+
+    /**
+     * Document completeness for a student.
+     *
+     * @return array{percent:int,missing:array<int,string>,required:int,have:int}
+     */
+    public function completion(int $studentId): array
+    {
+        try {
+            $haveTypes = array_column(
+                QueryBuilder::table('student_documents')->select(['type'])->where('student_id', $studentId)->get(),
+                'type'
+            );
+        } catch (\Throwable) {
+            $haveTypes = [];
+        }
+        $missing = [];
+        foreach (self::REQUIRED as $key => $label) {
+            if (!in_array($key, $haveTypes, true)) {
+                $missing[] = $label;
+            }
+        }
+        $total = count(self::REQUIRED);
+        $done = $total - count($missing);
+        return [
+            'percent'  => $total > 0 ? (int) round(($done / $total) * 100) : 100,
+            'missing'  => $missing,
+            'required' => $total,
+            'have'     => $done,
+        ];
+    }
+
     /** Absolute filesystem path for a stored document (or null if missing). */
     public function absolutePath(array $doc): ?string
     {
