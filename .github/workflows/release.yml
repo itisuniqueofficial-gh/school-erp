@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write   # required to create releases & upload assets
+
+jobs:
+  release:
+    name: Build & publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for changelog
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd
+          coverage: none
+
+      - name: Lint (fail the release on any syntax error)
+        run: |
+          set -e
+          while IFS= read -r f; do php -l "$f" >/dev/null; done \
+            < <(find app core config database routes public bootstrap bin -name '*.php')
+
+      - name: Build deployment artifacts
+        run: |
+          set -e
+          VERSION="${GITHUB_REF_NAME}"
+          PKG="school-erp-${VERSION}"
+          mkdir -p dist
+
+          # Production-ready bundle (source minus git/CI/tests/runtime data/secrets).
+          EXCLUDES=(
+            "--exclude=./.git" "--exclude=./.github" "--exclude=./tests"
+            "--exclude=./.playwright-mcp" "--exclude=./.env"
+            "--exclude=./storage/logs/*" "--exclude=./storage/cache/*"
+            "--exclude=./storage/sessions/*" "--exclude=./storage/uploads/*"
+            "--exclude=./storage/backups/*"
+          )
+          tar czf "dist/${PKG}.tar.gz" "${EXCLUDES[@]}" -C . .
+          ( cd . && zip -rq "dist/${PKG}.zip" . \
+              -x './.git/*' './.github/*' './tests/*' './.env' \
+                 './storage/logs/*' './storage/cache/*' './storage/sessions/*' \
+                 './storage/uploads/*' './storage/backups/*' './.playwright-mcp/*' )
+
+          # Environment template + changelog snapshot as standalone assets.
+          cp .env.example "dist/${PKG}.env.example"
+          [ -f CHANGELOG.md ] && cp CHANGELOG.md "dist/${PKG}-CHANGELOG.md" || true
+          ( cd dist && sha256sum * > "${PKG}.sha256" )
+
+      - name: Generate release notes
+        run: |
+          set -e
+          PREV=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || echo "")
+          {
+            echo "## School ERP ${GITHUB_REF_NAME}"
+            echo ""
+            echo "### Changes"
+            if [ -n "$PREV" ]; then
+              git log --no-merges --pretty='- %s (%h)' "${PREV}..${GITHUB_REF_NAME}"
+            else
+              git log --no-merges --pretty='- %s (%h)' "${GITHUB_REF_NAME}"
+            fi
+            echo ""
+            echo "### Database changes"
+            echo "- Additive migrations only. Apply with \`php bin/console upgrade\`."
+            echo ""
+            echo "### Upgrade notes (zero data loss)"
+            echo "1. **Back up** your database and \`storage/uploads\` (or let \`upgrade\` back up automatically)."
+            echo "2. Deploy the new code (do NOT overwrite \`.env\` or \`storage/\`)."
+            echo "3. Run \`php bin/console upgrade\` — creates a backup, then applies only pending migrations."
+            echo "4. Verify \`GET /health\` returns 200."
+            echo ""
+            echo "> \`migrate:fresh\` is blocked in production. No tables are dropped, truncated, or reseeded on upgrade."
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "School ERP ${{ github.ref_name }}"
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.env.example
+            dist/*-CHANGELOG.md
+            dist/*.sha256

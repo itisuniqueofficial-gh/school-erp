@@ -4,6 +4,47 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.2.0] - 2026-07-22
+
+### Added
+- **Login by 12-digit User ID** (in addition to email/username), with a fixed
+  validator size bug for numeric logins.
+- **Payment gateways** (Razorpay / PhonePe / MobiKwik): admin config with
+  credentials **encrypted at rest**, enable/disable + test/live per gateway,
+  server-side signature + webhook HMAC verification, and a `payment_transactions`
+  ledger with idempotency / duplicate-payment protection.
+- **ERP Configuration** (institution-agnostic): institution type/board, optional
+  **module enable/disable** with server-side route enforcement (`module:`
+  middleware), configurable **terminology**, and **DB-backed branding**
+  (name/footer/login copy) — no template edits.
+- **Audit Log viewer** (`/admin/audit`) with filters + pagination.
+- **Profile pictures / avatars**: secure GD pipeline (real-MIME validation +
+  re-encode + thumbnail), admin & self-service, authenticated media serving.
+- **Full Section CRUD**, **dependency-aware safe delete** for academic entities,
+  and immutable **12-digit exam IDs**.
+- **Deployment**: production `Dockerfile`, `koyeb.yaml`, `docker/entrypoint.sh`,
+  `deploy/nginx.conf.example`, `deploy/Caddyfile.example`,
+  `KOYEB_DEPLOYMENT.md`, `ENVIRONMENT_VARIABLES.md`.
+- **Portability**: proxy-aware `base_url()` auto-detection (blank `APP_URL`
+  auto-detects scheme/host/subdirectory), storage auto-creation on boot.
+- **Ops**: `GET /health` JSON endpoint (200/503), `php bin/console health`,
+  `php bin/console upgrade` (backup + pending migrations only), DB connection
+  retry, credential-safe 503 database-unavailable page.
+- **CI/CD**: GitHub Actions `ci.yml` (lint + composer validate + secret hygiene
+  + integration tests on a MySQL service) and `release.yml` (versioned artifacts
+  + release notes on `v*` tags); Dependabot.
+
+### Changed
+- Schema is now **77 tables** (added `payment_transactions`, teaching-assignment
+  history, workflow tables, exam `uid`, universal 12-digit `uid`s).
+- `migrate:fresh` is **refused in production** without `--force`; migrations are
+  additive-only and applied via the safe `upgrade` path.
+- Default `APP_URL` is empty (auto-detect); branding/name sourced from the DB.
+
+### Security
+- Payment credentials encrypted (AES-256-GCM); no secrets committed (CI check).
+- DB errors never leak stack traces/paths/credentials in production.
+
 ## [1.1.0] - 2026-07-22
 
 ### Added

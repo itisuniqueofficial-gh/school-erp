@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd
+          coverage: none
+
+      - name: PHP syntax lint (all sources)
+        run: |
+          set -e
+          err=0
+          while IFS= read -r f; do
+            php -l "$f" >/dev/null || { echo "Syntax error: $f"; err=1; }
+          done < <(find app core config database routes public bootstrap bin tests -name '*.php')
+          exit $err
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish --no-check-lock
+
+      - name: Secret hygiene
+        run: |
+          # .env must never be committed.
+          if [ -f .env ] && git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env is tracked by git — remove it and rely on .env.example"; exit 1
+          fi
+          # Fail if obvious secrets are committed anywhere in the tree.
+          if git grep -nEI 'ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA|OPENSSH|EC) PRIVATE KEY-----' \
+             -- . ':(exclude).github/**' ':(exclude)docs/**'; then
+            echo "::error::possible secret detected in the repository"; exit 1
+          fi
+          echo "No committed secrets detected."
+
+  test:
+    name: Migrate, seed & integration tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: school_erp
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd
+          coverage: none
+
+      - name: Prepare environment (.env from template)
+        run: |
+          cp .env.example .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/'       .env
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/'            .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=school_erp/' .env
+          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/'    .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/'    .env
+          sed -i 's/^APP_ENV=.*/APP_ENV=testing/'         .env
+          php bin/console key:generate
+
+      - name: System health check
+        run: php bin/console migrate && php bin/console seed && php bin/console health
+
+      - name: Integration test suites (fresh DB per suite)
+        run: |
+          set -e
+          fail=0
+          for f in tests/integration_*.php; do
+            echo "==== $f ===="
+            php bin/console migrate:fresh >/dev/null
+            php bin/console seed >/dev/null
+            php "$f" || fail=1
+          done
+          exit $fail
