@@ -53,11 +53,14 @@ No framework-specific server configuration is required.
 - [ ] Document root = `public/`
 - [ ] PHP 8.3+ with required extensions
 - [ ] `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` set
+- [ ] `APP_URL` blank (auto-detect) or set to your HTTPS domain
 - [ ] `SESSION_SECURE_COOKIE=true`, SSL active
-- [ ] `storage/` writable (0775), not web-accessible
+- [ ] `storage/` writable (0775), not web-accessible (auto-created on boot)
 - [ ] Installer removed (`public/install.php` deleted)
 - [ ] Cron jobs for reminders/backup/cleanup added
-- [ ] Default admin password changed
+- [ ] Default admin password changed (login via 12-digit User ID / email / username)
+- [ ] `GET /health` returns 200 (or run `php bin/console health`)
+- [ ] Future updates: pull code, then `php bin/console upgrade` (backup + pending migrations)
 - [ ] Test login, a CRUD action, a report, and a backup
 
 ## Notes for LiteSpeed / CloudLinux

@@ -4,7 +4,8 @@
 
 ## 1. Logging in
 1. Go to `https://your-school-domain/login`. _[screenshot: login page]_
-2. Enter your **email/username** and **password**, optionally tick *Remember me*.
+2. Enter your **12-digit User ID, email, or username** and **password**,
+   optionally tick *Remember me*.
 3. Click **Sign in**. You are taken to the dashboard for your role.
 - Forgot your password? Click **Forgot password?**, enter your email, and follow
   the reset link. _[screenshot: forgot password]_
@@ -45,7 +46,11 @@ Mark one academic year as *current*.
 - **Report cards**: ranked results with pass/fail; printable & exportable.
 
 ## 8. Fees
-- **Collect fees**: search a student, see invoices, click **Pay**, choose method → a receipt is generated. _[screenshot: fee collection]_
+- **Collect fees**: search a student, see invoices, click **Pay**, choose method
+  (cash, cheque, UPI, bank transfer, or an enabled online gateway) — a receipt is
+  generated. _[screenshot: fee collection]_
+- Online payments (Razorpay / PhonePe / MobiKwik, if enabled by the admin) are
+  verified on the server before a payment is marked successful.
 - **Structures**: define fee structures per class.
 - **Receipt**: printable payment receipt.
 
@@ -70,8 +75,9 @@ Edit the school profile and system settings; trigger a **database backup**.
 overwrites current data — download first._
 
 ## 14. Your account
-Use the profile menu → **Change password**. Choose a strong password (8+ chars
-with upper, lower case and a number).
+Open **My Profile** from the top-right menu to view your 12-digit User ID and
+**upload/replace your profile picture** (JPG/PNG/WebP). Use **Change password**
+to set a strong password (8+ chars with upper, lower case and a number).
 
 ## Portals
 - **Student portal**: attendance %, fees due, results, timetable.

@@ -1,0 +1,43 @@
+# School ERP — Nginx server block (PHP-FPM). Document root MUST be public/.
+# Works on Nginx, and (with the same try_files logic) OpenLiteSpeed/LiteSpeed.
+# Copy to /etc/nginx/sites-available/ and adjust server_name / fastcgi_pass.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your-domain.example;          # or _  for any host
+    root /var/www/school-erp/public;          # <-- point at public/
+    index index.php;
+
+    # Security: block dotfiles and sensitive project files.
+    location ~ /\.(?!well-known) { deny all; }
+    location ~* /(\.env|composer\.(json|lock)|README\.md) { deny all; }
+
+    # Front controller: serve real files, else route to index.php.
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;   # or 127.0.0.1:9000
+        fastcgi_param HTTP_PROXY "";
+        # Preserve real scheme/host so the app auto-detects HTTPS behind proxy.
+        fastcgi_param HTTPS $https if_not_empty;
+    }
+
+    # Deny direct access to writable storage (served via app routes instead).
+    location ^~ /storage/ { deny all; }
+
+    client_max_body_size 12M;
+
+    # Static asset caching.
+    location ~* \.(css|js|png|jpe?g|svg|woff2?)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+}
+
+# For HTTPS, add a listen 443 ssl block with your certs (Let's Encrypt/Certbot)
+# and set SESSION_SECURE_COOKIE=true. The app auto-detects https from the request.

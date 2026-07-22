@@ -29,7 +29,9 @@ DB_USERNAME=your_user
 DB_PASSWORD=your_password
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://your-domain.test
+# Leave APP_URL blank to auto-detect scheme/host/subdirectory per request
+# (works behind Cloudflare / reverse proxies). Set it only to force a canonical URL.
+APP_URL=
 ```
 
 ### 3. Create the database
@@ -39,7 +41,7 @@ CREATE DATABASE school_erp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ### 4. Run migrations and seed data
 ```bash
-php bin/console migrate      # creates all 66 tables
+php bin/console migrate      # creates all 77 tables (19 migrations)
 php bin/console seed         # roles, permissions, demo users, academic data
 ```
 Alternatively import `database/schema.sql` directly, then run `php bin/console seed`.
@@ -81,14 +83,25 @@ Production: point your web server document root at the **`public/`** directory
 | Command                          | Description                        |
 |----------------------------------|------------------------------------|
 | `php bin/console migrate`        | Run pending migrations             |
-| `php bin/console migrate:fresh`  | Drop all tables and re-migrate     |
+| `php bin/console upgrade`        | Safe upgrade: backup + pending migrations only |
+| `php bin/console migrate:fresh`  | Drop all tables and re-migrate (blocked in production without `--force`) |
 | `php bin/console migrate:status` | Show applied/pending migrations    |
 | `php bin/console seed`           | Seed baseline data                 |
+| `php bin/console health`         | Full system health check (DB/storage/cache/env) |
 | `php bin/console key:generate`   | Generate the app key               |
 | `php bin/console backup`         | Dump the database to `storage/backups` |
 
 ## Troubleshooting
 
 - **500 on first load**: check `storage/` is writable and `.env` exists.
-- **DB connection failed**: verify credentials and that MySQL is reachable.
+- **DB connection failed**: verify credentials and that MySQL is reachable. The
+  app shows a friendly 503 page (no stack trace) when the DB is unreachable.
 - **Routes 404 on Apache**: ensure `mod_rewrite` is enabled and `.htaccess` is allowed (`AllowOverride All`).
+
+## Docker / Koyeb / other hosts
+
+A production `Dockerfile`, `koyeb.yaml`, and `docker/entrypoint.sh` are included,
+plus `deploy/nginx.conf.example` and `deploy/Caddyfile.example`. See
+`KOYEB_DEPLOYMENT.md` and `ENVIRONMENT_VARIABLES.md` in the project root, and
+`docs/DEPLOYMENT.md` for server configs. The app is deployment-agnostic: all
+config comes from environment variables and `APP_URL` auto-detects when blank.

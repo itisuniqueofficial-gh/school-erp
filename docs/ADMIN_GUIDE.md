@@ -19,12 +19,39 @@ accountant, librarian, receptionist, transport_manager, hr, student, parent`.
 - **Settings** (`/admin/settings`): school name, email, phone, address, currency,
   timezone, academic options. Values are stored in the `settings` table and
   editable inline.
+- **ERP Configuration** (`/admin/settings/institution`): make the platform fit
+  any institution without code changes —
+  - **Institution profile**: name, code, type (Government / Aided / Private /
+    Coaching / Training / …) and board (CBSE / CISCE / State / IB / Cambridge /
+    NIOS / …).
+  - **Modules**: enable/disable optional modules (Fees, Payments, Scholarships,
+    Library, Transport, Communication, HR, Documents, Timetable). Disabled
+    modules are hidden from navigation **and blocked server-side** (403) — no
+    data is deleted.
+  - **Terminology**: rename entities (Student→Learner, Class→Course, …).
+  - **Branding**: name, short name, footer text, copyright, support email/phone,
+    login welcome/description — reflected across the ERP (title, sidebar, footer,
+    login) with no template edits. `APP_URL` blank = auto-detect.
+- **Payment Gateways** (`/admin/settings/payments`): enable/disable Razorpay,
+  PhonePe and MobiKwik independently, set test/live mode and credentials.
+  Secrets are **encrypted at rest** and never shown in full; a gateway can only
+  be enabled once its required credentials are complete. Online payments are
+  always verified server-side (signature + webhook HMAC); the transactions
+  ledger prevents duplicate/settled-twice payments. Offline methods (cash,
+  cheque, UPI, bank transfer) work without any gateway.
 - **Academic Years**: create years and set the *current* one (used across modules).
 
 ## User management
 - Create staff/teacher accounts (optionally with logins) and student/parent
   accounts. Default password for generated accounts is `Password123!` — instruct
   users to change it on first login.
+- **User Management** (`/admin/users`): list users with their 12-digit User ID,
+  role and status; activate/deactivate.
+- Every user has a **unique 12-digit User ID** and can sign in with **User ID,
+  email, or username** + password.
+- **Profile pictures**: admins can upload/replace/remove a teacher's photo
+  (Teachers → profile); every user can manage their own via **My Profile**
+  (`/account`). Images are validated and re-encoded server-side (JPG/PNG/WebP).
 - Deactivate a user by setting them inactive (login is refused).
 
 ## Maintenance mode
@@ -52,6 +79,8 @@ Auto-generated: admission/employee/invoice/receipt/roll numbers, barcodes,
 timestamps, audit logs, dashboard statistics.
 
 ## Logging & audit
+- **Audit Log viewer** (`/admin/audit`): browse the immutable trail with filters
+  for action, entity type, actor/description search, and date range (paginated).
 - **Audit trail**: `audit_logs` records logins, CRUD actions and security events
   with user, IP and user-agent.
 - **Login history**: `login_attempts` records every attempt (brute-force data).
@@ -67,11 +96,16 @@ timestamps, audit logs, dashboard statistics.
 - Remove `public/install.php` after installation.
 - Keep regular, off-server backups.
 
-## Updates
+## Updates & safe deployment
 - Version is shown in the footer (`config/app.php` → `version`).
-- New releases add migration files; run `php bin/console migrate` to apply.
-- `update_logs` tracks applied versions. Back up before upgrading; restore from
-  backup to roll back.
+- **Zero data loss**: deploy with `php bin/console upgrade` — it takes an
+  automatic backup, then applies **only pending** (additive) migrations; it
+  never drops, truncates, seeds, or re-creates data. Re-running is a no-op.
+- `migrate:fresh` (which drops all tables) is **refused when `APP_ENV=production`**
+  unless `--force` is given.
+- Verify any environment with `php bin/console health` or `GET /health`.
+- `update_logs`/`migrations` track applied versions. Back up before upgrading;
+  restore from a backup (Admin → Backups) to roll back.
 
 ## Troubleshooting workflows
 | Problem | Steps |

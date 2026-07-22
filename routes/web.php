@@ -222,6 +222,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/settings/payments/{gateway}', \App\Controllers\Admin\PaymentSettingsController::class . '@save')->middleware('can:settings.manage');
             $router->get('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@index')->middleware('can:settings.manage');
             $router->post('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@save')->middleware('can:settings.manage');
+            $router->get('/audit', \App\Controllers\Admin\AuditController::class . '@index')->middleware('can:settings.view');
             $router->post('/settings/backup', SettingController::class . '@backup')->middleware('can:settings.manage');
 
             // Backup manager

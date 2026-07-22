@@ -123,8 +123,15 @@ sudo ufw enable
 
 ## Production checklist
 - [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` set
+- [ ] `APP_URL` blank (auto-detect, proxy-aware) or set to the canonical HTTPS URL
 - [ ] HTTPS active, `SESSION_SECURE_COOKIE=true`
-- [ ] `storage/` writable, not web-accessible
+- [ ] `storage/` writable, not web-accessible (auto-created on boot)
 - [ ] `public/install.php` removed
 - [ ] Cron jobs active; backups verified
 - [ ] Firewall enabled; MySQL bound to localhost
+- [ ] `GET /health` returns 200 (or `php bin/console health`)
+- [ ] Future updates: `git pull` then `php bin/console upgrade` (backup + pending
+      migrations only; `migrate:fresh` is blocked in production)
+
+> **Container option:** a production `Dockerfile` + `koyeb.yaml` are included for
+> Docker/Koyeb/Render/Railway/Fly.io. See `KOYEB_DEPLOYMENT.md`.

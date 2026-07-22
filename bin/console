@@ -51,6 +51,15 @@ try {
             break;
 
         case 'migrate:fresh':
+            // Guard: migrate:fresh DROPS ALL TABLES. Never allow it to run in a
+            // production environment by accident — require an explicit --force.
+            if (config('app.env') === 'production' && !in_array('--force', $argv, true)) {
+                $out('REFUSED: migrate:fresh drops all tables and would destroy production data.', 'red');
+                $out('This is a destructive operation and APP_ENV=production.', 'yellow');
+                $out('Use "php bin/console migrate" for safe additive upgrades, or', 'yellow');
+                $out('re-run with --force if you are absolutely certain.', 'yellow');
+                exit(1);
+            }
             $out('Dropping all tables...', 'yellow');
             $migrator = new Migrator();
             $migrator->fresh();
@@ -73,6 +82,42 @@ try {
             }
             if ($status['pending'] === []) {
                 $out('  (none)', 'green');
+            }
+            break;
+
+        case 'upgrade':
+            // Zero-data-loss production upgrade: back up first, then apply ONLY
+            // pending (additive) migrations. Never drops/truncates/seeds.
+            $out('=== Safe Upgrade ===', 'cyan');
+            $ping = \Core\Database\Connection::instance()->ping();
+            if (!$ping['ok']) {
+                $out('Database not reachable — aborting upgrade (no changes made).', 'red');
+                exit(1);
+            }
+            $status = (new Migrator())->status();
+            if ($status['pending'] === []) {
+                $out('Already up to date (' . count($status['applied']) . ' migrations). Nothing to do.', 'green');
+                break;
+            }
+            $out(count($status['pending']) . ' pending migration(s). Creating a safety backup first...', 'yellow');
+            $backup = (new \App\Services\BackupService())->create();
+            if ($backup !== null) {
+                $out("Backup written to: {$backup}", 'green');
+            } else {
+                $out('WARNING: automatic backup failed (mysqldump missing?). Continuing — migrations are additive and non-destructive.', 'yellow');
+            }
+            try {
+                $ran = (new Migrator())->migrate();
+                foreach ($ran as $m) {
+                    $out("Migrated: {$m}", 'green');
+                }
+                $out('Upgrade complete. ' . count($ran) . ' migration(s) applied; existing data preserved.', 'green');
+            } catch (\Throwable $e) {
+                $out('Migration FAILED: ' . $e->getMessage(), 'red');
+                if ($backup !== null) {
+                    $out("Restore the pre-upgrade backup with: php bin/console — or via Admin > Backups ({$backup})", 'yellow');
+                }
+                exit(1);
             }
             break;
 
@@ -207,6 +252,7 @@ try {
             $out('  migrate:status     Show migration status');
             $out('  seed               Seed baseline data');
             $out('  health             Run a full system health check');
+            $out('  upgrade            Safe production upgrade: backup + pending migrations only');
             $out('  install            Migrate + seed in one step');
             $out('  key:generate       Generate & write APP_KEY into .env');
             $out('  backup             Dump the database to storage/backups');

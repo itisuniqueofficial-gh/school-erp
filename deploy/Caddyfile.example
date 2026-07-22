@@ -1,0 +1,32 @@
+# School ERP — Caddyfile (Caddy v2, automatic HTTPS).
+# Document root is public/. Caddy terminates TLS and sets X-Forwarded-Proto,
+# which the app uses to auto-detect its base URL — no APP_URL needed.
+
+your-domain.example {
+    root * /var/www/school-erp/public
+    encode zstd gzip
+
+    # Block sensitive files.
+    @dotfiles path /.* /storage/*
+    respond @dotfiles 403
+
+    php_fastcgi unix//run/php/php8.3-fpm.sock
+    file_server
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    request_body {
+        max_size 12MB
+    }
+}
+
+# Local / no-domain testing:
+#   :8000 {
+#       root * ./public
+#       php_fastcgi 127.0.0.1:9000
+#       file_server
+#   }

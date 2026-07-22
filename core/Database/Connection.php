@@ -68,21 +68,33 @@ final class Connection
             $c['charset'] ?? 'utf8mb4'
         );
 
-        try {
-            $this->pdo = new PDO(
-                $dsn,
-                $c['username'] ?? 'root',
-                $c['password'] ?? '',
-                $c['options'] ?? []
-            );
-        } catch (PDOException $e) {
-            // Surface a generic, credential-free message; keep the real PDO
-            // error as the previous exception for server-side logging only.
-            throw new DatabaseConnectionException(
-                'Unable to connect to the database.',
-                (int) $e->getCode(),
-                $e
-            );
+        $retries = max(1, (int) ($c['connect_retries'] ?? (int) (getenv('DB_CONNECT_RETRIES') ?: 1)));
+        $delayMs = max(0, (int) ($c['connect_retry_delay_ms'] ?? 500));
+
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                $this->pdo = new PDO(
+                    $dsn,
+                    $c['username'] ?? 'root',
+                    $c['password'] ?? '',
+                    $c['options'] ?? []
+                );
+                return;
+            } catch (PDOException $e) {
+                if ($attempt < $retries) {
+                    if ($delayMs > 0) {
+                        usleep($delayMs * 1000);
+                    }
+                    continue;
+                }
+                // Surface a generic, credential-free message; keep the real PDO
+                // error as the previous exception for server-side logging only.
+                throw new DatabaseConnectionException(
+                    'Unable to connect to the database.',
+                    (int) $e->getCode(),
+                    $e
+                );
+            }
         }
     }
 

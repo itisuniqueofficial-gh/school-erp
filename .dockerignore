@@ -1,0 +1,26 @@
+# Secrets & local env — provided via Koyeb environment variables instead.
+.env
+.env.local
+
+# VCS & CI
+.git
+.gitignore
+.github
+
+# Local dev / test artifacts
+.playwright-mcp
+tests
+*.md
+docs
+
+# Runtime data that must NOT be baked into the image (persisted via volume).
+storage/logs/*
+storage/cache/*
+storage/sessions/*
+storage/uploads/*
+storage/backups/*
+!storage/**/.gitkeep
+
+# Dependencies are restored in-image if needed.
+vendor
+node_modules

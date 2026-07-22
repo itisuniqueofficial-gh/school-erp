@@ -20,7 +20,11 @@ chown -R www-data:www-data storage   # use your web-server user
 ```
 
 Writable paths: `storage/logs`, `storage/cache`, `storage/sessions`,
-`storage/uploads`, `storage/backups`.
+`storage/uploads` (and `uploads/avatars`, `uploads/documents`), `storage/backups`.
+
+> The app **auto-creates** any missing storage subfolders on boot, so a fresh
+> clone works even without manual `mkdir` — you still need `storage/` itself to
+> be writable by the web-server user.
 
 ---
 
@@ -50,13 +54,14 @@ The installer shows clear success/failure messages at every step.
 ```bash
 cp .env.example .env
 php bin/console key:generate
-# edit .env with DB credentials, APP_URL, APP_ENV=production
+# edit .env with DB credentials, APP_ENV=production (leave APP_URL blank to auto-detect)
 php bin/console install       # runs migrate + seed
 # then create the lock so the installer is disabled:
 echo "installed" > storage/installed.lock
 ```
 
-Individual commands: `php bin/console migrate`, `php bin/console seed`.
+Individual commands: `php bin/console migrate`, `php bin/console seed`,
+`php bin/console health` (verify), `php bin/console upgrade` (safe re-deploy).
 You may also import `database/schema.sql` directly, then run `seed`.
 
 ---
@@ -67,7 +72,7 @@ You may also import `database/schema.sql` directly, then run `seed`.
 |-----|---------|
 | `APP_ENV` | `production` in production |
 | `APP_DEBUG` | `false` in production (never expose stack traces) |
-| `APP_URL` | Public URL, e.g. `https://school.example.com` |
+| `APP_URL` | Public URL, e.g. `https://school.example.com`. **Leave blank to auto-detect** the scheme/host/subdirectory from each request (proxy-aware) |
 | `APP_KEY` | Generated automatically by the wizard / `key:generate` |
 | `APP_MAINTENANCE` | `true` to enable maintenance mode |
 | `DB_*` | Database connection |
@@ -78,7 +83,16 @@ You may also import `database/schema.sql` directly, then run `seed`.
 
 The wizard creates it. On CLI installs the seeder creates
 `superadmin@school.test` / `Password123!` — **change this immediately** via
-*Profile → Change Password*.
+*My Profile → Change Password*. Users can sign in with their **12-digit User ID**,
+email, or username.
+
+## Deploying to Docker / Koyeb / any host
+
+The project ships a production `Dockerfile`, `koyeb.yaml`, `docker/entrypoint.sh`
+(auto storage + safe `upgrade` on boot), and `deploy/nginx.conf.example` /
+`deploy/Caddyfile.example`. Full guides: `KOYEB_DEPLOYMENT.md` and
+`ENVIRONMENT_VARIABLES.md` (project root). Verify any environment with
+`php bin/console health` or the `GET /health` JSON endpoint.
 
 ## Common problems & troubleshooting
 

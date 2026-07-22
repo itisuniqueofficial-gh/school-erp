@@ -48,6 +48,18 @@ error_reporting($debug ? E_ALL : E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 ini_set('display_errors', $debug ? '1' : '0');
 ini_set('log_errors', '1');
 
+// --- Ensure runtime storage directories exist (portable: shared hosting has
+// --- no entrypoint/build step, so the app self-heals its storage layout).
+foreach ([
+    'logs', 'cache', 'sessions', 'backups', 'temp',
+    'uploads', 'uploads/avatars', 'uploads/documents', 'uploads/student', 'uploads/teacher', 'uploads/school',
+] as $__dir) {
+    $__path = $root . '/storage/' . $__dir;
+    if (!is_dir($__path)) {
+        @mkdir($__path, 0775, true);
+    }
+}
+
 // --- Application container --------------------------------------------------
 $app = new Application($root);
 

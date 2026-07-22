@@ -1,0 +1,69 @@
+# ==========================================================================
+# Koyeb service definition for the School ERP.
+# Deploy with the Koyeb CLI:  koyeb app init school-erp --docker . 
+# or point a Koyeb Git-driven service at this repository (Dockerfile build).
+# ==========================================================================
+service:
+  name: school-erp
+  # Build the bundled Dockerfile (no build command needed — Docker handles it).
+  build:
+    type: docker
+    dockerfile: Dockerfile
+
+  # Koyeb injects $PORT; the entrypoint binds Apache to it.
+  ports:
+    - port: 8000
+      protocol: http
+
+  routes:
+    - path: /
+      port: 8000
+
+  # Health check drives zero-downtime deploys & auto-restart.
+  health_checks:
+    - protocol: http
+      port: 8000
+      path: /health
+      grace_period: 20s
+      interval: 30s
+      timeout: 5s
+      restart_limit: 3
+
+  # Auto-redeploy when the connected branch changes.
+  autodeploy: true
+
+  scaling:
+    min: 1
+    max: 3
+
+  # Persistent volume for uploaded files (photos, documents, receipts, logos).
+  # Koyeb volumes mount at a path; point storage/uploads at it in production.
+  volumes:
+    - name: erp-uploads
+      path: /var/www/html/storage/uploads
+
+  # Non-secret env. Secrets (DB_PASSWORD, APP_KEY, PAYMENT_*) must be added as
+  # Koyeb "secrets", never committed here.
+  env:
+    - key: APP_ENV
+      value: production
+    - key: APP_DEBUG
+      value: "false"
+    - key: APP_TIMEZONE
+      value: Asia/Kolkata
+    - key: DB_CONNECTION
+      value: mysql
+    - key: DB_CONNECT_RETRIES
+      value: "10"
+    - key: SESSION_SECURE_COOKIE
+      value: "true"
+    - key: LOG_LEVEL
+      value: warning
+    # --- Provide via Koyeb secrets (examples; do not hardcode values) -------
+    # - { key: APP_KEY,      secret: erp-app-key }
+    # - { key: APP_URL,      value: https://your-domain }
+    # - { key: DB_HOST,      secret: erp-db-host }
+    # - { key: DB_PORT,      value: "3306" }
+    # - { key: DB_DATABASE,  secret: erp-db-name }
+    # - { key: DB_USERNAME,  secret: erp-db-user }
+    # - { key: DB_PASSWORD,  secret: erp-db-pass }

@@ -125,19 +125,76 @@ if (!function_exists('view')) {
     }
 }
 
+if (!function_exists('base_url')) {
+    /**
+     * The application's base URL. Uses APP_URL when explicitly configured;
+     * otherwise auto-detects from the current request so the app is portable
+     * across any domain, subdirectory, HTTP/HTTPS, and reverse proxies
+     * (Cloudflare / load balancers via X-Forwarded-* headers) with no code or
+     * config changes. Falls back to http://localhost in CLI contexts.
+     */
+    function base_url(): string
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $configured = trim((string) config('app.url', ''));
+        return $cached = detect_base_url($_SERVER, $configured);
+    }
+}
+
+if (!function_exists('detect_base_url')) {
+    /**
+     * Pure base-URL resolver (no globals) — unit-testable.
+     *
+     * @param array<string,mixed> $s  A $_SERVER-like array.
+     * @param string $configured      Explicit APP_URL (wins when non-empty).
+     */
+    function detect_base_url(array $s, string $configured = ''): string
+    {
+        if ($configured !== '') {
+            return rtrim($configured, '/');
+        }
+        if (empty($s['HTTP_HOST']) && empty($s['SERVER_NAME']) && empty($s['HTTP_X_FORWARDED_HOST'])) {
+            return 'http://localhost'; // CLI / no request context
+        }
+
+        $https = (!empty($s['HTTPS']) && strtolower((string) $s['HTTPS']) !== 'off')
+            || strtolower((string) ($s['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https'
+            || strtolower((string) ($s['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on'
+            || (int) ($s['SERVER_PORT'] ?? 0) === 443;
+        $scheme = $https ? 'https' : 'http';
+
+        // Proxies may send a comma-separated list; take the first host.
+        $host = (string) ($s['HTTP_X_FORWARDED_HOST'] ?? $s['HTTP_HOST'] ?? $s['SERVER_NAME'] ?? 'localhost');
+        $host = trim(explode(',', $host)[0]);
+
+        // Subdirectory install support (e.g. example.com/erp).
+        $dir = rtrim(str_replace('\\', '/', dirname((string) ($s['SCRIPT_NAME'] ?? ''))), '/');
+        if ($dir === '.' || $dir === '/') {
+            $dir = '';
+        }
+        if (str_ends_with($dir, '/public')) {
+            $dir = substr($dir, 0, -7);
+        }
+
+        return $scheme . '://' . $host . $dir;
+    }
+}
+
 if (!function_exists('url')) {
     function url(string $path = ''): string
     {
-        $base = rtrim((string) config('app.url'), '/');
-        return $base . '/' . ltrim($path, '/');
+        return base_url() . '/' . ltrim($path, '/');
     }
 }
 
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        $base = rtrim((string) config('app.url'), '/');
-        return $base . '/' . ltrim($path, '/');
+        return base_url() . '/' . ltrim($path, '/');
     }
 }
 

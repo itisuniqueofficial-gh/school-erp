@@ -21,6 +21,13 @@ List endpoints return pagination metadata:
 { "success": true, "data": [ ... ], "meta": { "total": 42, "per_page": 15, "current_page": 1, "last_page": 3, "from": 1, "to": 15 } }
 ```
 
+## Health check (public)
+
+`GET {APP_URL}/health` — no auth. Returns JSON with per-check status (database,
+storage, cache), app version, environment, PHP version, memory, disk, and
+response time. **200** when healthy, **503** when degraded. Use it for uptime
+monitors and platform health checks.
+
 ## Authentication
 
 ### `POST /auth/login` (public)

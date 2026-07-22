@@ -18,6 +18,13 @@ Base URL: `{APP_URL}/api/v1` · Format: JSON · Auth: Bearer token.
   "meta": { "total": 42, "per_page": 15, "current_page": 1, "last_page": 3, "from": 1, "to": 15 } }
 ```
 
+## Health check (public)
+
+`GET {APP_URL}/health` — no token required. Returns JSON: per-check status
+(`database`, `storage`, `cache`), `status` (`ok`/`degraded`), app `version`,
+`env`, `php`, `memory`, `disk`, and `response_ms`. HTTP **200** when healthy,
+**503** when degraded — suitable for load balancers and platform health checks.
+
 ## Authentication flow
 
 1. `POST /auth/login` with credentials → receive a Bearer token.
