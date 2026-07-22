@@ -256,6 +256,37 @@ final class StudentController extends Controller
         return $this->redirect('/admin/students/' . $id, ['success' => 'Student updated successfully.']);
     }
 
+    /** Apply a bulk action to selected students (activate/deactivate/archive/restore). */
+    public function bulk(Request $request): Response
+    {
+        $ids = array_values(array_filter(array_map('intval', (array) $request->input('student_ids', []))));
+        $action = (string) $request->input('bulk_action', '');
+        $allowed = ['activate', 'deactivate', 'archive', 'restore'];
+
+        if ($ids === []) {
+            return $this->redirect('/admin/students', ['error' => 'Select at least one student first.']);
+        }
+        if (!in_array($action, $allowed, true)) {
+            return $this->redirect('/admin/students', ['error' => 'Choose a valid bulk action.']);
+        }
+        // Archiving/restoring is a delete-class action; gate it separately.
+        if (in_array($action, ['archive', 'restore'], true) && !auth()->can('students.delete')) {
+            abort(403, 'You do not have permission to archive students.');
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $count = match ($action) {
+            'activate'   => QueryBuilder::table('students')->whereIn('id', $ids)->update(['status' => 'active', 'updated_at' => $now]),
+            'deactivate' => QueryBuilder::table('students')->whereIn('id', $ids)->update(['status' => 'inactive', 'updated_at' => $now]),
+            'archive'    => QueryBuilder::table('students')->whereIn('id', $ids)->whereNull('deleted_at')->update(['deleted_at' => $now, 'updated_at' => $now]),
+            'restore'    => QueryBuilder::table('students')->whereIn('id', $ids)->whereNotNull('deleted_at')->update(['deleted_at' => null, 'updated_at' => $now]),
+            default      => 0,
+        };
+
+        AuditLogger::log('student.bulk_' . $action, 'student', null, ucfirst($action) . ' ' . $count . ' student(s)');
+        return $this->redirect('/admin/students', ['success' => ucfirst($action) . ' applied to ' . $count . ' student(s).']);
+    }
+
     public function destroy(Request $request, string $id): Response
     {
         $student = Student::find((int) $id);

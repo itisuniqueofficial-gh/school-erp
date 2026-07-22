@@ -20,6 +20,8 @@ final class Student extends Model
         'blood_group', 'email', 'phone', 'address', 'city', 'state', 'postal_code',
         'nationality', 'religion', 'category', 'class_id', 'section_id', 'academic_year_id',
         'aadhaar_enc', 'aadhaar_last4', 'abc_id', 'apaar_id', 'pen_id', 'udise_id',
+        'apaar_status', 'abc_status', 'digilocker_status', 'state_student_id', 'samagra_id',
+        'emis_number', 'board_registration_no', 'digilocker_ref',
         'admission_date', 'photo', 'medical_notes', 'status',
     ];
 

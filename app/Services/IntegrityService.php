@@ -104,6 +104,18 @@ final class IntegrityService
             ) ?? 0)),
             'warning', '/admin/teachers');
 
+        // Documents awaiting verification (approval queue).
+        $out[] = $this->row('documents_pending_verification', 'Documents awaiting verification',
+            $this->count(fn () => QueryBuilder::table('student_documents')
+                ->where('verification_status', 'pending')->count()),
+            'warning', '/admin/students');
+
+        // Attendance unlock requests awaiting admin review (approval queue).
+        $out[] = $this->row('attendance_unlock_pending', 'Attendance unlock requests pending review',
+            $this->count(fn () => QueryBuilder::table('attendance_unlock_requests')
+                ->where('status', 'pending')->count()),
+            'warning', '/admin/attendance');
+
         return $out;
     }
 

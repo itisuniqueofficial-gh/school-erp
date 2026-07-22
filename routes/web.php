@@ -98,6 +98,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->put('/students/{id}', StudentController::class . '@update')->middleware('can:students.update');
             $router->delete('/students/{id}', StudentController::class . '@destroy')->middleware('can:students.delete');
             $router->post('/students/promote', StudentController::class . '@promote')->middleware('can:students.update');
+            $router->post('/students/bulk', StudentController::class . '@bulk')->middleware('can:students.update');
             // Student documents + sensitive government IDs
             $router->post('/students/{id}/documents', StudentController::class . '@uploadDocument')->middleware('can:students.documents');
             $router->get('/students/{id}/documents/{docId}/download', StudentController::class . '@downloadDocument')->middleware('can:students.view');
@@ -222,6 +223,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/settings/payments/{gateway}', \App\Controllers\Admin\PaymentSettingsController::class . '@save')->middleware('can:settings.manage');
             $router->get('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@index')->middleware('can:settings.manage');
             $router->post('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@save')->middleware('can:settings.manage');
+            $router->get('/settings/integrations', \App\Controllers\Admin\IntegrationController::class . '@index')->middleware('can:settings.manage');
+            $router->post('/settings/integrations/{provider}', \App\Controllers\Admin\IntegrationController::class . '@save')->middleware('can:settings.manage');
             $router->get('/audit', \App\Controllers\Admin\AuditController::class . '@index')->middleware('can:settings.view');
             $router->post('/settings/backup', SettingController::class . '@backup')->middleware('can:settings.manage');
 

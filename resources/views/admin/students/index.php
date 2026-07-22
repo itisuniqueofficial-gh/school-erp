@@ -84,6 +84,17 @@
             <?php endforeach; ?>
         </select>
         <button type="submit" class="btn btn-secondary" data-confirm="Promote selected students?"><i class="fa-solid fa-arrow-up-right-dots"></i> Promote</button>
+
+        <span class="ml-4 text-sm text-slate-500">Bulk action:</span>
+        <select name="bulk_action" class="form-select w-auto">
+            <option value="activate">Activate</option>
+            <option value="deactivate">Deactivate</option>
+            <?php if (auth()->can('students.delete')): ?>
+            <option value="archive">Archive (soft-delete)</option>
+            <option value="restore">Restore</option>
+            <?php endif; ?>
+        </select>
+        <button type="submit" class="btn btn-secondary" formaction="<?= e(url('/admin/students/bulk')) ?>" data-confirm="Apply the selected bulk action to the checked students?"><i class="fa-solid fa-layer-group"></i> Apply</button>
     </div>
     <?php endif; ?>
 </form>
