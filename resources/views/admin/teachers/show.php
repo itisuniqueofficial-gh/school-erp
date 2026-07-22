@@ -13,7 +13,9 @@ $name = $teacher['first_name'] . ' ' . $teacher['last_name'];
 <?php $this->section('main'); ?>
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <div class="card p-6 text-center">
-        <span class="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-emerald-600 text-3xl font-bold text-white"><?= e(strtoupper(substr((string) $teacher['first_name'], 0, 1))) ?></span>
+        <div class="mx-auto flex justify-center">
+            <?php $this->include('partials.avatar', ['avatar' => $teacher['photo'] ?? null, 'name' => (string) $name, 'size' => 112]); ?>
+        </div>
         <h2 class="mt-4 text-lg font-bold text-slate-900"><?= e($name) ?></h2>
         <p class="text-sm text-slate-500"><?= e((string) ($teacher['designation'] ?? 'Teacher')) ?> · <?= e((string) $teacher['employee_code']) ?></p>
         <?php if (!empty($teacher['uid'])): ?>
@@ -23,6 +25,27 @@ $name = $teacher['first_name'] . ' ' . $teacher['last_name'];
         </p>
         <?php endif; ?>
         <span class="badge <?= $teacher['status'] === 'active' ? 'badge-green' : 'badge-slate' ?> mt-2"><?= e(ucfirst(str_replace('_',' ',(string) $teacher['status']))) ?></span>
+
+        <?php if (auth()->can('teachers.update')): ?>
+        <div class="mt-5 border-t border-slate-100 pt-4 text-left">
+            <label class="form-label" for="teacher-photo">Profile picture</label>
+            <form method="POST" action="<?= e(url('/admin/teachers/' . $teacher['id'] . '/photo')) ?>" enctype="multipart/form-data" class="space-y-2" data-loading>
+                <?= csrf_field() ?>
+                <img id="teacher-photo-preview" class="mx-auto hidden h-24 w-24 rounded-full object-cover ring-1 ring-slate-200" alt="Preview">
+                <input id="teacher-photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" required
+                       class="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-brand-700 hover:file:bg-brand-100"
+                       data-image-preview="#teacher-photo-preview">
+                <p class="text-xs text-slate-400">JPG, PNG or WebP. Re-encoded on the server for safety.</p>
+                <button class="btn btn-primary btn-sm w-full justify-center"><i class="fa-solid fa-upload"></i> <?= !empty($teacher['photo']) ? 'Replace' : 'Upload' ?> picture</button>
+            </form>
+            <?php if (!empty($teacher['photo'])): ?>
+            <form method="POST" action="<?= e(url('/admin/teachers/' . $teacher['id'] . '/photo')) ?>" class="mt-2" data-confirm="Remove this profile picture?">
+                <?= csrf_field() ?><?= method_field('DELETE') ?>
+                <button class="text-sm text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Remove picture</button>
+            </form>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
     <div class="card p-6 lg:col-span-2">
         <h2 class="mb-4 font-semibold text-slate-800">Details</h2>

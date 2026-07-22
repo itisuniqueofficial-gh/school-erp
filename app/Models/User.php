@@ -23,15 +23,14 @@ final class User extends Model
     protected array $hidden = ['password'];
 
     /**
-     * Find an active user by email or username.
+     * Find an active user by 12-digit User ID, email, or username.
      *
      * @return array<string,mixed>|null
      */
     public static function findByLogin(string $login): ?array
     {
         return QueryBuilder::table('users')
-            ->where('email', $login)
-            ->orWhere('username', $login)
+            ->whereRaw('(`email` = ? OR `username` = ? OR `uid` = ?)', [$login, $login, $login])
             ->whereNull('deleted_at')
             ->first();
     }

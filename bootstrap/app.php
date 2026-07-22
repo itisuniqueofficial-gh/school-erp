@@ -79,9 +79,31 @@ set_exception_handler(static function (\Throwable $e) use ($debug): void {
             'exception' => get_class($e),
             'file'      => $e->getFile(),
             'line'      => $e->getLine(),
+            // The previous exception carries the real driver error (host/port).
+            'detail'    => $e->getPrevious()?->getMessage(),
         ]);
     } catch (\Throwable) {
         // ignore logging failures
+    }
+
+    // Database connectivity failures get a dedicated, credential-free 503 page.
+    if ($e instanceof \Core\Database\DatabaseConnectionException) {
+        if (!headers_sent()) {
+            http_response_code(503);
+            header('Content-Type: text/html; charset=UTF-8');
+            header('Retry-After: 30');
+        }
+        try {
+            echo view('errors.database', [
+                'code'    => 503,
+                'title'   => 'Service Unavailable',
+                'message' => 'Unable to connect to the database. Please check your database configuration or contact the administrator.',
+                'detail'  => $debug ? ($e->getPrevious()?->getMessage() ?? $e->getMessage()) : null,
+            ]);
+        } catch (\Throwable) {
+            echo '<h1>503 Service Unavailable</h1><p>Unable to connect to the database. Please contact the administrator.</p>';
+        }
+        exit;
     }
 
     if (!headers_sent()) {

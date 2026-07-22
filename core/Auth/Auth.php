@@ -25,13 +25,12 @@ final class Auth
     }
 
     /**
-     * Attempt to authenticate using email/username and password.
+     * Attempt to authenticate using the 12-digit User ID, email, or username.
      */
     public function attempt(string $login, string $password, bool $remember = false): bool
     {
         $user = QueryBuilder::table('users')
-            ->where('email', $login)
-            ->orWhere('username', $login)
+            ->whereRaw('(`email` = ? OR `username` = ? OR `uid` = ?)', [$login, $login, $login])
             ->whereNull('deleted_at')
             ->first();
 

@@ -76,6 +76,67 @@ try {
             }
             break;
 
+        case 'health':
+            $out('=== School ERP Health Check ===', 'cyan');
+            $healthFail = 0;
+            $pass = static function (string $m) use ($out): void { $out('  [PASS] ' . $m, 'green'); };
+            $fail = static function (string $m) use ($out, &$healthFail): void { $out('  [FAIL] ' . $m, 'red'); $healthFail++; };
+            $warn = static function (string $m) use ($out): void { $out('  [WARN] ' . $m, 'yellow'); };
+
+            // 1. Database connection
+            $ping = \Core\Database\Connection::instance()->ping();
+            $ping['ok'] ? $pass('Database connection') : $fail('Database connection: ' . $ping['error']);
+
+            // 2. Database schema (required tables present)
+            if ($ping['ok']) {
+                $required = ['users', 'roles', 'permissions', 'user_roles', 'students', 'staff',
+                    'academic_years', 'classes', 'sections', 'subjects', 'class_subjects',
+                    'teacher_assignments', 'student_attendance', 'subject_attendance', 'exams',
+                    'audit_logs', 'notifications', 'login_attempts'];
+                $rows = \Core\Database\Connection::instance()->select(
+                    'SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()'
+                );
+                $have = array_map(static fn ($r) => strtolower((string) ($r['t'] ?? $r['T'] ?? '')), $rows);
+                $missing = array_values(array_diff($required, $have));
+                $missing === [] ? $pass('Database schema (' . count($required) . ' core tables)') : $fail('Missing tables: ' . implode(', ', $missing));
+
+                // Key unique constraints for data integrity.
+                $uniq = \Core\Database\Connection::instance()->scalar(
+                    "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'subject_attendance' AND index_name = 'uq_subject_attendance'"
+                );
+                (int) $uniq > 0 ? $pass('Attendance duplicate-prevention constraint') : $warn('uq_subject_attendance constraint not found');
+            }
+
+            // 3. Migrations
+            try {
+                $status = (new Migrator())->status();
+                $status['pending'] === [] ? $pass('Migrations up to date (' . count($status['applied']) . ' applied)') : $warn(count($status['pending']) . ' pending migration(s) — run: php bin/console migrate');
+            } catch (\Throwable $e) {
+                $fail('Migration status: ' . $e->getMessage());
+            }
+
+            // 4. Storage writability
+            foreach (['storage/logs', 'storage/cache', 'storage/sessions', 'storage/uploads', 'storage/uploads/avatars'] as $dir) {
+                is_writable($root . '/' . $dir) ? $pass('Writable: ' . $dir) : $fail('Not writable: ' . $dir);
+            }
+
+            // 5. Environment configuration
+            (string) config('app.key', '') !== '' ? $pass('APP_KEY is set') : $fail('APP_KEY is empty — run: php bin/console key:generate');
+            if (config('app.env') === 'production' && (bool) config('app.debug', false) === true) {
+                $fail('APP_DEBUG is true in production — set APP_DEBUG=false');
+            } else {
+                $pass('Debug mode appropriate for environment (' . config('app.env') . ')');
+            }
+
+            $out('', '');
+            if ($healthFail === 0) {
+                $out('All health checks passed. System is ready.', 'green');
+            } else {
+                $out("{$healthFail} check(s) failed. See above.", 'red');
+                exit(1);
+            }
+            break;
+
         case 'seed':
             $out('Seeding database...', 'cyan');
             (new DatabaseSeeder())->run();
@@ -145,6 +206,7 @@ try {
             $out('  migrate:fresh      Drop all tables and re-run migrations');
             $out('  migrate:status     Show migration status');
             $out('  seed               Seed baseline data');
+            $out('  health             Run a full system health check');
             $out('  install            Migrate + seed in one step');
             $out('  key:generate       Generate & write APP_KEY into .env');
             $out('  backup             Dump the database to storage/backups');

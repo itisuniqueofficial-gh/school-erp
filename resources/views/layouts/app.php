@@ -36,7 +36,10 @@
         </main>
 
         <footer class="border-t border-slate-200 px-4 py-4 text-center text-xs text-slate-400 sm:px-6 lg:px-8">
-            <?= e(config('app.name')) ?> v<?= e(config('app.version')) ?> &middot; &copy; <?= date('Y') ?>
+            <p><?= e(config('app.name')) ?> v<?= e(config('app.version')) ?> &middot; &copy; <?= date('Y') ?></p>
+            <p class="mt-1">Made with <i class="fa-solid fa-heart text-rose-500" aria-label="love"></i> by
+                <a href="https://itisuniqueofficial.com" target="_blank" rel="noopener noreferrer" class="font-medium text-slate-500 hover:text-brand-600">It Is Unique Official</a>
+            </p>
         </footer>
     </div>
 </div>

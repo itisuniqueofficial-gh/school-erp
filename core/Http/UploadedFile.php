@@ -38,6 +38,12 @@ final class UploadedFile
         return (int) ($this->file['size'] ?? 0);
     }
 
+    /** Absolute path to the uploaded temp file (for server-side processing). */
+    public function path(): string
+    {
+        return (string) ($this->file['tmp_name'] ?? '');
+    }
+
     /**
      * Detect the real MIME type from file contents (not the client-supplied type).
      */

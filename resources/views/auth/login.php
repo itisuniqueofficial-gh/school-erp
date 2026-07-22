@@ -9,16 +9,17 @@
     <?= csrf_field() ?>
 
     <div>
-        <label for="login" class="form-label required">Email or Username</label>
+        <label for="login" class="form-label required">User ID / Email / Username</label>
         <div class="relative">
             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                 <i class="fa-solid fa-user"></i>
             </span>
             <input id="login" name="login" type="text" autocomplete="username" required
                    value="<?= e((string) old('login')) ?>"
-                   class="form-input pl-10" placeholder="you@school.test"
+                   class="form-input pl-10" placeholder="100000000001 or you@school.test"
                    aria-invalid="<?= error('login') ? 'true' : 'false' ?>">
         </div>
+        <p class="mt-1 text-xs text-slate-400">Sign in with your 12-digit User ID, email, or username.</p>
         <?php if ($e = error('login')): ?><p class="form-error"><?= e($e) ?></p><?php endif; ?>
     </div>
 

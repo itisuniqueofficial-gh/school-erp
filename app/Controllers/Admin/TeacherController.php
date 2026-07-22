@@ -13,6 +13,7 @@ use App\Models\Subject;
 use App\Models\AcademicYear;
 use App\Services\TeacherAssignmentService;
 use App\Services\IdSequenceService;
+use App\Services\AvatarService;
 use App\Services\AuditLogger;
 use Core\Database\Connection;
 use Core\Database\QueryBuilder;
@@ -110,6 +111,47 @@ final class TeacherController extends Controller
 
         AuditLogger::log('teacher.created', 'staff', $staffId, 'Added teacher ' . $data['first_name']);
         return $this->redirect('/admin/teachers/' . $staffId, ['success' => 'Teacher added successfully.']);
+    }
+
+    /** Upload or replace a teacher's profile picture (admin-managed). */
+    public function uploadPhoto(Request $request, string $id): Response
+    {
+        $teacher = Staff::find((int) $id);
+        if ($teacher === null) {
+            abort(404, 'Teacher not found.');
+        }
+        $file = $request->file('photo');
+        if ($file === null || !$file->isValid()) {
+            return $this->redirect('/admin/teachers/' . $id, ['error' => 'Please choose an image to upload.']);
+        }
+        $svc = new AvatarService();
+        $res = $svc->store($file);
+        if (!$res['ok']) {
+            return $this->redirect('/admin/teachers/' . $id, ['error' => $res['message']]);
+        }
+        $svc->delete($teacher['photo'] ?? null); // remove the previous picture
+        Staff::updateById((int) $id, ['photo' => $res['filename']]);
+        if (!empty($teacher['user_id'])) {
+            User::updateById((int) $teacher['user_id'], ['avatar' => $res['filename']]);
+        }
+        AuditLogger::log('teacher.photo_updated', 'staff', (int) $id, 'Updated profile picture');
+        return $this->redirect('/admin/teachers/' . $id, ['success' => 'Profile picture updated.']);
+    }
+
+    /** Remove a teacher's profile picture. */
+    public function removePhoto(Request $request, string $id): Response
+    {
+        $teacher = Staff::find((int) $id);
+        if ($teacher === null) {
+            abort(404, 'Teacher not found.');
+        }
+        (new AvatarService())->delete($teacher['photo'] ?? null);
+        Staff::updateById((int) $id, ['photo' => null]);
+        if (!empty($teacher['user_id'])) {
+            User::updateById((int) $teacher['user_id'], ['avatar' => null]);
+        }
+        AuditLogger::log('teacher.photo_removed', 'staff', (int) $id, 'Removed profile picture');
+        return $this->redirect('/admin/teachers/' . $id, ['success' => 'Profile picture removed.']);
     }
 
     public function show(Request $request, string $id): Response

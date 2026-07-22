@@ -76,7 +76,30 @@ final class Connection
                 $c['options'] ?? []
             );
         } catch (PDOException $e) {
-            throw new RuntimeException('Database connection failed: ' . $e->getMessage(), (int) $e->getCode(), $e);
+            // Surface a generic, credential-free message; keep the real PDO
+            // error as the previous exception for server-side logging only.
+            throw new DatabaseConnectionException(
+                'Unable to connect to the database.',
+                (int) $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    /**
+     * Test database connectivity without throwing. Returns a result array for
+     * health checks: ['ok' => bool, 'error' => ?string].
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function ping(): array
+    {
+        try {
+            $this->pdo()->query('SELECT 1');
+            return ['ok' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            $prev = $e->getPrevious();
+            return ['ok' => false, 'error' => ($prev ?? $e)->getMessage()];
         }
     }
 

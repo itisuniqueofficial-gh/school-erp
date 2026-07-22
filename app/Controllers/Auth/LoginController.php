@@ -26,7 +26,7 @@ final class LoginController extends Controller
             'login'    => 'required|string|max:190',
             'password' => 'required|string|max:255',
         ], [
-            'login' => 'Email or username is required.',
+            'login' => 'Your User ID, email, or username is required.',
         ]);
 
         $remember = $request->boolean('remember');

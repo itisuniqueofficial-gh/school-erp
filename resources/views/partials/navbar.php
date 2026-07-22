@@ -36,7 +36,7 @@ try { $__unread = (new \App\Services\NotificationService())->unreadCount((int) a
         <!-- User menu -->
         <div class="relative">
             <button data-dropdown-toggle="user-menu" class="flex items-center gap-2 rounded-lg p-1.5 hover:bg-slate-100" aria-haspopup="true">
-                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white"><?= e($initials) ?></span>
+                <?php $this->include('partials.avatar', ['avatar' => $user['avatar'] ?? null, 'name' => (string) $name, 'size' => 32]); ?>
                 <span class="hidden text-left sm:block">
                     <span class="block text-sm font-semibold leading-tight text-slate-800"><?= e((string) $name) ?></span>
                     <span class="block text-xs leading-tight text-slate-400"><?= e($roleLabel) ?></span>
@@ -44,6 +44,9 @@ try { $__unread = (new \App\Services\NotificationService())->unreadCount((int) a
                 <i class="fa-solid fa-chevron-down hidden text-xs text-slate-400 sm:block"></i>
             </button>
             <div id="user-menu" data-dropdown class="absolute right-0 mt-2 hidden w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <a href="<?= e(url('/account')) ?>" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-circle-user mr-2 text-slate-400"></i> My Profile
+                </a>
                 <a href="<?= e(url('/change-password')) ?>" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
                     <i class="fa-solid fa-key mr-2 text-slate-400"></i> Change Password
                 </a>

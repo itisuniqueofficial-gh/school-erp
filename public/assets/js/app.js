@@ -321,4 +321,19 @@
             });
         });
     });
+
+    // Live image preview for profile-picture upload inputs.
+    $(document).on('change', '[data-image-preview]', function () {
+        var target = document.querySelector($(this).data('image-preview'));
+        var file = this.files && this.files[0];
+        if (!target) { return; }
+        if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) {
+            target.classList.add('hidden');
+            target.removeAttribute('src');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (e) { target.src = e.target.result; target.classList.remove('hidden'); };
+        reader.readAsDataURL(file);
+    });
 })(jQuery);

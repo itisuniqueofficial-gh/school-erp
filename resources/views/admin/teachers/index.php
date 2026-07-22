@@ -29,7 +29,7 @@
             <?php else: foreach ($teachers as $t): ?>
                 <tr>
                     <td class="font-mono text-xs"><?= e((string) $t['employee_code']) ?></td>
-                    <td class="font-medium text-slate-800"><?= e((string) ($t['first_name'] . ' ' . $t['last_name'])) ?></td>
+                    <td class="font-medium text-slate-800"><div class="flex items-center gap-2"><?php $this->include('partials.avatar', ['avatar' => $t['photo'] ?? null, 'name' => (string) ($t['first_name'] . ' ' . $t['last_name']), 'size' => 32]); ?><span><?= e((string) ($t['first_name'] . ' ' . $t['last_name'])) ?></span></div></td>
                     <td><?= e((string) ($t['designation'] ?? '—')) ?></td>
                     <td class="text-slate-500"><?= e((string) ($t['email'] ?? '—')) ?></td>
                     <td><span class="badge <?= $t['status'] === 'active' ? 'badge-green' : 'badge-slate' ?>"><?= e(ucfirst((string) str_replace('_', ' ', $t['status']))) ?></span></td>

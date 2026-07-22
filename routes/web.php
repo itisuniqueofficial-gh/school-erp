@@ -16,6 +16,8 @@ declare(strict_types=1);
 use App\Controllers\Auth\LoginController;
 use App\Controllers\Auth\PasswordController;
 use App\Controllers\HomeController;
+use App\Controllers\MediaController;
+use App\Controllers\AccountController;
 use App\Controllers\NotificationController;
 use App\Controllers\SearchController;
 use App\Controllers\Admin\DashboardController;
@@ -66,6 +68,15 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
         $router->post('/notifications/read-all', NotificationController::class . '@readAll');
         $router->get('/notifications/{id}/read', NotificationController::class . '@read');
 
+        // Self-service account & profile picture (all authenticated users).
+        $router->get('/account', AccountController::class . '@edit')->name('account');
+        $router->post('/account/photo', AccountController::class . '@uploadPhoto');
+        $router->delete('/account/photo', AccountController::class . '@removePhoto');
+
+        // Authenticated media (profile pictures live outside the web root).
+        $router->get('/media/avatar/{file}', MediaController::class . '@avatar');
+        $router->get('/media/avatar/{file}/thumb', MediaController::class . '@avatarThumb');
+
         // Global search (staff only).
         $router->group(['middleware' => ['role:super_admin,school_admin,principal,vice_principal,receptionist,hr,accountant,teacher,class_teacher,librarian,transport_manager']], function ($router): void {
             $router->get('/search', SearchController::class . '@index')->name('search');
@@ -101,6 +112,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/teachers/{id}', TeacherController::class . '@show')->middleware('can:teachers.view');
             $router->get('/teachers/{id}/edit', TeacherController::class . '@edit')->middleware('can:teachers.update');
             $router->put('/teachers/{id}', TeacherController::class . '@update')->middleware('can:teachers.update');
+            $router->post('/teachers/{id}/photo', TeacherController::class . '@uploadPhoto')->middleware('can:teachers.update');
+            $router->delete('/teachers/{id}/photo', TeacherController::class . '@removePhoto')->middleware('can:teachers.update');
             $router->delete('/teachers/{id}', TeacherController::class . '@destroy')->middleware('can:teachers.delete');
             // Teaching assignments (year → class → section → subject → teacher)
             $router->post('/teachers/{id}/assignments', TeacherController::class . '@storeAssignment')->middleware('can:teachers.update');

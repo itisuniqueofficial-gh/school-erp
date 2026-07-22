@@ -44,6 +44,11 @@
             <?php endif; ?>
 
             <?= $this->yield('form') ?>
+
+            <p class="mt-8 text-center text-xs text-slate-400">
+                Made with <i class="fa-solid fa-heart text-rose-500" aria-label="love"></i> by
+                <a href="https://itisuniqueofficial.com" target="_blank" rel="noopener noreferrer" class="font-medium text-slate-500 hover:text-brand-600">It Is Unique Official</a>
+            </p>
         </div>
     </div>
 </div>

@@ -166,10 +166,25 @@ final class Validator
         return true;
     }
 
+    /**
+     * Determine the size of a value for min/max/size/between rules. When the
+     * field is explicitly declared as a `string`, always measure character
+     * length (so a numeric-looking string like a 12-digit ID is bounded by
+     * length, not value). Otherwise numeric values are compared by value.
+     */
+    private function sizeOf(string $field, mixed $value): float
+    {
+        $rules = explode('|', $this->rules[$field] ?? '');
+        if (in_array('string', $rules, true)) {
+            return (float) mb_strlen((string) $value);
+        }
+        return is_numeric($value) ? (float) $value : (float) mb_strlen((string) $value);
+    }
+
     private function validateMin(string $field, mixed $value, ?string $param): bool
     {
         $min = (float) $param;
-        $size = is_numeric($value) ? (float) $value : mb_strlen((string) $value);
+        $size = $this->sizeOf($field, $value);
         if ($size < $min) {
             $this->addError($field, ":field must be at least {$param}.");
             return false;
@@ -180,7 +195,7 @@ final class Validator
     private function validateMax(string $field, mixed $value, ?string $param): bool
     {
         $max = (float) $param;
-        $size = is_numeric($value) ? (float) $value : mb_strlen((string) $value);
+        $size = $this->sizeOf($field, $value);
         if ($size > $max) {
             $this->addError($field, ":field must not exceed {$param}.");
             return false;
@@ -191,7 +206,7 @@ final class Validator
     private function validateBetween(string $field, mixed $value, ?string $param): bool
     {
         [$min, $max] = array_pad(explode(',', (string) $param), 2, '0');
-        $size = is_numeric($value) ? (float) $value : mb_strlen((string) $value);
+        $size = $this->sizeOf($field, $value);
         if ($size < (float) $min || $size > (float) $max) {
             $this->addError($field, ":field must be between {$min} and {$max}.");
             return false;
