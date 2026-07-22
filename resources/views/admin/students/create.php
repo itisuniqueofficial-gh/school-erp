@@ -56,16 +56,15 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
                 <label class="form-label" for="class_id">Class</label>
-                <select id="class_id" name="class_id" class="form-select">
-                    <option value="">—</option>
+                <select id="class_id" name="class_id" class="form-select" data-cascade="class" data-target-section="#section_id">
+                    <option value="">Select class</option>
                     <?php foreach ($classes as $c): ?><option value="<?= (int) $c['id'] ?>"><?= e((string) $c['name']) ?></option><?php endforeach; ?>
                 </select>
             </div>
             <div>
                 <label class="form-label" for="section_id">Section</label>
-                <select id="section_id" name="section_id" class="form-select">
-                    <option value="">—</option>
-                    <?php foreach ($sections as $sec): ?><option value="<?= (int) $sec['id'] ?>"><?= e((string) ($sec['class_name'] . ' - ' . $sec['name'])) ?></option><?php endforeach; ?>
+                <select id="section_id" name="section_id" class="form-select" data-placeholder="Select a class first">
+                    <option value="">Select a class first</option>
                 </select>
             </div>
             <div>

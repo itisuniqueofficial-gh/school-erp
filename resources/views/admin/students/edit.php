@@ -46,16 +46,16 @@ $v = static fn (string $k, $d = '') => e((string) (old($k) !== '' ? old($k) : ($
             </div>
             <div>
                 <label class="form-label" for="class_id">Class</label>
-                <select id="class_id" name="class_id" class="form-select">
+                <select id="class_id" name="class_id" class="form-select" data-cascade="class" data-target-section="#section_id">
                     <option value="">—</option>
                     <?php foreach ($classes as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (int) ($student['class_id'] ?? 0) === (int) $c['id'] ? 'selected' : '' ?>><?= e((string) $c['name']) ?></option><?php endforeach; ?>
                 </select>
             </div>
             <div>
                 <label class="form-label" for="section_id">Section</label>
-                <select id="section_id" name="section_id" class="form-select">
-                    <option value="">—</option>
-                    <?php foreach ($sections as $sec): ?><option value="<?= (int) $sec['id'] ?>" <?= (int) ($student['section_id'] ?? 0) === (int) $sec['id'] ? 'selected' : '' ?>><?= e((string) ($sec['class_name'] . ' - ' . $sec['name'])) ?></option><?php endforeach; ?>
+                <select id="section_id" name="section_id" class="form-select" data-placeholder="Select section">
+                    <option value="">Select section</option>
+                    <?php foreach ($sections as $sec): if ((int) ($student['class_id'] ?? 0) !== (int) $sec['class_id']) continue; ?><option value="<?= (int) $sec['id'] ?>" <?= (int) ($student['section_id'] ?? 0) === (int) $sec['id'] ? 'selected' : '' ?>><?= e((string) $sec['name']) ?></option><?php endforeach; ?>
                 </select>
             </div>
             <div>
@@ -82,6 +82,21 @@ $v = static fn (string $k, $d = '') => e((string) (old($k) !== '' ? old($k) : ($
                 <label class="form-label" for="address">Address</label>
                 <input id="address" name="address" class="form-input" value="<?= $v('address') ?>">
             </div>
+        </div>
+    </div>
+
+    <div class="card p-6">
+        <h2 class="mb-1 font-semibold text-slate-800">Government &amp; Academic IDs</h2>
+        <p class="mb-4 text-xs text-slate-400">Aadhaar is encrypted at rest and shown masked. Leave blank to keep the existing value.</p>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+                <label class="form-label" for="aadhaar">Aadhaar Number</label>
+                <input id="aadhaar" name="aadhaar" class="form-input" inputmode="numeric" placeholder="<?= !empty($student['aadhaar_last4']) ? 'XXXX-XXXX-' . e((string) $student['aadhaar_last4']) : 'Not set' ?>">
+            </div>
+            <div><label class="form-label" for="abc_id">ABC ID</label><input id="abc_id" name="abc_id" class="form-input" value="<?= $v('abc_id') ?>"></div>
+            <div><label class="form-label" for="apaar_id">APAAR ID</label><input id="apaar_id" name="apaar_id" class="form-input" value="<?= $v('apaar_id') ?>"></div>
+            <div><label class="form-label" for="pen_id">PEN ID</label><input id="pen_id" name="pen_id" class="form-input" value="<?= $v('pen_id') ?>"></div>
+            <div><label class="form-label" for="udise_id">UDISE ID</label><input id="udise_id" name="udise_id" class="form-input" value="<?= $v('udise_id') ?>"></div>
         </div>
     </div>
 

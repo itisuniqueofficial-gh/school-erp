@@ -16,7 +16,7 @@ final class User extends Model
     protected bool $softDeletes = true;
 
     protected array $fillable = [
-        'name', 'email', 'username', 'phone', 'password', 'avatar',
+        'name', 'uid', 'public_id', 'email', 'username', 'phone', 'password', 'avatar',
         'is_active', 'email_verified_at', 'last_login_at', 'last_login_ip',
     ];
 

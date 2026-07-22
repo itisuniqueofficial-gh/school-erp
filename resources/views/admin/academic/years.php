@@ -1,7 +1,7 @@
 <?php
 /** @var \Core\View\View $this */
 /** @var array<int,array<string,mixed>> $years */
-$tabs = ['years' => 'Years', 'classes' => 'Classes', 'sections' => 'Sections', 'subjects' => 'Subjects'];
+$tabs = ['years' => 'Years', 'classes' => 'Classes', 'sections' => 'Sections', 'subjects' => 'Subjects', 'class-subjects' => 'Class Subjects'];
 $active = 'years';
 ?>
 <?php $this->extend('layouts.app'); ?>
@@ -16,15 +16,37 @@ $active = 'years';
     <div class="lg:col-span-2">
         <div class="card overflow-hidden">
             <table class="data-table">
-                <thead><tr><th>Name</th><th>Start</th><th>End</th><th>Current</th></tr></thead>
+                <thead><tr><th>ID</th><th>Name</th><th>Start</th><th>End</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
                 <tbody>
-                <?php if (empty($years)): ?><tr><td colspan="4" class="py-8 text-center text-slate-400">No years defined.</td></tr>
-                <?php else: foreach ($years as $y): ?>
+                <?php if (empty($years)): ?><tr><td colspan="6" class="py-8 text-center text-slate-400">No years defined.</td></tr>
+                <?php else: foreach ($years as $y): $cur = !empty($y['is_current']); $arch = ($y['status'] ?? 'active') === 'archived'; ?>
                     <tr>
-                        <td class="font-medium text-slate-800"><?= e((string) $y['name']) ?></td>
+                        <td class="font-mono text-xs"><?= e((string) ($y['public_id'] ?? '—')) ?></td>
+                        <td class="font-medium text-slate-800"><?= e((string) $y['name']) ?> <?= $cur ? '<span class="badge badge-green ml-1">Current</span>' : '' ?></td>
                         <td><?= e((string) $y['start_date']) ?></td>
                         <td><?= e((string) $y['end_date']) ?></td>
-                        <td><?= !empty($y['is_current']) ? '<span class="badge badge-green">Current</span>' : '' ?></td>
+                        <td><span class="badge <?= $arch ? 'badge-red' : 'badge-slate' ?>"><?= e(ucfirst((string) ($y['status'] ?? 'active'))) ?></span></td>
+                        <td class="text-right">
+                            <?php if (auth()->can('academic.manage')): ?>
+                            <?php if (!$cur): ?>
+                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/activate')) ?>" class="inline" data-confirm="Make <?= e((string) $y['name']) ?> the current academic year?"><?= csrf_field() ?><button class="text-green-600 hover:underline"><i class="fa-solid fa-circle-check"></i> Activate</button></form>
+                            <?php endif; ?>
+                            <details class="inline-block text-left align-middle">
+                                <summary class="ml-2 cursor-pointer text-brand-600 hover:underline"><i class="fa-solid fa-pen"></i> Edit</summary>
+                                <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'])) ?>" class="mt-2 space-y-2 rounded-lg border border-slate-200 p-3" data-loading>
+                                    <?= csrf_field() ?><?= method_field('PUT') ?>
+                                    <input name="name" class="form-input" value="<?= e((string) $y['name']) ?>" required>
+                                    <input name="start_date" type="date" class="form-input" value="<?= e((string) $y['start_date']) ?>" required>
+                                    <input name="end_date" type="date" class="form-input" value="<?= e((string) $y['end_date']) ?>" required>
+                                    <select name="status" class="form-select"><option value="active" <?= !$arch ? 'selected' : '' ?>>Active</option><option value="archived" <?= $arch ? 'selected' : '' ?>>Archived</option></select>
+                                    <button class="btn btn-primary btn-sm w-full justify-center">Save</button>
+                                </form>
+                            </details>
+                            <?php if (!$cur): ?>
+                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this year?' : 'Archive this year? Historical records are preserved.' ?>"><?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button></form>
+                            <?php endif; ?>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>

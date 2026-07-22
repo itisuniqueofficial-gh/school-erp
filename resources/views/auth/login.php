@@ -58,15 +58,4 @@
 </div>
 <?php $this->endSection(); ?>
 
-<?php $this->section('form_scripts'); ?>
-<script>
-    $(function () {
-        $('[data-toggle-password]').on('click', function () {
-            const input = document.getElementById($(this).data('toggle-password'));
-            const icon = $(this).find('i');
-            if (input.type === 'password') { input.type = 'text'; icon.removeClass('fa-eye').addClass('fa-eye-slash'); }
-            else { input.type = 'password'; icon.removeClass('fa-eye-slash').addClass('fa-eye'); }
-        });
-    });
-</script>
-<?php $this->endSection(); ?>
+<?php // Password visibility toggle is handled app-wide in assets/js/app.js. ?>

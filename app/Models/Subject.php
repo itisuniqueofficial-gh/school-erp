@@ -12,5 +12,5 @@ use Core\Database\Model;
 final class Subject extends Model
 {
     protected string $table = 'subjects';
-    protected array $fillable = ['name', 'code', 'type'];
+    protected array $fillable = ['name', 'uid', 'public_id', 'code', 'type', 'max_marks', 'pass_marks', 'description', 'status'];
 }

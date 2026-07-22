@@ -83,4 +83,34 @@ final class IdSequenceService
     public function staff(?int $year = null): string    { return $this->generate('STF', $year); }
     public function parent(?int $year = null): string   { return $this->generate('PAR', $year); }
     public function admin(?int $year = null): string    { return $this->generate('ADM', $year); }
+
+    /**
+     * Universal 12-digit NUMERIC public identifier. The leading digit(s) encode
+     * the entity type; the remainder is a zero-padded, atomically-incremented,
+     * never-reused sequence. Uses a year=0 global counter (per lead) with the
+     * same row-locked transaction as next(), so it is concurrency-safe and the
+     * result is guaranteed unique (also backed by a DB UNIQUE index).
+     *
+     * e.g. lead '1', seq 1 => "100000000001"; lead '11', seq 1 => "110000000001".
+     */
+    public function numeric(string $lead): string
+    {
+        $lead = preg_replace('/\D/', '', $lead) ?: '1';
+        $seq = $this->next('UID' . $lead, 0);
+        $width = 12 - strlen($lead);
+        if ($width < 1) {
+            $width = 1;
+        }
+        return $lead . str_pad((string) $seq, $width, '0', STR_PAD_LEFT);
+    }
+
+    // Entity-typed 12-digit IDs (leading digit = type).
+    public function uidUser(): string     { return $this->numeric('1'); }
+    public function uidStudent(): string  { return $this->numeric('2'); }
+    public function uidStaff(): string    { return $this->numeric('3'); }
+    public function uidClass(): string    { return $this->numeric('4'); }
+    public function uidSection(): string  { return $this->numeric('5'); }
+    public function uidSubject(): string  { return $this->numeric('6'); }
+    public function uidYear(): string     { return $this->numeric('7'); }
+    public function uidDocument(): string { return $this->numeric('8'); }
 }

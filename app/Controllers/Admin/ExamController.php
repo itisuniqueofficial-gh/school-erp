@@ -64,6 +64,7 @@ final class ExamController extends Controller
         }
 
         $classId = (int) $request->query('class_id', 0);
+        $sectionId = (int) $request->query('section_id', 0);
         $subjectId = (int) $request->query('subject_id', 0);
         $students = [];
         $schedule = null;
@@ -71,10 +72,13 @@ final class ExamController extends Controller
 
         if ($classId && $subjectId) {
             $schedule = $this->ensureSchedule($examId, $classId, $subjectId);
-            $students = QueryBuilder::table('students')
+            $studentQuery = QueryBuilder::table('students')
                 ->select(['id', 'admission_no', 'roll_no', 'first_name', 'last_name'])
-                ->where('class_id', $classId)->whereNull('deleted_at')->where('status', 'active')
-                ->orderBy('roll_no')->get();
+                ->where('class_id', $classId)->whereNull('deleted_at')->where('status', 'active');
+            if ($sectionId) {
+                $studentQuery->where('section_id', $sectionId);
+            }
+            $students = $studentQuery->orderBy('roll_no')->get();
 
             foreach (QueryBuilder::table('exam_marks')->where('exam_schedule_id', (int) $schedule['id'])->get() as $m) {
                 $existing[(int) $m['student_id']] = $m;
@@ -85,11 +89,13 @@ final class ExamController extends Controller
             'title'     => 'Enter Marks · ' . $exam['name'],
             'exam'      => $exam,
             'classes'   => ClassModel::ordered(),
+            'sections'  => \App\Models\Section::withClass(),
             'subjects'  => Subject::all(),
             'students'  => $students,
             'schedule'  => $schedule,
             'existing'  => $existing,
-            'selected'  => ['class_id' => $classId, 'subject_id' => $subjectId],
+            'status'    => $schedule ? (new MarksWorkflowService())->currentStatus((int) $schedule['id']) : 'draft',
+            'selected'  => ['class_id' => $classId, 'section_id' => $sectionId, 'subject_id' => $subjectId],
         ]);
     }
 
@@ -97,6 +103,7 @@ final class ExamController extends Controller
     {
         $examId = (int) $id;
         $classId = (int) $request->input('class_id', 0);
+        $sectionId = (int) $request->input('section_id', 0);
         $subjectId = (int) $request->input('subject_id', 0);
         $marks = (array) $request->input('marks', []); // [student_id => marks]
 
@@ -142,7 +149,7 @@ final class ExamController extends Controller
         }
 
         AuditLogger::log('exam.marks_entered', 'exam', $examId, 'Entered marks');
-        return $this->redirect("/admin/exams/{$examId}/marks?class_id={$classId}&subject_id={$subjectId}", ['success' => 'Marks saved.']);
+        return $this->redirect("/admin/exams/{$examId}/marks?class_id={$classId}&section_id={$sectionId}&subject_id={$subjectId}", ['success' => 'Marks saved.']);
     }
 
     /**
@@ -160,8 +167,39 @@ final class ExamController extends Controller
             return $this->back(['marks' => ['No marks schedule found for that class/subject.']]);
         }
         $result = (new MarksWorkflowService())->transition((int) $schedule['id'], $action, auth()->id());
+        if ($result['ok'] && $action === 'publish') {
+            $this->notifyResultsPublished((int) $schedule['class_id']);
+        }
         $back = "/admin/exams/{$id}/marks?class_id={$classId}&subject_id={$subjectId}";
         return $this->redirect($back, [$result['ok'] ? 'success' : 'error' => $result['message']]);
+    }
+
+    /**
+     * Notify students of a class (and their guardians) that results are out.
+     */
+    private function notifyResultsPublished(int $classId): void
+    {
+        try {
+            $students = QueryBuilder::table('students')
+                ->select(['students.id', 'students.user_id'])
+                ->where('class_id', $classId)->whereNull('deleted_at')->get();
+            $notif = new \App\Services\NotificationService();
+            foreach ($students as $s) {
+                if (!empty($s['user_id'])) {
+                    $notif->notify((int) $s['user_id'], 'result', 'Results published', 'Your exam results have been published.', '/student/results');
+                }
+                $guardians = QueryBuilder::table('student_guardians')
+                    ->select(['guardians.user_id'])
+                    ->join('guardians', 'student_guardians.guardian_id', '=', 'guardians.id')
+                    ->where('student_guardians.student_id', (int) $s['id'])->get();
+                foreach ($guardians as $g) {
+                    if (!empty($g['user_id'])) {
+                        $notif->notify((int) $g['user_id'], 'result', 'Results published', 'Your child\'s results have been published.', '/parent/dashboard');
+                    }
+                }
+            }
+        } catch (\Throwable) {
+        }
     }
 
     /**

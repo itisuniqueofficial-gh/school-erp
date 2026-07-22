@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Models\Staff;
+use App\Models\User;
 use App\Models\TeacherAssignment;
 use App\Models\ClassModel;
 use App\Models\Section;
 use App\Models\Subject;
 use App\Models\AcademicYear;
 use App\Services\TeacherAssignmentService;
+use App\Services\IdSequenceService;
 use App\Services\AuditLogger;
 use Core\Database\Connection;
 use Core\Database\QueryBuilder;
@@ -66,11 +68,14 @@ final class TeacherController extends Controller
         ]);
 
         try {
-            $staffId = Connection::instance()->transaction(function () use ($data, $request): int {
+            $publicId = (new IdSequenceService())->teacher();
+            $uid = (new IdSequenceService())->uidStaff();
+            $staffId = Connection::instance()->transaction(function () use ($data, $request, $publicId, $uid): int {
                 $userId = null;
                 if ($request->boolean('create_login') && !empty($data['email'])) {
                     $userId = User::create([
                         'name' => $data['first_name'] . ' ' . $data['last_name'],
+                        'uid' => (new IdSequenceService())->uidUser(),
                         'email' => $data['email'],
                         'username' => strtolower($data['first_name']) . random_int(100, 999),
                         'password' => Hash::make('Password123!'),
@@ -81,6 +86,8 @@ final class TeacherController extends Controller
 
                 return Staff::create([
                     'user_id'     => $userId,
+                    'uid'         => $uid,
+                    'public_id'   => $publicId,
                     'employee_code' => Staff::generateEmployeeCode(),
                     'first_name'  => $data['first_name'],
                     'last_name'   => $data['last_name'],
@@ -117,6 +124,8 @@ final class TeacherController extends Controller
             'qualifications' => Staff::qualifications((int) $id),
             'subjects'       => Staff::subjects((int) $id),
             'assignments'    => TeacherAssignment::forTeacher((int) $id),
+            'assignmentHistory' => (new TeacherAssignmentService())->historyForTeacher((int) $id),
+            'otherTeachers'  => Staff::query()->where('staff_type', 'teaching')->whereRaw('`id` != ?', [(int) $id])->orderBy('first_name')->get(),
             'years'          => AcademicYear::all(),
             'classes'        => ClassModel::ordered(),
             'sections'       => Section::withClass(),
@@ -150,6 +159,20 @@ final class TeacherController extends Controller
     {
         (new TeacherAssignmentService())->remove((int) $assignmentId);
         return $this->redirect('/admin/teachers/' . $id, ['success' => 'Assignment removed.']);
+    }
+
+    /** One-click teacher reassignment (with effective date + reason + history). */
+    public function reassignAssignment(Request $request, string $id, string $assignmentId): Response
+    {
+        $data = $this->validate($request, [
+            'new_staff_id'   => 'required|integer',
+            'reason'         => 'required|string|max:255',
+            'effective_date' => 'nullable|date',
+        ]);
+        $result = (new TeacherAssignmentService())->reassign(
+            (int) $assignmentId, (int) $data['new_staff_id'], $data['reason'], $data['effective_date'] ?: null
+        );
+        return $this->redirect('/admin/teachers/' . $id . '#assignments', [$result['ok'] ? 'success' : 'error' => $result['message']]);
     }
 
     public function assignClassTeacher(Request $request, string $id): Response

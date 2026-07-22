@@ -16,7 +16,7 @@ final class Staff extends Model
     protected bool $softDeletes = true;
 
     protected array $fillable = [
-        'user_id', 'department_id', 'employee_code', 'first_name', 'last_name',
+        'user_id', 'uid', 'public_id', 'department_id', 'employee_code', 'first_name', 'last_name',
         'staff_type', 'designation', 'gender', 'dob', 'email', 'phone', 'address',
         'joining_date', 'qualification', 'experience_years', 'basic_salary', 'photo', 'status',
     ];

@@ -2,7 +2,7 @@
 /** @var \Core\View\View $this */
 /** @var array<int,array<string,mixed>> $sections */
 /** @var array<int,array<string,mixed>> $classes */
-$tabs = ['years' => 'Years', 'classes' => 'Classes', 'sections' => 'Sections', 'subjects' => 'Subjects'];
+$tabs = ['years' => 'Years', 'classes' => 'Classes', 'sections' => 'Sections', 'subjects' => 'Subjects', 'class-subjects' => 'Class Subjects'];
 $active = 'sections';
 ?>
 <?php $this->extend('layouts.app'); ?>

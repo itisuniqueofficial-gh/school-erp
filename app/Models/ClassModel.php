@@ -12,7 +12,7 @@ use Core\Database\Model;
 final class ClassModel extends Model
 {
     protected string $table = 'classes';
-    protected array $fillable = ['name', 'numeric_level'];
+    protected array $fillable = ['name', 'uid', 'public_id', 'code', 'numeric_level', 'uses_sections', 'description', 'status'];
 
     /** @return array<int,array<string,mixed>> */
     public static function ordered(): array

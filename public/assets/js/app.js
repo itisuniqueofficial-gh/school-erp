@@ -43,24 +43,89 @@
             setTimeout(() => $el.fadeOut(300, () => $el.remove()), 4000);
         });
 
-        // --- Sidebar toggle (mobile) --------------------------------------
-        $('[data-sidebar-toggle]').on('click', function () {
-            $('[data-sidebar]').toggleClass('-translate-x-full');
-            $('[data-sidebar-backdrop]').toggleClass('hidden');
+        // --- Sidebar drawer (mobile) --------------------------------------
+        // Off-canvas drawer with body scroll-lock, focus management, overlay
+        // click and Escape support. Desktop (lg+) keeps the sidebar static, so
+        // these handlers are no-ops there (the toggle button is hidden by CSS).
+        const $sidebar = $('[data-sidebar]');
+        const $backdrop = $('[data-sidebar-backdrop]');
+        const $sidebarToggle = $('[data-sidebar-toggle]');
+
+        function sidebarIsOpen() {
+            return $sidebar.length && !$sidebar.hasClass('-translate-x-full');
+        }
+        function openSidebar() {
+            $sidebar.removeClass('-translate-x-full');
+            $backdrop.removeClass('hidden');
+            $('body').addClass('overflow-hidden');
+            $sidebarToggle.attr('aria-expanded', 'true');
+            // Move focus into the drawer for keyboard/screen-reader users.
+            $sidebar.find('a, button').filter(':visible').first().trigger('focus');
+        }
+        function closeSidebar(restoreFocus) {
+            $sidebar.addClass('-translate-x-full');
+            $backdrop.addClass('hidden');
+            $('body').removeClass('overflow-hidden');
+            $sidebarToggle.attr('aria-expanded', 'false');
+            if (restoreFocus !== false) { $sidebarToggle.trigger('focus'); }
+        }
+
+        $sidebarToggle.attr('aria-expanded', 'false');
+        $sidebarToggle.on('click', function () {
+            if (sidebarIsOpen()) { closeSidebar(); } else { openSidebar(); }
         });
-        $('[data-sidebar-backdrop]').on('click', function () {
-            $('[data-sidebar]').addClass('-translate-x-full');
-            $(this).addClass('hidden');
-        });
+        $backdrop.on('click', function () { closeSidebar(); });
 
         // --- User dropdown ------------------------------------------------
         $('[data-dropdown-toggle]').on('click', function (e) {
             e.stopPropagation();
             const target = $(this).data('dropdown-toggle');
-            $('#' + target).toggleClass('hidden');
+            const $menu = $('#' + target);
+            const willOpen = $menu.hasClass('hidden');
+            $('[data-dropdown]').addClass('hidden');
+            $('[data-dropdown-toggle]').attr('aria-expanded', 'false');
+            $menu.toggleClass('hidden', !willOpen);
+            $(this).attr('aria-expanded', willOpen ? 'true' : 'false');
         });
         $(document).on('click', function () {
             $('[data-dropdown]').addClass('hidden');
+            $('[data-dropdown-toggle]').attr('aria-expanded', 'false');
+        });
+
+        // --- Escape key: close open overlays ------------------------------
+        $(document).on('keydown', function (e) {
+            if (e.key !== 'Escape' && e.keyCode !== 27) { return; }
+            if (sidebarIsOpen()) { closeSidebar(); }
+            $('[data-dropdown]').addClass('hidden');
+            $('[data-dropdown-toggle]').attr('aria-expanded', 'false');
+        });
+
+        // --- Password visibility toggle (app-wide) ------------------------
+        // Any `<button data-toggle-password="inputId">` with an <i> icon works.
+        $(document).on('click', '[data-toggle-password]', function () {
+            const input = document.getElementById($(this).data('toggle-password'));
+            if (!input) { return; }
+            const $icon = $(this).find('i');
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            $icon.toggleClass('fa-eye', !show).toggleClass('fa-eye-slash', show);
+            $(this).attr('aria-pressed', show ? 'true' : 'false');
+        });
+
+        // --- Copy-to-clipboard for 12-digit IDs and other tokens ----------
+        $(document).on('click', '[data-copy]', function (e) {
+            e.preventDefault();
+            var text = String($(this).data('copy'));
+            var done = function () { if (window.toast) { window.toast('Copied: ' + text, 'success'); } };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done, done);
+            } else {
+                var $t = $('<textarea>').val(text).css({ position: 'fixed', left: '-9999px' }).appendTo('body');
+                $t[0].select();
+                try { document.execCommand('copy'); } catch (err) {}
+                $t.remove();
+                done();
+            }
         });
 
         // --- Confirm + method spoofing for delete buttons -----------------
@@ -135,10 +200,17 @@
     }
 
     $(function () {
-        // Validate on blur and on submit for forms not explicitly opted out.
-        $(document).on('blur', 'form:not([data-no-validate]) input, form:not([data-no-validate]) select, form:not([data-no-validate]) textarea', function () {
+        // Disable browser-native validation bubbles so there is ONE consistent
+        // validation system (custom). Fields still keep `required` for a11y.
+        $('form:not([data-no-validate])').attr('novalidate', 'novalidate');
+
+        // Do NOT show errors before submit. Only re-validate a field that is
+        // already in the error state, so the message clears the moment it's fixed.
+        $(document).on('input change', 'form:not([data-no-validate]) .field-invalid', function () {
             validateField(this);
         });
+
+        // Validate everything on submit; block and focus the first invalid field.
         $(document).on('submit', 'form:not([data-no-validate])', function (e) {
             let ok = true;
             $(this).find('input, select, textarea').each(function () {
@@ -147,6 +219,7 @@
             });
             if (!ok) {
                 e.preventDefault();
+                e.stopImmediatePropagation();
                 const $first = $(this).find('.field-invalid').first();
                 if ($first.length) { $first.trigger('focus'); }
                 if (window.toast) { window.toast('Please correct the highlighted fields.', 'error'); }
@@ -166,5 +239,86 @@
             };
             document.head.appendChild(s);
         }
+    });
+})(jQuery);
+
+/* ==========================================================================
+   Cascading dependent dropdowns (Academic Year -> Class -> Section -> Subject
+   -> Teacher). Progressive enhancement: forms still work without JS because
+   the server renders the full option lists too.
+   ========================================================================== */
+(function ($) {
+    'use strict';
+
+    var OPTIONS_URL = (window.ERP_BASE || '') + '/admin/academic/options';
+
+    function fill($select, rows, placeholder) {
+        if (!$select.length) { return; }
+        var current = $select.val();
+        var ph = $select.data('placeholder') || placeholder;
+        $select.empty();
+        if (ph) {
+            $select.append($('<option>').val('').text(ph));
+        }
+        (rows || []).forEach(function (r) {
+            $select.append($('<option>').val(r.id).text(r.name));
+        });
+        // Preserve previous selection when still present (else it resets — the
+        // desired behaviour when a parent changes and old value is now invalid).
+        if (current) { $select.val(current); }
+    }
+
+    function load(type, params, cb) {
+        $.getJSON(OPTIONS_URL, $.extend({ type: type }, params))
+            .done(function (res) { cb((res && res.data) || []); })
+            .fail(function () { cb([]); });
+    }
+
+    $(function () {
+        // Class -> Section (element carries data-target-section="#selector").
+        $(document).on('change', 'select[data-cascade="class"][data-target-section]', function () {
+            var classId = $(this).val();
+            var $section = $($(this).data('target-section'));
+            var $subject = $($(this).data('target-subject') || '');
+            var $wrap = $section.closest('div');
+            if (!classId) {
+                fill($section, [], null);
+                $wrap.show(); $section.prop('disabled', false);
+                if ($subject.length) { fill($subject, [], null); }
+                return;
+            }
+            // Respect the class's section-usage flag: no-section classes hide the
+            // Section field entirely and submit without a section.
+            $.getJSON(OPTIONS_URL, { type: 'class-config', class_id: classId }).done(function (cfg) {
+                var uses = (cfg && cfg.uses_sections !== undefined) ? Number(cfg.uses_sections) : 1;
+                if (uses === 0) {
+                    $section.val('').prop('disabled', true);
+                    $wrap.hide();
+                } else {
+                    $section.prop('disabled', false);
+                    $wrap.show();
+                    load('sections', { class_id: classId }, function (rows) { fill($section, rows, null); });
+                }
+            }).fail(function () {
+                $section.prop('disabled', false); $wrap.show();
+                load('sections', { class_id: classId }, function (rows) { fill($section, rows, null); });
+            });
+            if ($subject.length) {
+                load('subjects', { class_id: classId }, function (rows) { fill($subject, rows, null); });
+            }
+        });
+
+        // Section change -> refresh teacher list where a target is declared.
+        $(document).on('change', 'select[data-cascade="section"][data-target-teacher]', function () {
+            var $form = $(this).closest('form');
+            var classId = $form.find('[name="class_id"]').val();
+            var sectionId = $(this).val();
+            var subjectId = $form.find('[name="subject_id"]').val();
+            var $teacher = $($(this).data('target-teacher'));
+            if (!classId || !sectionId) { fill($teacher, [], 'Teacher'); return; }
+            load('teachers', { class_id: classId, section_id: sectionId, subject_id: subjectId || 0 }, function (rows) {
+                fill($teacher, rows, 'Teacher');
+            });
+        });
     });
 })(jQuery);

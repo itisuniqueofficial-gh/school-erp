@@ -49,6 +49,14 @@ html { scroll-behavior: smooth; }
 .form-error { color: #dc2626; font-size: .8125rem; margin-top: .25rem; }
 .required::after { content: " *"; color: #dc2626; }
 
+/* Validation states (single, consistent system; browser-native is disabled via novalidate). */
+.field-invalid, .form-input.field-invalid, .form-select.field-invalid, .form-textarea.field-invalid {
+    border-color: #dc2626 !important; background: #fef2f2;
+}
+.field-invalid:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.15) !important; }
+.field-error-msg { color: #dc2626; font-size: .78rem; margin-top: .25rem; min-height: 1rem; line-height: 1rem; }
+.field-valid { border-color: #16a34a; }
+
 .badge { display: inline-flex; align-items: center; padding: .15rem .6rem; border-radius: 9999px; font-size: .75rem; font-weight: 600; }
 .badge-green { background: #dcfce7; color: #166534; }
 .badge-red { background: #fee2e2; color: #991b1b; }

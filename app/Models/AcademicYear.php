@@ -13,7 +13,7 @@ use Core\Database\QueryBuilder;
 final class AcademicYear extends Model
 {
     protected string $table = 'academic_years';
-    protected array $fillable = ['name', 'start_date', 'end_date', 'is_current'];
+    protected array $fillable = ['name', 'uid', 'public_id', 'start_date', 'end_date', 'is_current', 'status'];
 
     /** @return array<string,mixed>|null */
     public static function current(): ?array

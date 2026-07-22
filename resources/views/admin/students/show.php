@@ -26,6 +26,12 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
         <?php endif; ?>
         <h2 class="mt-4 text-lg font-bold text-slate-900"><?= e($name) ?></h2>
         <p class="text-sm text-slate-500"><?= e((string) $student['admission_no']) ?></p>
+        <?php if (!empty($student['uid'])): ?>
+        <p class="mt-1 flex items-center justify-center gap-2 text-sm">
+            <span class="font-mono text-slate-700"><?= e((string) $student['uid']) ?></span>
+            <button type="button" data-copy="<?= e((string) $student['uid']) ?>" class="text-brand-600 hover:text-brand-800" title="Copy Student ID" aria-label="Copy Student ID"><i class="fa-solid fa-copy"></i></button>
+        </p>
+        <?php endif; ?>
         <span class="badge <?= $student['status'] === 'active' ? 'badge-green' : 'badge-slate' ?> mt-2"><?= e(ucfirst((string) $student['status'])) ?></span>
     </div>
 
@@ -70,18 +76,82 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
         <?php endif; ?>
     </div>
 
-    <!-- Documents -->
+    <!-- Government / Academic IDs -->
     <div class="card p-6">
-        <h2 class="mb-4 font-semibold text-slate-800">Documents</h2>
-        <?php if (empty($documents)): ?>
-            <p class="text-sm text-slate-400">No documents uploaded.</p>
-        <?php else: ?>
-        <ul class="space-y-2">
-            <?php foreach ($documents as $doc): ?>
-            <li class="flex items-center gap-2 text-sm text-slate-700"><i class="fa-solid fa-file text-slate-400"></i> <?= e((string) $doc['title']) ?></li>
+        <h2 class="mb-4 font-semibold text-slate-800">Government &amp; Academic IDs</h2>
+        <dl class="grid grid-cols-1 gap-y-3">
+            <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Aadhaar</dt>
+                <dd class="text-sm text-slate-700">
+                    <span id="aadhaar-value" data-masked="<?= e($hasAadhaar ? $aadhaarMasked : '—') ?>"><?= e($hasAadhaar ? $aadhaarMasked : '—') ?></span>
+                    <?php if ($hasAadhaar && $canReveal): ?>
+                        <button type="button" id="reveal-aadhaar" data-url="<?= e(url('/admin/students/' . $student['id'] . '/reveal-aadhaar')) ?>" class="ml-2 text-xs text-brand-600 hover:underline"><i class="fa-solid fa-eye"></i> Show</button>
+                    <?php endif; ?>
+                </dd>
+            </div>
+            <?php foreach (['ABC ID' => 'abc_id', 'APAAR ID' => 'apaar_id', 'PEN ID' => 'pen_id', 'UDISE ID' => 'udise_id'] as $lbl => $col): ?>
+            <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400"><?= e($lbl) ?></dt><dd class="text-sm text-slate-700"><?= e((string) ($student[$col] ?? '—')) ?></dd></div>
             <?php endforeach; ?>
-        </ul>
+        </dl>
+    </div>
+
+    <!-- Documents -->
+    <div class="card p-6 lg:col-span-3">
+        <h2 class="mb-4 font-semibold text-slate-800">Documents</h2>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead><tr><th>Title</th><th>Type</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+                <tbody>
+                <?php if (empty($documents)): ?>
+                    <tr><td colspan="4" class="py-6 text-center text-slate-400">No documents uploaded.</td></tr>
+                <?php else: foreach ($documents as $doc):
+                    $vs = (string) ($doc['verification_status'] ?? 'pending');
+                    $badge = $vs === 'verified' ? 'badge-green' : ($vs === 'rejected' ? 'badge-red' : 'badge-slate'); ?>
+                    <tr>
+                        <td class="font-medium text-slate-800"><?= e((string) $doc['title']) ?></td>
+                        <td><?= e((string) ($documentTypes[$doc['type']] ?? $doc['type'] ?? '—')) ?></td>
+                        <td><span class="badge <?= $badge ?>"><?= e(ucfirst($vs)) ?></span></td>
+                        <td class="text-right">
+                            <a href="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'] . '/download')) ?>" target="_blank" class="text-brand-600 hover:underline" aria-label="View document"><i class="fa-solid fa-eye"></i></a>
+                            <?php if (!empty($canVerify) && $vs !== 'verified'): ?>
+                            <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'] . '/review')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="decision" value="approve"><button class="ml-2 text-green-600 hover:underline" aria-label="Verify"><i class="fa-solid fa-check"></i></button></form>
+                            <?php endif; ?>
+                            <?php if (!empty($canVerify) && $vs !== 'rejected'): ?>
+                            <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'] . '/review')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="decision" value="reject"><button class="ml-2 text-amber-600 hover:underline" aria-label="Reject"><i class="fa-solid fa-xmark"></i></button></form>
+                            <?php endif; ?>
+                            <?php if (!empty($canDocs)): ?>
+                            <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:underline" data-confirm="Delete this document?" aria-label="Delete"><i class="fa-solid fa-trash"></i></button></form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php if (!empty($canDocs)): ?>
+        <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents')) ?>" enctype="multipart/form-data" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4" data-loading>
+            <?= csrf_field() ?>
+            <input type="text" name="title" placeholder="Title (optional)" class="form-input">
+            <select name="type" class="form-select" required><?php foreach ($documentTypes as $k => $label): ?><option value="<?= e($k) ?>"><?= e($label) ?></option><?php endforeach; ?></select>
+            <input type="file" name="document" class="form-input" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+            <button class="btn btn-primary justify-center"><i class="fa-solid fa-upload"></i> Upload</button>
+        </form>
+        <p class="mt-2 text-xs text-slate-400">Allowed: PDF, JPG, PNG, WEBP. Files are stored securely outside the web root and served only to authorized users.</p>
         <?php endif; ?>
     </div>
 </div>
+<?php $this->endSection(); ?>
+
+<?php $this->section('page_scripts'); ?>
+<script>
+$(function(){
+  $('#reveal-aadhaar').on('click', function(){
+    var $btn = $(this), $val = $('#aadhaar-value');
+    if ($btn.data('shown')) { $val.text($val.data('masked')); $btn.data('shown', false).html('<i class="fa-solid fa-eye"></i> Show'); return; }
+    $.getJSON($btn.data('url')).done(function(r){
+      $val.text(r.aadhaar || '—'); $btn.data('shown', true).html('<i class="fa-solid fa-eye-slash"></i> Hide');
+    }).fail(function(){ if(window.toast) toast('Not authorized to reveal.', 'error'); });
+  });
+});
+</script>
 <?php $this->endSection(); ?>

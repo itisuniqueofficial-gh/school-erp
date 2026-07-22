@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Core\Database\Connection;
 use Core\Database\QueryBuilder;
 
 /**
@@ -63,6 +64,45 @@ final class IntegrityService
                 ->whereRaw('`exam_marks`.`marks_obtained` > `exam_schedules`.`full_marks`')
                 ->count()),
             'critical', '/admin/exams');
+
+        // Enrolled students missing a roll number in the current year.
+        $out[] = $this->row('students_no_roll', 'Enrolled students without a roll number',
+            $this->count(fn () => QueryBuilder::table('student_enrollments')
+                ->where('academic_year_id', $yearId)
+                ->whereRaw('(`roll_no` IS NULL OR `roll_no` = 0)')
+                ->count()),
+            'critical', '/admin/students');
+
+        // Duplicate roll numbers within a (year, class, section) — should be 0
+        // thanks to the UNIQUE constraint; surfaced as a safety net.
+        $out[] = $this->row('duplicate_rolls', 'Duplicate roll numbers in a class/section',
+            $this->count(fn () => (int) (Connection::instance()->scalar(
+                'SELECT COUNT(*) FROM (SELECT 1 FROM `student_enrollments` WHERE `academic_year_id` = ? GROUP BY `academic_year_id`,`class_id`,`section_id`,`roll_no` HAVING COUNT(*) > 1) t',
+                [$yearId]
+            ) ?? 0)),
+            'critical', '/admin/students');
+
+        // Classes that have no subjects allocated.
+        $out[] = $this->row('classes_no_subjects', 'Classes without any subject allocation',
+            $this->count(fn () => QueryBuilder::table('classes')
+                ->whereRaw('`classes`.`id` NOT IN (SELECT `class_id` FROM `class_subjects`)')
+                ->count()),
+            'warning', '/admin/academic/subjects');
+
+        // Marks awaiting approval (submitted / under_review).
+        $out[] = $this->row('marks_pending_approval', 'Marks batches awaiting approval',
+            $this->count(fn () => (int) (Connection::instance()->scalar(
+                "SELECT COUNT(DISTINCT `exam_schedule_id`) FROM `exam_marks` WHERE `status` IN ('submitted','under_review')"
+            ) ?? 0)),
+            'warning', '/admin/exams');
+
+        // Overloaded teachers (more than 25 subject assignments in the year).
+        $out[] = $this->row('teacher_overload', 'Teachers exceeding the workload limit',
+            $this->count(fn () => (int) (Connection::instance()->scalar(
+                'SELECT COUNT(*) FROM (SELECT 1 FROM `teacher_assignments` WHERE `academic_year_id` = ? GROUP BY `staff_id` HAVING COUNT(*) > 25) t',
+                [$yearId]
+            ) ?? 0)),
+            'warning', '/admin/teachers');
 
         return $out;
     }

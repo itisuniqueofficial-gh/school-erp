@@ -77,7 +77,7 @@ final class DatabaseSeeder
     private function seedPermissions(): void
     {
         $modules = [
-            'students'      => ['view', 'create', 'update', 'delete'],
+            'students'      => ['view', 'create', 'update', 'delete', 'documents', 'verify', 'reveal_id'],
             'teachers'      => ['view', 'create', 'update', 'delete'],
             'staff'         => ['view', 'create', 'update', 'delete'],
             'academic'      => ['view', 'manage'],
@@ -149,7 +149,7 @@ final class DatabaseSeeder
         $this->assign('class_teacher', ['students.view', 'students.update', 'attendance.view', 'attendance.mark', 'attendance.unlock_request', 'exams.view', 'exams.manage', 'marks.submit', 'academic.view', 'communication.view', 'communication.send', 'reports.view']);
         $this->assign('accountant', ['fees.view', 'fees.manage', 'fees.collect', 'students.view', 'reports.view']);
         $this->assign('librarian', ['library.view', 'library.manage', 'students.view']);
-        $this->assign('receptionist', ['students.view', 'students.create', 'communication.view', 'communication.send']);
+        $this->assign('receptionist', ['students.view', 'students.create', 'students.documents', 'communication.view', 'communication.send']);
         $this->assign('transport_manager', ['transport.view', 'transport.manage', 'students.view']);
         $this->assign('hr', ['staff.view', 'staff.create', 'staff.update', 'hr.view', 'hr.manage', 'reports.view']);
         $this->assign('student', []);
@@ -392,6 +392,22 @@ final class DatabaseSeeder
         $backfill('users', 'USR');
         $backfill('students', 'STU');
         $backfill('guardians', 'PAR');
+
+        // Academic-entity human-friendly IDs (AY-/CLS-/SEC-/SUB-).
+        foreach (QueryBuilder::table('academic_years')->whereNull('public_id')->get() as $ay) {
+            QueryBuilder::table('academic_years')->where('id', (int) $ay['id'])->update([
+                'public_id' => 'AY-' . date('Y', strtotime((string) $ay['start_date'])) . '-' . date('y', strtotime((string) $ay['end_date'])),
+            ]);
+        }
+        foreach (QueryBuilder::table('classes')->whereNull('public_id')->get() as $c) {
+            QueryBuilder::table('classes')->where('id', (int) $c['id'])->update(['public_id' => sprintf('CLS-%04d', (int) $c['id'])]);
+        }
+        foreach (QueryBuilder::table('sections')->whereNull('public_id')->get() as $s) {
+            QueryBuilder::table('sections')->where('id', (int) $s['id'])->update(['public_id' => sprintf('SEC-%04d', (int) $s['id'])]);
+        }
+        foreach (QueryBuilder::table('subjects')->whereNull('public_id')->get() as $s) {
+            QueryBuilder::table('subjects')->where('id', (int) $s['id'])->update(['public_id' => sprintf('SUB-%04d', (int) $s['id'])]);
+        }
         // Teachers vs non-teaching staff get different prefixes.
         foreach (QueryBuilder::table('staff')->whereNull('public_id')->orderBy('id')->get() as $i => $s) {
             $prefix = ($s['staff_type'] ?? 'teaching') === 'teaching' ? 'TCH' : 'STF';
@@ -399,6 +415,35 @@ final class DatabaseSeeder
                 'public_id' => sprintf('%s-%d-%05d', $prefix, $year, $i + 1),
             ]);
         }
+
+        // Universal 12-digit numeric uids for all core entities (leading digit =
+        // type). Reserve each sequence's next_value so runtime generation via
+        // IdSequenceService::numeric() continues without collision.
+        $uidBackfill = function (string $table, string $lead): void {
+            $rows = QueryBuilder::table($table)->whereNull('uid')->orderBy('id')->get();
+            $seq = 1;
+            $width = 12 - strlen($lead);
+            foreach ($rows as $r) {
+                QueryBuilder::table($table)->where('id', (int) $r['id'])
+                    ->update(['uid' => $lead . str_pad((string) $seq, $width, '0', STR_PAD_LEFT)]);
+                $seq++;
+            }
+            $prefix = 'UID' . $lead;
+            $existing = QueryBuilder::table('id_sequences')->where('prefix', $prefix)->where('year', 0)->first();
+            if ($existing) {
+                QueryBuilder::table('id_sequences')->where('id', (int) $existing['id'])->update(['next_value' => $seq]);
+            } else {
+                QueryBuilder::table('id_sequences')->insert(['prefix' => $prefix, 'year' => 0, 'next_value' => $seq]);
+            }
+        };
+        $uidBackfill('users', '1');
+        $uidBackfill('students', '2');
+        $uidBackfill('staff', '3');
+        $uidBackfill('classes', '4');
+        $uidBackfill('sections', '5');
+        $uidBackfill('subjects', '6');
+        $uidBackfill('academic_years', '7');
+        $uidBackfill('student_documents', '8');
 
         // Seed id_sequences so future generated IDs continue after the demo data.
         foreach (['STU' => 2, 'TCH' => 2, 'STF' => 2, 'PAR' => 2, 'USR' => 9] as $prefix => $nextVal) {
@@ -435,11 +480,33 @@ final class DatabaseSeeder
                 'staff_id' => (int) $teacher['id'], 'role' => 'subject_teacher',
                 'created_at' => $this->now(), 'updated_at' => $this->now(),
             ]);
+            $demoAssignmentId = (int) (QueryBuilder::table('teacher_assignments')
+                ->where('academic_year_id', $yearId)->where('class_id', (int) $student['class_id'])
+                ->where('section_id', (int) $student['section_id'])->where('subject_id', (int) $subject['id'])
+                ->where('staff_id', (int) $teacher['id'])->value('id') ?? 0);
+            if ($demoAssignmentId && !QueryBuilder::table('teacher_assignment_history')->where('assignment_id', $demoAssignmentId)->first()) {
+                QueryBuilder::table('teacher_assignment_history')->insert([
+                    'assignment_id' => $demoAssignmentId, 'staff_id' => (int) $teacher['id'], 'role' => 'subject_teacher',
+                    'start_date' => date('Y-m-d'), 'status' => 'active', 'created_at' => $this->now(),
+                ]);
+            }
             QueryBuilder::table('class_teachers')->insert([
                 'academic_year_id' => $yearId, 'class_id' => (int) $student['class_id'],
                 'section_id' => (int) $student['section_id'], 'staff_id' => (int) $teacher['id'],
                 'created_at' => $this->now(), 'updated_at' => $this->now(),
             ]);
+
+            // Allocate the core subjects to the demo class (configure once, reuse).
+            foreach (QueryBuilder::table('subjects')->whereIn('code', ['MATH', 'ENG', 'SCI'])->get() as $sub) {
+                if (!QueryBuilder::table('class_subjects')->where('class_id', (int) $student['class_id'])->where('subject_id', (int) $sub['id'])->first()) {
+                    $csId = QueryBuilder::table('class_subjects')->insert([
+                        'class_id' => (int) $student['class_id'], 'subject_id' => (int) $sub['id'],
+                        'full_marks' => 100, 'pass_marks' => 33, 'status' => 'active',
+                        'created_at' => $this->now(), 'updated_at' => $this->now(),
+                    ]);
+                    QueryBuilder::table('class_subjects')->where('id', $csId)->update(['public_id' => sprintf('CSA-%04d', $csId)]);
+                }
+            }
         }
     }
 }

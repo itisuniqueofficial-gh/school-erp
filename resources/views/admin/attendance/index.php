@@ -14,13 +14,13 @@
 <?php $this->section('main'); ?>
 <form method="GET" class="card mb-4 p-4">
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <select name="class_id" class="form-select" required>
+        <select name="class_id" class="form-select" data-cascade="class" data-target-section="#att_section" required>
             <option value="">Select class</option>
             <?php foreach ($classes as $c): ?><option value="<?= (int) $c['id'] ?>" <?= $selected['class_id'] === (int) $c['id'] ? 'selected' : '' ?>><?= e((string) $c['name']) ?></option><?php endforeach; ?>
         </select>
-        <select name="section_id" class="form-select" required>
+        <select name="section_id" id="att_section" class="form-select" data-placeholder="Select section" required>
             <option value="">Select section</option>
-            <?php foreach ($sections as $s): ?><option value="<?= (int) $s['id'] ?>" <?= $selected['section_id'] === (int) $s['id'] ? 'selected' : '' ?>><?= e((string) ($s['class_name'] . ' - ' . $s['name'])) ?></option><?php endforeach; ?>
+            <?php foreach ($sections as $s): if ($selected['class_id'] && (int) $s['class_id'] !== $selected['class_id']) continue; ?><option value="<?= (int) $s['id'] ?>" <?= $selected['section_id'] === (int) $s['id'] ? 'selected' : '' ?>><?= e((string) $s['name']) ?></option><?php endforeach; ?>
         </select>
         <input type="date" name="date" value="<?= e($selected['date']) ?>" class="form-input">
         <button class="btn btn-primary justify-center"><i class="fa-solid fa-magnifying-glass"></i> Load students</button>

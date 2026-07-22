@@ -41,6 +41,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <div class="space-y-1">
             <?php if (auth()->can('students.view')): ?><?= $link('/admin/students', 'fa-user-graduate', 'Students') ?><?php endif; ?>
             <?php if (auth()->can('teachers.view')): ?><?= $link('/admin/teachers', 'fa-chalkboard-user', 'Teachers') ?><?php endif; ?>
+            <?php if (auth()->can('teachers.view')): ?><?= $link('/admin/teaching-assignments', 'fa-diagram-project', 'Teaching Assignments') ?><?php endif; ?>
             <?php if (auth()->can('staff.view')): ?><?= $link('/admin/staff', 'fa-users', 'Staff') ?><?php endif; ?>
         </div>
     </div>
@@ -48,6 +49,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <div>
         <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Academics</p>
         <div class="space-y-1">
+            <?php if (auth()->can('academic.view')): ?><?= $link('/admin/setup', 'fa-list-check', 'Setup Center') ?><?php endif; ?>
             <?php if (auth()->can('academic.view')): ?><?= $link('/admin/academic/classes', 'fa-school', 'Academic') ?><?php endif; ?>
             <?php if (auth()->can('attendance.view')): ?><?= $link('/admin/attendance', 'fa-clipboard-check', 'Attendance') ?><?php endif; ?>
             <?php if (auth()->can('exams.view')): ?><?= $link('/admin/exams', 'fa-award', 'Examinations') ?><?php endif; ?>
@@ -89,6 +91,8 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <div class="space-y-1">
         <?= $link('/teacher/classes', 'fa-chalkboard', 'My Classes') ?>
         <?= $link('/teacher/attendance', 'fa-clipboard-check', 'Attendance') ?>
+        <?= $link('/teacher/subject-attendance', 'fa-clipboard-list', 'Subject Attendance') ?>
+        <?= $link('/teacher/marks', 'fa-pen-to-square', 'Marks Entry') ?>
         <?= $link('/teacher/timetable', 'fa-calendar-days', 'Timetable') ?>
     </div>
     <?php endif; ?>

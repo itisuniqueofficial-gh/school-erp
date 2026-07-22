@@ -66,3 +66,6 @@ Thumbs.db
 *.min.js.map
 /.phpunit.cache/
 coverage/
+
+# Playwright MCP test artifacts
+.playwright-mcp/

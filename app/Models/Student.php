@@ -16,9 +16,10 @@ final class Student extends Model
     protected bool $softDeletes = true;
 
     protected array $fillable = [
-        'user_id', 'admission_no', 'roll_no', 'first_name', 'last_name', 'gender', 'dob',
+        'user_id', 'uid', 'public_id', 'admission_no', 'roll_no', 'first_name', 'last_name', 'gender', 'dob',
         'blood_group', 'email', 'phone', 'address', 'city', 'state', 'postal_code',
         'nationality', 'religion', 'category', 'class_id', 'section_id', 'academic_year_id',
+        'aadhaar_enc', 'aadhaar_last4', 'abc_id', 'apaar_id', 'pen_id', 'udise_id',
         'admission_date', 'photo', 'medical_notes', 'status',
     ];
 

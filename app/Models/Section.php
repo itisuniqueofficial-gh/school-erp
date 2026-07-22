@@ -13,7 +13,7 @@ use Core\Database\QueryBuilder;
 final class Section extends Model
 {
     protected string $table = 'sections';
-    protected array $fillable = ['class_id', 'name', 'capacity', 'class_teacher_id'];
+    protected array $fillable = ['class_id', 'uid', 'public_id', 'name', 'capacity', 'class_teacher_id', 'status'];
 
     /** @return array<int,array<string,mixed>> */
     public static function forClass(int $classId): array

@@ -18,7 +18,13 @@
     </div>
     <div>
         <label for="password" class="form-label required">New password</label>
-        <input id="password" name="password" type="password" required autocomplete="new-password" class="form-input" placeholder="At least 8 characters">
+        <div class="relative">
+            <input id="password" name="password" type="password" required autocomplete="new-password" class="form-input pr-10" placeholder="At least 8 characters">
+            <button type="button" data-toggle-password="password" aria-label="Toggle password visibility" aria-pressed="false"
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-eye"></i>
+            </button>
+        </div>
         <?php if ($e = error('password')): ?><p class="form-error"><?= e($e) ?></p><?php endif; ?>
     </div>
     <div>

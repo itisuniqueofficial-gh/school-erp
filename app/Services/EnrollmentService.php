@@ -20,11 +20,16 @@ final class EnrollmentService
      * Next available roll number = MAX(roll_no)+1 within the context.
      * Preserves existing numbers (does not fill gaps by default).
      */
-    public function nextRollNumber(int $yearId, int $classId, int $sectionId): int
+    public function nextRollNumber(int $yearId, int $classId, ?int $sectionId): int
     {
-        $max = QueryBuilder::table('student_enrollments')
-            ->where('academic_year_id', $yearId)->where('class_id', $classId)->where('section_id', $sectionId)
-            ->selectRaw('COALESCE(MAX(`roll_no`),0) AS m')->value('m');
+        $q = QueryBuilder::table('student_enrollments')
+            ->where('academic_year_id', $yearId)->where('class_id', $classId);
+        if ($sectionId) {
+            $q->where('section_id', $sectionId);
+        } else {
+            $q->whereNull('section_id');
+        }
+        $max = $q->selectRaw('COALESCE(MAX(`roll_no`),0) AS m')->value('m');
         return (int) $max + 1;
     }
 
@@ -34,8 +39,9 @@ final class EnrollmentService
      *
      * @return array{ok:bool,message:string,roll_no:?int}
      */
-    public function enroll(int $studentId, int $yearId, int $classId, int $sectionId, ?int $rollNo = null): array
+    public function enroll(int $studentId, int $yearId, int $classId, ?int $sectionId = null, ?int $rollNo = null): array
     {
+        $sectionId = $sectionId ?: null; // 0 / '' => no section
         // One enrollment per student per year.
         $existing = QueryBuilder::table('student_enrollments')
             ->where('academic_year_id', $yearId)->where('student_id', $studentId)->first();
