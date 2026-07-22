@@ -137,8 +137,35 @@ $app->make(Session::class)->start();
 
 // --- Share common view data -------------------------------------------------
 $view = $app->make(View::class);
-$view->share('appName', Config::get('app.name', 'School ERP'));
 $view->share('appUrl', Config::get('app.url'));
 $view->share('appVersion', Config::get('app.version', '1.0.0'));
+
+// DB-backed branding (falls back to config when unset or DB unavailable), so
+// the school name / footer / login copy are never hard-coded in templates.
+$__brandDefaults = [
+    'appName'         => (string) Config::get('app.name', 'School ERP'),
+    'appShortName'    => '',
+    'appFooterText'   => '',
+    'appCopyright'    => '',
+    'appSupportEmail' => '',
+    'appLoginWelcome' => '',
+    'appLoginDesc'    => '',
+    'appLogo'         => '',
+];
+try {
+    $inst = new \App\Services\InstitutionService();
+    $map = [
+        'appName' => 'name', 'appShortName' => 'short_name', 'appFooterText' => 'footer_text',
+        'appCopyright' => 'copyright', 'appSupportEmail' => 'support_email',
+        'appLoginWelcome' => 'login_welcome', 'appLoginDesc' => 'login_desc', 'appLogo' => 'logo',
+    ];
+    foreach ($map as $shareKey => $profileKey) {
+        $view->share($shareKey, $inst->profile($profileKey, $__brandDefaults[$shareKey]));
+    }
+} catch (\Throwable) {
+    foreach ($__brandDefaults as $k => $v) {
+        $view->share($k, $v);
+    }
+}
 
 return $app;

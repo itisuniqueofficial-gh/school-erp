@@ -4,6 +4,8 @@
 ?>
 <?php $this->extend('layouts.app'); ?>
 <?php $this->section('page_actions'); ?>
+<a href="<?= e(url('/admin/settings/institution')) ?>" class="btn btn-secondary"><i class="fa-solid fa-sliders"></i> ERP Configuration</a>
+<a href="<?= e(url('/admin/settings/payments')) ?>" class="btn btn-secondary"><i class="fa-solid fa-credit-card"></i> Payment Gateways</a>
 <?php if (auth()->can('settings.manage')): ?>
 <form method="POST" action="<?= e(url('/admin/settings/backup')) ?>" class="inline">
     <?= csrf_field() ?>

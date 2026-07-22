@@ -178,29 +178,29 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/exams/{id}/marks/workflow', ExamController::class . '@marksWorkflow')->middleware('can:exams.view');
 
             // Fees
-            $router->get('/fees', FeeController::class . '@index')->middleware('can:fees.view');
-            $router->get('/fees/structures', FeeController::class . '@structures')->middleware('can:fees.view');
-            $router->post('/fees/structures', FeeController::class . '@storeStructure')->middleware('can:fees.manage');
-            $router->get('/fees/collect', FeeController::class . '@collect')->middleware('can:fees.collect');
-            $router->post('/fees/collect', FeeController::class . '@storePayment')->middleware('can:fees.collect');
-            $router->get('/fees/receipt/{id}', FeeController::class . '@receipt')->middleware('can:fees.view');
+            $router->get('/fees', FeeController::class . '@index')->middleware('can:fees.view')->middleware('module:fees');
+            $router->get('/fees/structures', FeeController::class . '@structures')->middleware('can:fees.view')->middleware('module:fees');
+            $router->post('/fees/structures', FeeController::class . '@storeStructure')->middleware('can:fees.manage')->middleware('module:fees');
+            $router->get('/fees/collect', FeeController::class . '@collect')->middleware('can:fees.collect')->middleware('module:fees');
+            $router->post('/fees/collect', FeeController::class . '@storePayment')->middleware('can:fees.collect')->middleware('module:fees');
+            $router->get('/fees/receipt/{id}', FeeController::class . '@receipt')->middleware('can:fees.view')->middleware('module:fees');
 
             // Library
-            $router->get('/library', LibraryController::class . '@index')->middleware('can:library.view');
-            $router->post('/library/books', LibraryController::class . '@storeBook')->middleware('can:library.manage');
-            $router->post('/library/issue', LibraryController::class . '@issue')->middleware('can:library.manage');
-            $router->post('/library/return', LibraryController::class . '@returnBook')->middleware('can:library.manage');
+            $router->get('/library', LibraryController::class . '@index')->middleware('can:library.view')->middleware('module:library');
+            $router->post('/library/books', LibraryController::class . '@storeBook')->middleware('can:library.manage')->middleware('module:library');
+            $router->post('/library/issue', LibraryController::class . '@issue')->middleware('can:library.manage')->middleware('module:library');
+            $router->post('/library/return', LibraryController::class . '@returnBook')->middleware('can:library.manage')->middleware('module:library');
 
             // Transport
-            $router->get('/transport', TransportController::class . '@index')->middleware('can:transport.view');
-            $router->post('/transport/routes', TransportController::class . '@storeRoute')->middleware('can:transport.manage');
-            $router->post('/transport/vehicles', TransportController::class . '@storeVehicle')->middleware('can:transport.manage');
-            $router->post('/transport/assign', TransportController::class . '@assign')->middleware('can:transport.manage');
+            $router->get('/transport', TransportController::class . '@index')->middleware('can:transport.view')->middleware('module:transport');
+            $router->post('/transport/routes', TransportController::class . '@storeRoute')->middleware('can:transport.manage')->middleware('module:transport');
+            $router->post('/transport/vehicles', TransportController::class . '@storeVehicle')->middleware('can:transport.manage')->middleware('module:transport');
+            $router->post('/transport/assign', TransportController::class . '@assign')->middleware('can:transport.manage')->middleware('module:transport');
 
             // Communication
-            $router->get('/communication', CommunicationController::class . '@index')->middleware('can:communication.view');
-            $router->post('/communication/notices', CommunicationController::class . '@storeNotice')->middleware('can:communication.send');
-            $router->post('/communication/messages', CommunicationController::class . '@sendMessage')->middleware('can:communication.send');
+            $router->get('/communication', CommunicationController::class . '@index')->middleware('can:communication.view')->middleware('module:communication');
+            $router->post('/communication/notices', CommunicationController::class . '@storeNotice')->middleware('can:communication.send')->middleware('module:communication');
+            $router->post('/communication/messages', CommunicationController::class . '@sendMessage')->middleware('can:communication.send')->middleware('module:communication');
 
             // Reports
             $router->get('/reports', ReportController::class . '@index')->middleware('can:reports.view');
@@ -218,6 +218,10 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             // Settings
             $router->get('/settings', SettingController::class . '@index')->middleware('can:settings.view');
             $router->post('/settings', SettingController::class . '@update')->middleware('can:settings.manage');
+            $router->get('/settings/payments', \App\Controllers\Admin\PaymentSettingsController::class . '@index')->middleware('can:settings.manage');
+            $router->post('/settings/payments/{gateway}', \App\Controllers\Admin\PaymentSettingsController::class . '@save')->middleware('can:settings.manage');
+            $router->get('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@index')->middleware('can:settings.manage');
+            $router->post('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@save')->middleware('can:settings.manage');
             $router->post('/settings/backup', SettingController::class . '@backup')->middleware('can:settings.manage');
 
             // Backup manager

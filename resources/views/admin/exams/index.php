@@ -10,11 +10,12 @@
     <div class="lg:col-span-2">
         <div class="card overflow-hidden">
             <table class="data-table">
-                <thead><tr><th>Exam</th><th>Type</th><th>Dates</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+                <thead><tr><th>Exam ID</th><th>Exam</th><th>Type</th><th>Dates</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
                 <tbody>
-                <?php if (empty($exams)): ?><tr><td colspan="5" class="py-8 text-center text-slate-400">No exams yet.</td></tr>
+                <?php if (empty($exams)): ?><tr><td colspan="6" class="py-8 text-center text-slate-400">No exams yet.</td></tr>
                 <?php else: foreach ($exams as $ex): ?>
                     <tr>
+                        <td class="font-mono text-xs text-slate-500"><?= e((string) ($ex['uid'] ?? '—')) ?></td>
                         <td class="font-medium text-slate-800"><?= e((string) $ex['name']) ?></td>
                         <td><?= e((string) ($ex['type_name'] ?? '—')) ?></td>
                         <td class="text-slate-500 text-xs"><?= e((string) ($ex['start_date'] ?? '—')) ?> → <?= e((string) ($ex['end_date'] ?? '—')) ?></td>

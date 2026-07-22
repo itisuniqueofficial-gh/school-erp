@@ -8,6 +8,7 @@ use App\Models\ClassModel;
 use App\Models\Exam;
 use App\Models\Subject;
 use App\Services\MarksWorkflowService;
+use App\Services\IdSequenceService;
 use App\Services\AuditLogger;
 use Core\Database\Connection;
 use Core\Database\QueryBuilder;
@@ -42,6 +43,7 @@ final class ExamController extends Controller
         $id = Exam::create([
             'exam_type_id'     => (int) $data['exam_type_id'],
             'academic_year_id' => (int) ($request->input('academic_year_id') ?: 0) ?: null,
+            'uid'              => (new IdSequenceService())->uidExam(),
             'name'             => $data['name'],
             'start_date'       => $data['start_date'] ?: null,
             'end_date'         => $data['end_date'] ?: null,

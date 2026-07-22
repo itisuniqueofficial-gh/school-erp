@@ -13,7 +13,7 @@ use Core\Database\QueryBuilder;
 final class Exam extends Model
 {
     protected string $table = 'exams';
-    protected array $fillable = ['exam_type_id', 'academic_year_id', 'name', 'start_date', 'end_date', 'status'];
+    protected array $fillable = ['exam_type_id', 'academic_year_id', 'uid', 'name', 'start_date', 'end_date', 'status'];
 
     /** @return array<int,array<string,mixed>> Exams with their type name. */
     public static function withType(): array

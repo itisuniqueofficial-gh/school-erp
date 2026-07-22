@@ -113,4 +113,5 @@ final class IdSequenceService
     public function uidSubject(): string  { return $this->numeric('6'); }
     public function uidYear(): string     { return $this->numeric('7'); }
     public function uidDocument(): string { return $this->numeric('8'); }
+    public function uidExam(): string     { return $this->numeric('9'); }
 }

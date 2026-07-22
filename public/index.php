@@ -35,6 +35,7 @@ $router->aliasMiddleware([
     'security' => \App\Middleware\SecurityHeaders::class,
     'throttle' => \App\Middleware\RateLimit::class,
     'maintenance' => \App\Middleware\MaintenanceMode::class,
+    'module'   => \App\Middleware\EnsureModuleEnabled::class,
     'api.auth' => \App\Middleware\ApiAuthenticate::class,
 ]);
 

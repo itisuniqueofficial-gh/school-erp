@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
-    <title><?= e($this->yield('title', ($title ?? 'Dashboard') . ' · ' . config('app.name'))) ?></title>
-    <meta name="description" content="<?= e(config('app.name')) ?> — School management system.">
+    <title><?= e($this->yield('title', ($title ?? 'Dashboard') . ' · ' . ($appName ?? config('app.name')))) ?></title>
+    <meta name="description" content="<?= e(($appName ?? config('app.name'))) ?> — School management system.">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>

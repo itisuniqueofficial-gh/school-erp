@@ -11,15 +11,15 @@
                 <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-xl">
                     <i class="fa-solid fa-graduation-cap"></i>
                 </span>
-                <span class="text-xl font-bold"><?= e(config('app.name')) ?></span>
+                <span class="text-xl font-bold"><?= e($appName ?? config('app.name')) ?></span>
             </div>
             <div data-animate="brand">
-                <h2 class="text-3xl font-extrabold leading-tight">Empowering education,<br>simplifying administration.</h2>
+                <h2 class="text-3xl font-extrabold leading-tight"><?= e(!empty($appLoginWelcome) ? $appLoginWelcome : 'Empowering education, simplifying administration.') ?></h2>
                 <p class="mt-4 max-w-md text-brand-100">
-                    Manage admissions, attendance, fees, exams and more from a single secure platform.
+                    <?= e(!empty($appLoginDesc) ? $appLoginDesc : 'Manage admissions, attendance, fees, exams and more from a single secure platform.') ?>
                 </p>
             </div>
-            <p class="text-sm text-brand-200">&copy; <?= date('Y') ?> <?= e(config('app.name')) ?></p>
+            <p class="text-sm text-brand-200">&copy; <?= date('Y') ?> <?= e($appName ?? config('app.name')) ?></p>
         </div>
     </div>
 

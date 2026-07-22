@@ -22,7 +22,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
         <i class="fa-solid fa-graduation-cap"></i>
     </span>
-    <span class="truncate text-lg font-bold text-slate-900"><?= e(config('app.name')) ?></span>
+    <span class="truncate text-lg font-bold text-slate-900"><?= e($appName ?? config('app.name')) ?></span>
 </div>
 
 <nav class="space-y-6 px-3 py-5">
@@ -59,10 +59,11 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <div>
         <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Operations</p>
         <div class="space-y-1">
-            <?php if (auth()->can('fees.view')): ?><?= $link('/admin/fees', 'fa-file-invoice-dollar', 'Fees') ?><?php endif; ?>
-            <?php if (auth()->can('library.view')): ?><?= $link('/admin/library', 'fa-book', 'Library') ?><?php endif; ?>
-            <?php if (auth()->can('transport.view')): ?><?= $link('/admin/transport', 'fa-bus', 'Transport') ?><?php endif; ?>
-            <?php if (auth()->can('communication.view')): ?><?= $link('/admin/communication', 'fa-bullhorn', 'Communication') ?><?php endif; ?>
+            <?php $erp = new \App\Services\InstitutionService(); ?>
+            <?php if (auth()->can('fees.view') && $erp->moduleEnabled('fees')): ?><?= $link('/admin/fees', 'fa-file-invoice-dollar', 'Fees') ?><?php endif; ?>
+            <?php if (auth()->can('library.view') && $erp->moduleEnabled('library')): ?><?= $link('/admin/library', 'fa-book', 'Library') ?><?php endif; ?>
+            <?php if (auth()->can('transport.view') && $erp->moduleEnabled('transport')): ?><?= $link('/admin/transport', 'fa-bus', 'Transport') ?><?php endif; ?>
+            <?php if (auth()->can('communication.view') && $erp->moduleEnabled('communication')): ?><?= $link('/admin/communication', 'fa-bullhorn', 'Communication') ?><?php endif; ?>
         </div>
     </div>
 
@@ -71,7 +72,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <div class="space-y-1">
             <?php if (auth()->can('reports.view')): ?><?= $link('/admin/reports', 'fa-chart-line', 'Reports') ?><?php endif; ?>
             <?php if (auth()->can('users.view')): ?><?= $link('/admin/users', 'fa-users-gear', 'User Management') ?><?php endif; ?>
-            <?php if (auth()->can('hr.view')): ?><?= $link('/admin/hr', 'fa-briefcase', 'HR & Payroll') ?><?php endif; ?>
+            <?php if (auth()->can('hr.view') && $erp->moduleEnabled('hr')): ?><?= $link('/admin/hr', 'fa-briefcase', 'HR & Payroll') ?><?php endif; ?>
             <?php if (auth()->can('roles.view')): ?><?= $link('/admin/roles', 'fa-user-shield', 'Roles & Access') ?><?php endif; ?>
             <?php if (auth()->can('settings.view')): ?><?= $link('/admin/settings', 'fa-gear', 'Settings') ?><?php endif; ?>
         </div>
