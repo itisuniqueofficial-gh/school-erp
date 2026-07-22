@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.3.0] - 2026-07-22
+
+### Added
+- **Government integration framework** (future-ready): modular adapter registry
+  for UDISE+, APAAR, ABC, DigiLocker, NAD, State EMIS and Scholarship portals
+  — credentials **encrypted at rest**, enable/disable + sandbox/live per provider,
+  masked admin config, and a `government_sync_logs` ledger (pending/success/
+  failed/retry). No external APIs are hardcoded. Admin → Settings → Government
+  Integrations.
+- **Student digital-identity status**: per-student APAAR/ABC/DigiLocker
+  verification status + extra national identifiers (state student id, Samagra id,
+  EMIS number, board registration no, DigiLocker ref).
+- **Bulk student actions**: activate / deactivate / archive (soft-delete) /
+  restore from the students list — server-side gated, audited, non-destructive.
+- **Setup Center approval-queue checks**: “documents awaiting verification” and
+  “attendance unlock requests pending review”.
+
+### Changed
+- Schema is now **78 tables** (added `government_sync_logs`; students gained
+  digital-identity status + national-id columns).
+
+### Security
+- Government-integration credentials encrypted (AES-256-GCM); never rendered.
+
 ## [1.2.0] - 2026-07-22
 
 ### Added
