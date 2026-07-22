@@ -92,6 +92,7 @@ final class DatabaseSeeder
             'inventory'     => ['view', 'manage'],
             'hr'            => ['view', 'manage'],
             'communication' => ['view', 'send'],
+            'certificates'  => ['view', 'manage'],
             'reports'       => ['view'],
             'roles'         => ['view', 'manage'],
             'settings'      => ['view', 'manage'],

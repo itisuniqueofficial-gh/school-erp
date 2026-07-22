@@ -29,6 +29,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <div class="space-y-1">
         <?php if ($isStaff): ?>
             <?= $link('/admin/dashboard', 'fa-gauge-high', 'Dashboard') ?>
+            <?= $link('/admin/lookup', 'fa-magnifying-glass-arrow-right', 'Go to Record by ID') ?>
         <?php endif; ?>
         <?php if (auth()->hasRole('student')): ?><?= $link('/student/dashboard', 'fa-gauge-high', 'Dashboard') ?><?php endif; ?>
         <?php if (auth()->hasAnyRole(['teacher', 'class_teacher'])): ?><?= $link('/teacher/dashboard', 'fa-gauge-high', 'Dashboard') ?><?php endif; ?>
@@ -54,6 +55,8 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
             <?php if (auth()->can('academic.view')): ?><?= $link('/admin/academic/classes', 'fa-school', 'Academic') ?><?php endif; ?>
             <?php if (auth()->can('attendance.view')): ?><?= $link('/admin/attendance', 'fa-clipboard-check', 'Attendance') ?><?php endif; ?>
             <?php if (auth()->can('exams.view')): ?><?= $link('/admin/exams', 'fa-award', 'Examinations') ?><?php endif; ?>
+            <?php if (auth()->can('certificates.view')): ?><?= $link('/admin/certificates', 'fa-certificate', 'Certificates') ?><?php endif; ?>
+            <?php if (auth()->can('certificates.view')): ?><?= $link('/admin/certificate-requests', 'fa-inbox', 'Certificate Requests') ?><?php endif; ?>
         </div>
     </div>
 
@@ -86,6 +89,8 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <?= $link('/student/profile', 'fa-id-card', 'My Profile') ?>
         <?= $link('/student/attendance', 'fa-clipboard-check', 'Attendance') ?>
         <?= $link('/student/results', 'fa-award', 'Results') ?>
+        <?= $link('/student/report-cards', 'fa-file-lines', 'Report Cards') ?>
+        <?= $link('/student/certificates', 'fa-certificate', 'Documents & Certificates') ?>
         <?= $link('/student/documents', 'fa-folder-open', 'My Documents') ?>
         <?= $link('/student/fees', 'fa-file-invoice-dollar', 'Fees') ?>
         <?= $link('/student/timetable', 'fa-calendar-days', 'Timetable') ?>
@@ -105,6 +110,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <?php if (auth()->hasRole('parent')): ?>
     <div class="space-y-1">
         <?= $link('/parent/children', 'fa-children', 'My Children') ?>
+        <?= $link('/parent/report-cards', 'fa-file-lines', 'Report Cards') ?>
         <?= $link('/parent/fees', 'fa-file-invoice-dollar', 'Fees') ?>
     </div>
     <?php endif; ?>

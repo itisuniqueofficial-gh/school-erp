@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.5.0] - 2026-07-23
+
+### Added
+- **Professional report cards & marksheets**: branded, print-ready individual
+  report cards with server-side **one-click PDF download** (bundled FPDF engine),
+  full subject-wise marks, grade/GPA/division, year-scoped attendance summary and
+  live QR verification. Available to Admin, Students (own only) and Parents
+  (linked children only) with strict authorization.
+- **Digital Certificate System**: issue Bonafide / Transfer / Leaving / Character
+  / Study / custom certificates with unique IDs (`CERT-YYYY-NNNNN`),
+  auto-populated bodies from real data, professional PDF, public QR verification,
+  and revocation (record preserved).
+- **Certificate request & approval workflow**: students request a certificate
+  (type + purpose), staff review and approve/reject; approval auto-issues the
+  real certificate and the student downloads it. Full status timeline + audit.
+- **Universal "Go to Record by ID"** admin tool: resolve any unique ID
+  (student/staff public IDs, admission no, 12-digit ID, `CERT-`/`RC-`/`REQ-`)
+  straight to its record, audit-logged and permission-aware.
+
+### Changed
+- Schema now includes `report_card_versions`, `certificates`, and
+  `certificate_requests` (migrations 021–023, all additive).
+
 ## [1.4.0] - 2026-07-23
 
 ### Added

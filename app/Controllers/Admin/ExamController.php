@@ -245,6 +245,43 @@ final class ExamController extends Controller
         return $this->redirect('/admin/exams/' . $examId . '/report-cards', ['success' => 'Report card regenerated as a new version (previous version preserved).']);
     }
 
+    /** Individual, branded report card (HTML preview / print) for one student. */
+    public function reportCard(Request $request, string $id, string $studentId): Response
+    {
+        $examId = (int) $id; $sid = (int) $studentId;
+        if (Exam::find($examId) === null) {
+            abort(404, 'Exam not found.');
+        }
+        $doc = (new \App\Services\ReportCardDocumentService())->build($examId, $sid);
+        if ($doc === null) {
+            abort(404, 'No marks/report card available for this student.');
+        }
+        return $this->view('report-cards.show', [
+            'title'       => 'Report Card',
+            'doc'         => $doc,
+            'downloadUrl' => url('/admin/exams/' . $examId . '/report-cards/' . $sid . '/download'),
+            'backUrl'     => url('/admin/exams/' . $examId . '/report-cards'),
+        ]);
+    }
+
+    /** One-click server-side PDF download of a student's report card. */
+    public function downloadReportCard(Request $request, string $id, string $studentId): Response
+    {
+        $examId = (int) $id; $sid = (int) $studentId;
+        if (Exam::find($examId) === null) {
+            abort(404, 'Exam not found.');
+        }
+        $doc = (new \App\Services\ReportCardDocumentService())->build($examId, $sid);
+        if ($doc === null) {
+            abort(404, 'No marks/report card available for this student.');
+        }
+        $pdf = (new \App\Services\ReportCardPdfService())->render($doc);
+        AuditLogger::log('reportcard.downloaded', 'report_card', $sid, 'Downloaded ' . $doc['rc_uid']);
+        return (new Response($pdf, 200))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $doc['rc_uid'] . '.pdf"');
+    }
+
     /**
      * Find or create an exam_schedule row for exam/class/subject.
      *

@@ -7,7 +7,12 @@ namespace App\Controllers\Portal;
 use App\Models\Guardian;
 use App\Models\StudentEnrollment;
 use App\Services\AttendanceService;
+use App\Services\CertificatePdfService;
+use App\Services\CertificateRequestService;
+use App\Services\CertificateService;
 use App\Services\DocumentService;
+use App\Services\ReportCardDocumentService;
+use App\Services\ReportCardPdfService;
 use Core\Database\QueryBuilder;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -252,6 +257,140 @@ final class StudentPortalController extends Controller
         } catch (\Throwable) {
         }
         return $this->view('portal.student.results', ['title' => 'My Results', 'results' => $results]);
+    }
+
+    // ===================================================================
+    // Report cards — the student may only ever access their OWN cards
+    // ===================================================================
+    public function reportCards(Request $request): Response
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        $cards = [];
+        if ($sid) {
+            $cards = QueryBuilder::table('report_cards')
+                ->select(['report_cards.*', 'exams.name AS exam_name', 'academic_years.name AS year_name'])
+                ->leftJoin('exams', 'report_cards.exam_id', '=', 'exams.id')
+                ->leftJoin('academic_years', 'exams.academic_year_id', '=', 'academic_years.id')
+                ->where('report_cards.student_id', $sid)
+                ->orderBy('report_cards.id', 'DESC')->get();
+        }
+        return $this->view('portal.student.report-cards', ['title' => 'My Report Cards', 'cards' => $cards]);
+    }
+
+    /** Resolve a report card ONLY if it belongs to the authenticated student. */
+    private function ownedCard(string $rcUid): ?array
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        if ($sid === 0) {
+            return null;
+        }
+        return QueryBuilder::table('report_cards')->where('rc_uid', $rcUid)->where('student_id', $sid)->first();
+    }
+
+    public function reportCard(Request $request, string $code): Response
+    {
+        $card = $this->ownedCard($code);
+        if ($card === null) {
+            abort(403, 'You are not authorized to view this report card.');
+        }
+        $doc = (new ReportCardDocumentService())->build((int) $card['exam_id'], (int) $card['student_id']);
+        if ($doc === null) {
+            abort(404, 'Report card not available.');
+        }
+        return $this->view('report-cards.show', [
+            'title' => 'Report Card', 'doc' => $doc,
+            'downloadUrl' => url('/student/report-cards/' . $code . '/download'),
+            'backUrl' => url('/student/report-cards'),
+        ]);
+    }
+
+    public function downloadReportCard(Request $request, string $code): Response
+    {
+        $card = $this->ownedCard($code);
+        if ($card === null) {
+            abort(403, 'You are not authorized to download this report card.');
+        }
+        $doc = (new ReportCardDocumentService())->build((int) $card['exam_id'], (int) $card['student_id']);
+        if ($doc === null) {
+            abort(404, 'Report card not available.');
+        }
+        $pdf = (new ReportCardPdfService())->render($doc);
+        return (new Response($pdf, 200))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $code . '.pdf"');
+    }
+
+    // ===================================================================
+    // Documents & Certificates — request workflow (own records only)
+    // ===================================================================
+    public function certificates(Request $request): Response
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        $requests = $sid ? (new CertificateRequestService())->forStudent($sid) : [];
+        $issued = [];
+        if ($sid) {
+            $issued = QueryBuilder::table('certificates')
+                ->where('student_id', $sid)->orderBy('id', 'DESC')->get();
+        }
+        return $this->view('portal.student.certificates', [
+            'title'      => 'Documents & Certificates',
+            'requests'   => $requests,
+            'issued'     => $issued,
+            'types'      => (new CertificateService())->types(),
+            'requestable'=> CertificateRequestService::REQUESTABLE,
+            'purposes'   => (new CertificateRequestService())->purposes(),
+            'labels'     => CertificateRequestService::STATUS_LABELS,
+        ]);
+    }
+
+    public function submitCertificateRequest(Request $request): Response
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        if ($sid === 0) {
+            abort(403, 'No student profile.');
+        }
+        $type = (string) $request->input('type', '');
+        $purpose = (string) $request->input('purpose', '');
+        if ($purpose === 'Other') {
+            $purpose = trim((string) $request->input('other_purpose', '')) ?: 'Other';
+        }
+        $reason = (string) $request->input('reason', '');
+        $reqUid = (new CertificateRequestService())->create($sid, $type, $purpose, $reason);
+        return $this->redirect('/student/certificates', $reqUid !== null
+            ? ['success' => 'Request ' . $reqUid . ' submitted. You can track its status here.']
+            : ['error' => 'Could not submit. You may already have a pending request for this certificate.']);
+    }
+
+    public function cancelCertificateRequest(Request $request, string $reqUid): Response
+    {
+        $student = $this->currentStudent();
+        $ok = (new CertificateRequestService())->cancel($reqUid, (int) ($student['id'] ?? 0));
+        return $this->redirect('/student/certificates', $ok
+            ? ['success' => 'Request cancelled.']
+            : ['error' => 'This request can no longer be cancelled.']);
+    }
+
+    /** Download a generated certificate ONLY if it belongs to this student. */
+    public function downloadCertificate(Request $request, string $code): Response
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        $own = $sid ? QueryBuilder::table('certificates')->where('cert_uid', $code)->where('student_id', $sid)->first() : null;
+        if ($own === null) {
+            abort(403, 'You are not authorized to download this certificate.');
+        }
+        $doc = (new CertificateService())->document($code);
+        if ($doc === null) {
+            abort(404, 'Certificate not available.');
+        }
+        $pdf = (new CertificatePdfService())->render($doc);
+        return (new Response($pdf, 200))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $code . '.pdf"');
     }
 
     public function fees(Request $request): Response

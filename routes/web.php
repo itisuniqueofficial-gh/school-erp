@@ -17,6 +17,7 @@ use App\Controllers\Auth\LoginController;
 use App\Controllers\Auth\PasswordController;
 use App\Controllers\HomeController;
 use App\Controllers\ReportVerificationController;
+use App\Controllers\CertificateVerificationController;
 use App\Controllers\MediaController;
 use App\Controllers\AccountController;
 use App\Controllers\NotificationController;
@@ -34,6 +35,8 @@ use App\Controllers\Admin\FeeController;
 use App\Controllers\Admin\LibraryController;
 use App\Controllers\Admin\TransportController;
 use App\Controllers\Admin\CommunicationController;
+use App\Controllers\Admin\CertificateController;
+use App\Controllers\Admin\CertificateRequestController;
 use App\Controllers\Admin\ReportController;
 use App\Controllers\Admin\SettingController;
 use App\Controllers\Admin\RoleController;
@@ -49,6 +52,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
     $router->get('/health', HomeController::class . '@health')->name('health');
     // Public report-card QR verification (no auth; non-sensitive fields only).
     $router->get('/verify/report-card/{code}', ReportVerificationController::class . '@show')->name('verify.report_card');
+    $router->get('/verify/certificate/{code}', CertificateVerificationController::class . '@show')->name('verify.certificate');
 
     // --- Guest (authentication) -------------------------------------------
     $router->group(['middleware' => ['guest']], function ($router): void {
@@ -88,6 +92,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
         // ===== Admin / Staff area =========================================
         $router->group(['prefix' => 'admin', 'middleware' => ['role:super_admin,school_admin,principal,vice_principal,receptionist,hr,accountant']], function ($router): void {
             $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
+            $router->get('/lookup', \App\Controllers\Admin\IdLookupController::class . '@index')->name('admin.lookup');
             $router->get('/dashboard/stats', DashboardController::class . '@stats')->name('admin.dashboard.stats');
             $router->get('/setup', DashboardController::class . '@setupCenter')->middleware('can:academic.view');
             $router->get('/academic/health', DashboardController::class . '@academicHealth')->middleware('can:academic.view');
@@ -182,6 +187,21 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/exams/{id}/marks', ExamController::class . '@storeMarks')->middleware('can:exams.manage');
             $router->get('/exams/{id}/report-cards', ExamController::class . '@reportCards')->middleware('can:exams.view');
             $router->post('/exams/{id}/report-cards/{studentId}/regenerate', ExamController::class . '@regenerateReportCard')->middleware('can:exams.manage');
+            $router->get('/exams/{id}/report-cards/{studentId}', ExamController::class . '@reportCard')->middleware('can:exams.view');
+            $router->get('/exams/{id}/report-cards/{studentId}/download', ExamController::class . '@downloadReportCard')->middleware('can:exams.view');
+
+            // Certificates (digital paperwork: bonafide / transfer / leaving / etc.)
+            $router->get('/certificates', CertificateController::class . '@index')->middleware('can:certificates.view');
+            $router->get('/certificates/create', CertificateController::class . '@create')->middleware('can:certificates.manage');
+            $router->post('/certificates', CertificateController::class . '@store')->middleware('can:certificates.manage');
+            $router->get('/certificates/{code}', CertificateController::class . '@show')->middleware('can:certificates.view');
+            $router->get('/certificates/{code}/download', CertificateController::class . '@download')->middleware('can:certificates.view');
+            $router->post('/certificates/{code}/revoke', CertificateController::class . '@revoke')->middleware('can:certificates.manage');
+
+            // Certificate request queue (student-submitted requests).
+            $router->get('/certificate-requests', CertificateRequestController::class . '@index')->middleware('can:certificates.view');
+            $router->post('/certificate-requests/{reqUid}/approve', CertificateRequestController::class . '@approve')->middleware('can:certificates.manage');
+            $router->post('/certificate-requests/{reqUid}/reject', CertificateRequestController::class . '@reject')->middleware('can:certificates.manage');
             $router->post('/exams/{id}/marks/workflow', ExamController::class . '@marksWorkflow')->middleware('can:exams.view');
 
             // Fees
@@ -255,6 +275,13 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/profile', StudentPortalController::class . '@profile');
             $router->get('/attendance', StudentPortalController::class . '@attendance');
             $router->get('/results', StudentPortalController::class . '@results');
+            $router->get('/report-cards', StudentPortalController::class . '@reportCards');
+            $router->get('/report-cards/{code}', StudentPortalController::class . '@reportCard');
+            $router->get('/report-cards/{code}/download', StudentPortalController::class . '@downloadReportCard');
+            $router->get('/certificates', StudentPortalController::class . '@certificates');
+            $router->post('/certificates/request', StudentPortalController::class . '@submitCertificateRequest');
+            $router->post('/certificates/{reqUid}/cancel', StudentPortalController::class . '@cancelCertificateRequest');
+            $router->get('/certificates/{code}/download', StudentPortalController::class . '@downloadCertificate');
             $router->get('/fees', StudentPortalController::class . '@fees');
             $router->get('/timetable', StudentPortalController::class . '@timetable');
             $router->get('/documents', StudentPortalController::class . '@documents');
@@ -280,6 +307,9 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
         $router->group(['prefix' => 'parent', 'middleware' => ['role:parent']], function ($router): void {
             $router->get('/dashboard', ParentPortalController::class . '@dashboard')->name('parent.dashboard');
             $router->get('/children', ParentPortalController::class . '@children');
+            $router->get('/report-cards', ParentPortalController::class . '@reportCards');
+            $router->get('/report-cards/{code}', ParentPortalController::class . '@reportCard');
+            $router->get('/report-cards/{code}/download', ParentPortalController::class . '@downloadReportCard');
             $router->get('/fees', ParentPortalController::class . '@fees');
         });
     });
