@@ -52,14 +52,20 @@ try {
 
         case 'migrate:fresh':
             // Guard: migrate:fresh DROPS ALL TABLES. Refuse when it would destroy
-            // real data — production env, OR a non-"_test" database that already
-            // holds records — unless an explicit --force is given.
+            // real data — production env, OR a populated non-"_test" database in a
+            // non-disposable (local/dev) environment — unless --force is given.
+            // CI and other test contexts (APP_ENV=testing, CI=true, APP_TESTING=1)
+            // rebuild a throwaway database every run, so they are allowed.
             $force = in_array('--force', $argv, true);
             $dbName = (string) config('database.connections.' . config('database.default') . '.database');
             $isTestDb = str_ends_with($dbName, '_test');
+            $env = (string) config('app.env');
+            $disposable = getenv('APP_TESTING') === '1'
+                || $env === 'testing'
+                || filter_var((string) getenv('CI'), FILTER_VALIDATE_BOOLEAN);
             $hasData = false;
             try { $hasData = (int) (\Core\Database\Connection::instance()->selectOne('SELECT COUNT(*) AS c FROM `users`')['c'] ?? 0) > 0; } catch (\Throwable) {}
-            if (!$force && (config('app.env') === 'production' || (!$isTestDb && $hasData))) {
+            if (!$force && ($env === 'production' || (!$isTestDb && $hasData && !$disposable))) {
                 $out('REFUSED: migrate:fresh drops ALL tables and would destroy existing data.', 'red');
                 $out("Target database: '{$dbName}'" . ($hasData ? ' (contains records)' : '') . '.', 'yellow');
                 $out('For tests use a dedicated DB: APP_TESTING=1 php bin/console migrate:fresh', 'yellow');

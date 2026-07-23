@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.2] - 2026-07-23
+
+### Fixed
+- `migrate:fresh` guard no longer refuses in disposable/test contexts
+  (`APP_ENV=testing`, `CI=true`, or `APP_TESTING=1`), which had broken the CI
+  integration-test workflow after the v1.6.1 data-protection hardening. It still
+  refuses on production and on a populated non-`_test` database in local/dev
+  environments (real-data protection unchanged).
+
 ## [1.6.1] - 2026-07-23
 
 ### Added
