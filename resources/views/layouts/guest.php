@@ -8,9 +8,14 @@
         <div class="absolute inset-0 bg-gradient-to-br from-brand-600 to-brand-800"></div>
         <div class="relative flex h-full flex-col justify-between p-12 text-white">
             <div class="flex items-center gap-3">
-                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-xl">
-                    <i class="fa-solid fa-graduation-cap"></i>
-                </span>
+                <?php $loginLogo = function_exists('brand_logo_url') ? brand_logo_url() : null; ?>
+                <?php if ($loginLogo): ?>
+                    <img src="<?= e($loginLogo) ?>" alt="<?= e($appName ?? config('app.name')) ?> logo" class="h-11 w-11 rounded-xl bg-white/15 object-contain p-1">
+                <?php else: ?>
+                    <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-xl">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </span>
+                <?php endif; ?>
                 <span class="text-xl font-bold"><?= e($appName ?? config('app.name')) ?></span>
             </div>
             <div data-animate="brand">

@@ -4,6 +4,37 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.3] - 2026-07-23
+
+### Added
+- **Public/private media split**: branding assets (logo, favicon, stamp,
+  signature) now serve via a no-auth `/media/branding/{file}` route that only
+  serves files registered as branding settings — fixes the favicon/login logo
+  not loading, while student/teacher photos stay behind auth on `/media/avatar`.
+- **Branding assets**: uploadable Official Stamp + Authorized Signature (shared
+  AvatarService pipeline), rendered on certificate & hall-ticket PDFs with
+  “Stamp Pending” / “Signature Pending” fallbacks.
+- **Logo across portals**: sidebar + login page now show the uploaded logo
+  (glyph fallback).
+- **Historical branding snapshot** on issued certificates (migration 027): a
+  certificate keeps the branding in effect when it was issued, even if the
+  school later changes its name/logo.
+- **Holiday categories** (migration 028) + a configurable **working week** and
+  **`CalendarService`**: attendance marking is now blocked on holidays and
+  non-working days.
+- **Global Attendance & Calendar settings** page (Settings → Attendance &
+  Calendar): attendance type, working week, and an auto period-schedule
+  generator with server-side validation.
+- **Global + Local overrides** (migration 029, `scope_settings`): each
+  class/section can override the working week / times / period structure
+  (section › class › global) without affecting other scopes.
+- **`db:check`** read-only database integrity audit CLI, and **backup
+  verification** + guarded **restore** CLI (from the same release line).
+
+### Fixed
+- `migrate:fresh` guard now allows disposable/test contexts (`APP_ENV=testing`,
+  `CI=true`, `APP_TESTING=1`) while still protecting real local/production data.
+
 ## [1.6.2] - 2026-07-23
 
 ### Fixed

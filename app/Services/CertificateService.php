@@ -103,6 +103,7 @@ final class CertificateService
             'reference_no'     => trim((string) ($opts['reference_no'] ?? '')) ?: null,
             'body'             => $body,
             'data_json'        => json_encode($data, JSON_UNESCAPED_UNICODE),
+            'branding_snapshot'=> json_encode((new ReportCardDocumentService())->brandingSnapshot(), JSON_UNESCAPED_UNICODE),
             'status'           => 'issued',
             'issued_by'        => auth()->id(),
             'issued_on'        => trim((string) ($opts['issued_on'] ?? '')) ?: date('Y-m-d'),
@@ -217,8 +218,19 @@ final class CertificateService
         if ($cert === null) {
             return null;
         }
+        // Prefer the branding captured at issue time (historical integrity); fall
+        // back to current branding for certificates issued before snapshots.
+        $rcd = new ReportCardDocumentService();
+        $snapshot = null;
+        if (!empty($cert['branding_snapshot'])) {
+            $decoded = json_decode((string) $cert['branding_snapshot'], true);
+            if (is_array($decoded)) {
+                $snapshot = $decoded;
+            }
+        }
+        $branding = $snapshot !== null ? $rcd->brandingFromSnapshot($snapshot) : $rcd->branding();
         return [
-            'branding'   => (new ReportCardDocumentService())->branding(),
+            'branding'   => $branding,
             'certificate'=> $cert,
             'cert_uid'   => (string) $cert['cert_uid'],
             'title'      => (string) $cert['title'],

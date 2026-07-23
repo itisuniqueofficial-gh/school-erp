@@ -5,6 +5,7 @@
 <?php $this->extend('layouts.app'); ?>
 <?php $this->section('page_actions'); ?>
 <a href="<?= e(url('/admin/settings/institution')) ?>" class="btn btn-secondary"><i class="fa-solid fa-sliders"></i> ERP Configuration</a>
+<a href="<?= e(url('/admin/settings/attendance')) ?>" class="btn btn-secondary"><i class="fa-solid fa-calendar-days"></i> Attendance &amp; Calendar</a>
 <a href="<?= e(url('/admin/settings/integrations')) ?>" class="btn btn-secondary"><i class="fa-solid fa-building-columns"></i> Gov Integrations</a>
 <a href="<?= e(url('/admin/settings/payments')) ?>" class="btn btn-secondary"><i class="fa-solid fa-credit-card"></i> Payment Gateways</a>
 <?php if (auth()->can('settings.manage')): ?>
@@ -17,7 +18,13 @@
 <?php $this->section('main'); ?>
 <?php
 $logoFile = '';
-foreach ($grouped['general'] ?? [] as $row) { if (($row['key'] ?? '') === 'school_logo') { $logoFile = (string) $row['value']; } }
+$stampFile = '';
+$sigFile = '';
+foreach ($grouped['general'] ?? [] as $row) {
+    if (($row['key'] ?? '') === 'school_logo') { $logoFile = (string) $row['value']; }
+    if (($row['key'] ?? '') === 'school_stamp') { $stampFile = (string) $row['value']; }
+    if (($row['key'] ?? '') === 'principal_signature') { $sigFile = (string) $row['value']; }
+}
 ?>
 <div class="card mb-6 p-5">
     <h2 class="font-semibold text-slate-800">School Logo</h2>
@@ -25,7 +32,7 @@ foreach ($grouped['general'] ?? [] as $row) { if (($row['key'] ?? '') === 'schoo
     <div class="flex flex-wrap items-center gap-4">
         <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
             <?php if ($logoFile !== ''): ?>
-                <img src="<?= e(url('/media/avatar/' . pathinfo($logoFile, PATHINFO_FILENAME))) ?>" alt="School logo" class="h-full w-full object-contain" onerror="this.style.display='none'">
+                <img src="<?= e(url('/media/branding/' . pathinfo($logoFile, PATHINFO_FILENAME))) ?>" alt="School logo" class="h-full w-full object-contain" onerror="this.style.display='none'">
             <?php else: ?>
                 <i class="fa-solid fa-school text-2xl text-slate-300"></i>
             <?php endif; ?>
@@ -45,6 +52,39 @@ foreach ($grouped['general'] ?? [] as $row) { if (($row['key'] ?? '') === 'schoo
         <?php endif; ?>
     </div>
 </div>
+<?php
+$assetCards = [
+    ['key' => 'stamp', 'file' => $stampFile, 'title' => 'Official Stamp / Seal', 'desc' => 'Placed on official documents (hall tickets, certificates). Transparent PNG recommended, max 2 MB. When absent, documents show “Stamp Pending”.'],
+    ['key' => 'signature', 'file' => $sigFile, 'title' => 'Authorized Signature', 'desc' => 'Signature of the Principal / Controller of Examinations, placed on official documents. Transparent PNG recommended, max 2 MB. When absent, documents show “Signature Pending”.'],
+];
+foreach ($assetCards as $ac): ?>
+<div class="card mb-6 p-5">
+    <h2 class="font-semibold text-slate-800"><?= e($ac['title']) ?></h2>
+    <p class="mb-3 mt-1 text-sm text-slate-500"><?= e($ac['desc']) ?></p>
+    <div class="flex flex-wrap items-center gap-4">
+        <div class="flex h-20 w-32 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+            <?php if ($ac['file'] !== ''): ?>
+                <img src="<?= e(url('/media/branding/' . pathinfo($ac['file'], PATHINFO_FILENAME))) ?>" alt="<?= e($ac['title']) ?>" class="h-full w-full object-contain" onerror="this.style.display='none'">
+            <?php else: ?>
+                <span class="text-xs italic text-slate-400"><?= e($ac['key'] === 'stamp' ? 'Stamp Pending' : 'Signature Pending') ?></span>
+            <?php endif; ?>
+        </div>
+        <?php if (auth()->can('settings.manage')): ?>
+        <form method="POST" action="<?= e(url('/admin/settings/' . $ac['key'])) ?>" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2" data-loading>
+            <?= csrf_field() ?>
+            <input type="file" name="<?= e($ac['key']) ?>" accept="image/jpeg,image/png,image/webp" required class="text-xs file:mr-2 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-brand-700">
+            <button class="btn btn-primary btn-sm"><i class="fa-solid fa-upload"></i> <?= $ac['file'] !== '' ? 'Replace' : 'Upload' ?></button>
+        </form>
+        <?php if ($ac['file'] !== ''): ?>
+        <form method="POST" action="<?= e(url('/admin/settings/' . $ac['key'])) ?>" data-confirm="Remove this asset?">
+            <?= csrf_field() ?><?= method_field('DELETE') ?>
+            <button class="text-xs font-medium text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Remove</button>
+        </form>
+        <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endforeach; ?>
 <form method="POST" action="<?= e(url('/admin/settings')) ?>" class="space-y-6" data-loading>
     <?= csrf_field() ?>
     <?php if (empty($grouped)): ?>

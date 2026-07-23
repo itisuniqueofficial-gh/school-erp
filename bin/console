@@ -218,6 +218,26 @@ try {
             $out('Application key set successfully.', 'green');
             break;
 
+        case 'db:check':
+            // Detect-only database integrity audit (never deletes/repairs).
+            $out('Running database integrity audit...', 'cyan');
+            $checks = (new \App\Services\IntegrityService())->checks();
+            $issues = 0; $critical = 0;
+            foreach ($checks as $c) {
+                $n = (int) ($c['count'] ?? 0);
+                $sev = (string) ($c['severity'] ?? 'info');
+                if ($n > 0) {
+                    $issues++;
+                    if ($sev === 'critical') { $critical++; }
+                    $out(sprintf('  [%s] %s: %d  -> %s', strtoupper($sev), (string) $c['label'], $n, (string) ($c['link'] ?? '')), $sev === 'critical' ? 'red' : 'yellow');
+                } else {
+                    $out(sprintf('  [OK] %s', (string) $c['label']), 'green');
+                }
+            }
+            $out(sprintf('Audit complete: %d check(s), %d with issues (%d critical).', count($checks), $issues, $critical), $critical > 0 ? 'red' : ($issues > 0 ? 'yellow' : 'green'));
+            $out('This audit is read-only. Review each item at the linked admin page; nothing was changed.', 'cyan');
+            exit($critical > 0 ? 1 : 0);
+
         case 'backup':
             $out('Running database backup...', 'cyan');
             $svc = new \App\Services\BackupService();
@@ -379,6 +399,7 @@ try {
             $out('  migrate:status     Show migration status');
             $out('  seed               Seed baseline data');
             $out('  health             Run a full system health check');
+            $out('  db:check           Read-only database integrity audit (no changes)');
             $out('  upgrade            Safe production upgrade: backup + pending migrations only');
             $out('  install            Migrate + seed in one step');
             $out('  install:status     Show fresh/existing install state (deploy-safe)');

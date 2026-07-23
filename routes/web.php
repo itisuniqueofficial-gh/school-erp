@@ -67,6 +67,13 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
         $router->post('/reset-password', PasswordController::class . '@reset');
     });
 
+    // --- Public branding assets (no auth) ---------------------------------
+    // Logo/favicon/stamp/signature must load on the login page and in the
+    // browser tab where there is no session. The handler only serves files that
+    // are registered as branding settings, so private photos in the same store
+    // are never exposed.
+    $router->get('/media/branding/{file}', MediaController::class . '@branding');
+
     // --- Authenticated -----------------------------------------------------
     $router->group(['middleware' => ['auth']], function ($router): void {
         $router->post('/logout', LoginController::class . '@logout')->name('logout');
@@ -266,10 +273,16 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/settings', SettingController::class . '@update')->middleware('can:settings.manage');
             $router->post('/settings/logo', SettingController::class . '@uploadLogo')->middleware('can:settings.manage');
             $router->delete('/settings/logo', SettingController::class . '@removeLogo')->middleware('can:settings.manage');
+            $router->post('/settings/stamp', SettingController::class . '@uploadStamp')->middleware('can:settings.manage');
+            $router->delete('/settings/stamp', SettingController::class . '@removeStamp')->middleware('can:settings.manage');
+            $router->post('/settings/signature', SettingController::class . '@uploadSignature')->middleware('can:settings.manage');
+            $router->delete('/settings/signature', SettingController::class . '@removeSignature')->middleware('can:settings.manage');
             $router->get('/settings/payments', \App\Controllers\Admin\PaymentSettingsController::class . '@index')->middleware('can:settings.manage');
             $router->post('/settings/payments/{gateway}', \App\Controllers\Admin\PaymentSettingsController::class . '@save')->middleware('can:settings.manage');
             $router->get('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@index')->middleware('can:settings.manage');
             $router->post('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@save')->middleware('can:settings.manage');
+            $router->get('/settings/attendance', \App\Controllers\Admin\AttendanceSettingsController::class . '@index')->middleware('can:settings.manage');
+            $router->post('/settings/attendance', \App\Controllers\Admin\AttendanceSettingsController::class . '@save')->middleware('can:settings.manage');
             $router->get('/settings/integrations', \App\Controllers\Admin\IntegrationController::class . '@index')->middleware('can:settings.manage');
             $router->post('/settings/integrations/{provider}', \App\Controllers\Admin\IntegrationController::class . '@save')->middleware('can:settings.manage');
             $router->get('/audit', \App\Controllers\Admin\AuditController::class . '@index')->middleware('can:settings.view');

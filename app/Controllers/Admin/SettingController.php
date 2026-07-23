@@ -98,6 +98,61 @@ final class SettingController extends Controller
         return $this->redirect('/admin/settings', ['success' => 'School logo removed. The default logo will be used.']);
     }
 
+    public function uploadStamp(Request $request): Response
+    {
+        return $this->uploadAsset($request, 'school_stamp', 'stamp', 'official stamp');
+    }
+
+    public function removeStamp(Request $request): Response
+    {
+        return $this->removeAsset('school_stamp', 'official stamp');
+    }
+
+    public function uploadSignature(Request $request): Response
+    {
+        return $this->uploadAsset($request, 'principal_signature', 'signature', 'authorized signature');
+    }
+
+    public function removeSignature(Request $request): Response
+    {
+        return $this->removeAsset('principal_signature', 'authorized signature');
+    }
+
+    /**
+     * Shared branding-asset upload (stamp/signature) using the SAME centralized
+     * AvatarService pipeline as the logo — no duplicate upload logic.
+     */
+    private function uploadAsset(Request $request, string $key, string $field, string $label): Response
+    {
+        $file = $request->file($field);
+        if ($file === null || !$file->isValid()) {
+            return $this->redirect('/admin/settings', ['error' => "Please choose a {$label} image to upload."]);
+        }
+        $svc = new AvatarService();
+        $res = $svc->store($file, 2097152); // 2 MB
+        if (!$res['ok']) {
+            return $this->redirect('/admin/settings', ['error' => $res['message']]);
+        }
+        $old = QueryBuilder::table('settings')->where('key', $key)->value('value');
+        $this->putSetting($key, (string) $res['filename']);
+        if (!empty($old)) {
+            $svc->delete((string) $old);
+        }
+        AuditLogger::log('settings.asset_updated', 'settings', null, "Updated {$label}");
+        return $this->redirect('/admin/settings', ['success' => ucfirst($label) . ' updated. It now appears on official documents.']);
+    }
+
+    private function removeAsset(string $key, string $label): Response
+    {
+        $old = QueryBuilder::table('settings')->where('key', $key)->value('value');
+        if (!empty($old)) {
+            (new AvatarService())->delete((string) $old);
+        }
+        $this->putSetting($key, '');
+        AuditLogger::log('settings.asset_removed', 'settings', null, "Removed {$label}");
+        return $this->redirect('/admin/settings', ['success' => ucfirst($label) . ' removed.']);
+    }
+
     /** Upsert a single general setting. */
     private function putSetting(string $key, string $value): void
     {

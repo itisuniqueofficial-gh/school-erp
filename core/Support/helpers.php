@@ -359,7 +359,7 @@ if (!function_exists('brand_logo_url')) {
                 return $cached = null;
             }
             $hex = pathinfo($file, PATHINFO_FILENAME);
-            return $cached = url('/media/avatar/' . $hex) . '?v=' . substr(md5($file), 0, 8);
+            return $cached = url('/media/branding/' . $hex) . '?v=' . substr(md5($file), 0, 8);
         } catch (\Throwable) {
             return $cached = null;
         }

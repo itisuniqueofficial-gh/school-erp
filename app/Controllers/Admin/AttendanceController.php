@@ -9,6 +9,7 @@ use App\Models\Section;
 use App\Models\StudentAttendance;
 use App\Services\AttendanceLockService;
 use App\Services\AuditLogger;
+use App\Services\CalendarService;
 use Core\Database\QueryBuilder;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -67,6 +68,13 @@ final class AttendanceController extends Controller
         $lock = new AttendanceLockService();
         if (!$lock->isEditable($classId, $sectionId, $date)) {
             return $this->back(['attendance' => [$lock->reason($classId, $sectionId, $date)]]);
+        }
+
+        // Block marking on holidays / non-working days (per-class working week,
+        // falling back to the global default).
+        $calendar = new CalendarService();
+        if (!$calendar->isWorkingDayForScope($date, $classId, $sectionId)) {
+            return $this->back(['attendance' => [(string) $calendar->reasonForScope($date, $classId, $sectionId)]]);
         }
 
         $marked = 0;

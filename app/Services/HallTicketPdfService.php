@@ -121,10 +121,11 @@ final class HallTicketPdfService
             $pdf->SetTextColor(20, 20, 20);
         }
 
-        // Signature + stamp (fixed row)
+        // Signature + stamp (fixed row) — uses uploaded assets when configured,
+        // else shows a clear "Stamp Pending" / "Signature Pending" placeholder.
         $sigY = 232.0;
-        $pdf->stampBox($L, $sigY - 6);
-        $pdf->signatureLine(135, $sigY + 14, 60, 'Controller of Examinations');
+        $pdf->stampBox($L, $sigY - 6, 45, 24, $b['stamp'] ?? null);
+        $pdf->signatureLine(135, $sigY + 14, 60, 'Controller of Examinations', $b['signature'] ?? null);
 
         // Verification band
         $pdf->verificationBand('Hall Ticket ID', (string) $doc['ht_uid'], (string) $doc['verify_url'], 262.0);

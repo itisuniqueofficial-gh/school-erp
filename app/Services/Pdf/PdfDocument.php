@@ -129,19 +129,41 @@ final class PdfDocument extends \FPDF
     }
 
     /** Draw an official stamp placeholder box at (x,y). */
-    public function stampBox(float $x, float $y, float $w = 45, float $h = 24): void
+    public function stampBox(float $x, float $y, float $w = 45, float $h = 24, ?string $img = null): void
     {
+        if ($img !== null && $img !== '' && is_file($img)) {
+            $size = @getimagesize($img);
+            if (is_array($size) && (int) $size[0] > 0 && (int) $size[1] > 0) {
+                $pad = 2.0; $mw = $w - 2 * $pad; $mh = $h - 2 * $pad;
+                $iw = $mw; $ih = $iw * ((int) $size[1] / (int) $size[0]);
+                if ($ih > $mh) { $ih = $mh; $iw = $ih * ((int) $size[0] / (int) $size[1]); }
+                try { $this->Image($img, $x + ($w - $iw) / 2, $y + ($h - $ih) / 2, $iw, $ih); return; } catch (\Throwable) {}
+            }
+        }
+        // No stamp configured -> clear pending placeholder.
         $this->SetDrawColor(150, 150, 150);
         $this->SetLineWidth(0.2);
         $this->Rect($x, $y, $w, $h);
         $this->SetFont('Helvetica', 'I', 8);
         $this->SetTextColor(150, 150, 150);
-        $this->Text($x + $w / 2 - 11, $y + $h / 2 + 1, $this->tx('Official Stamp'));
+        $this->Text($x + $w / 2 - 11, $y + $h / 2 + 1, $this->tx('Stamp Pending'));
     }
 
     /** A signature line + caption centred within [x, x+w]. */
-    public function signatureLine(float $x, float $y, float $w, string $caption): void
+    public function signatureLine(float $x, float $y, float $w, string $caption, ?string $img = null): void
     {
+        if ($img !== null && $img !== '' && is_file($img)) {
+            $size = @getimagesize($img);
+            if (is_array($size) && (int) $size[0] > 0 && (int) $size[1] > 0) {
+                $ih = 12.0; $iw = $ih * ((int) $size[0] / (int) $size[1]);
+                if ($iw > $w) { $iw = $w; $ih = $iw * ((int) $size[1] / (int) $size[0]); }
+                try { $this->Image($img, $x + ($w - $iw) / 2, $y - $ih - 1, $iw, $ih); } catch (\Throwable) {}
+            }
+        } else {
+            $this->SetFont('Helvetica', 'I', 7.5);
+            $this->SetTextColor(150, 150, 150);
+            $this->Text($x + $w / 2 - 12, $y - 3, $this->tx('Signature Pending'));
+        }
         $this->SetDrawColor(60, 60, 60);
         $this->SetLineWidth(0.2);
         $this->Line($x, $y, $x + $w, $y);

@@ -207,12 +207,16 @@ final class ReportCardDocumentService
         }
         // Board/UDISE/affiliation are optional — pull from any group if present.
         $extra = QueryBuilder::table('settings')
-            ->whereIn('key', ['board_name', 'udise_code', 'affiliation_no', 'school_website', 'brand_color', 'school_logo'])->get();
+            ->whereIn('key', ['board_name', 'udise_code', 'affiliation_no', 'school_website', 'brand_color', 'school_logo', 'school_stamp', 'principal_signature'])->get();
         foreach ($extra as $r) {
             $s[(string) $r['key']] = (string) $r['value'];
         }
         $logoFile = trim((string) ($s['school_logo'] ?? ''));
         $logoPath = $logoFile !== '' ? (new AvatarService())->path($logoFile) : null;
+        $stampFile = trim((string) ($s['school_stamp'] ?? ''));
+        $stampPath = $stampFile !== '' ? (new AvatarService())->path($stampFile) : null;
+        $sigFile = trim((string) ($s['principal_signature'] ?? ''));
+        $sigPath = $sigFile !== '' ? (new AvatarService())->path($sigFile) : null;
         return [
             'name'        => $s['school_name'] ?? 'School',
             'address'     => $s['school_address'] ?? '',
@@ -225,6 +229,67 @@ final class ReportCardDocumentService
             'accent'      => $s['brand_color'] ?? '',
             'logo_file'   => $logoFile,
             'logo'        => $logoPath, // absolute path for PDF embedding, or null
+            'stamp'       => $stampPath, // official stamp image, or null -> "Stamp Pending"
+            'signature'   => $sigPath,   // authorized signature image, or null -> "Signature Pending"
+        ];
+    }
+
+    /**
+     * A storable (JSON-safe) branding snapshot for an issued document. Stores
+     * text fields verbatim and assets by filename (content-addressed), so the
+     * document can be re-rendered later with the branding that was in effect at
+     * issue time — independent of any future logo/detail changes.
+     *
+     * @return array<string,string>
+     */
+    public function brandingSnapshot(): array
+    {
+        $b = $this->branding();
+        return [
+            'name'           => (string) ($b['name'] ?? ''),
+            'address'        => (string) ($b['address'] ?? ''),
+            'phone'          => (string) ($b['phone'] ?? ''),
+            'email'          => (string) ($b['email'] ?? ''),
+            'website'        => (string) ($b['website'] ?? ''),
+            'board'          => (string) ($b['board'] ?? ''),
+            'udise'          => (string) ($b['udise'] ?? ''),
+            'affiliation'    => (string) ($b['affiliation'] ?? ''),
+            'accent'         => (string) ($b['accent'] ?? ''),
+            'logo_file'      => (string) ($b['logo_file'] ?? ''),
+            'stamp_file'     => !empty($b['stamp']) ? basename((string) $b['stamp']) : '',
+            'signature_file' => !empty($b['signature']) ? basename((string) $b['signature']) : '',
+        ];
+    }
+
+    /**
+     * Rebuild a render-ready branding array from a stored snapshot, resolving
+     * asset filenames to current absolute paths (best-effort: if an asset file
+     * was later deleted, it degrades gracefully to null).
+     *
+     * @param array<string,mixed> $s
+     * @return array<string,mixed>
+     */
+    public function brandingFromSnapshot(array $s): array
+    {
+        $av = new AvatarService();
+        $resolve = static function ($f) use ($av): ?string {
+            $f = is_string($f) ? trim($f) : '';
+            return $f !== '' ? $av->path($f) : null;
+        };
+        return [
+            'name'        => (string) ($s['name'] ?? 'School'),
+            'address'     => (string) ($s['address'] ?? ''),
+            'phone'       => (string) ($s['phone'] ?? ''),
+            'email'       => (string) ($s['email'] ?? ''),
+            'website'     => (string) ($s['website'] ?? ''),
+            'board'       => (string) ($s['board'] ?? ''),
+            'udise'       => (string) ($s['udise'] ?? ''),
+            'affiliation' => (string) ($s['affiliation'] ?? ''),
+            'accent'      => (string) ($s['accent'] ?? ''),
+            'logo_file'   => (string) ($s['logo_file'] ?? ''),
+            'logo'        => $resolve($s['logo_file'] ?? ''),
+            'stamp'       => $resolve($s['stamp_file'] ?? ''),
+            'signature'   => $resolve($s['signature_file'] ?? ''),
         ];
     }
 

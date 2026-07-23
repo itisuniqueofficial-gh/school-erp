@@ -82,10 +82,11 @@ final class CertificatePdfService
             $pdf->SetTextColor(20, 20, 20);
         }
 
-        // Signature + stamp (fixed row)
+        // Signature + stamp (fixed row) — uploaded assets when configured, else
+        // a clear "Stamp Pending" / "Signature Pending" placeholder.
         $sigY = 224.0;
-        $pdf->stampBox($L, $sigY - 6);
-        $pdf->signatureLine(135, $sigY + 14, 60, 'Principal / Authorised Signatory');
+        $pdf->stampBox($L, $sigY - 6, 45, 24, $b['stamp'] ?? null);
+        $pdf->signatureLine(135, $sigY + 14, 60, 'Principal / Authorised Signatory', $b['signature'] ?? null);
 
         // Unified verification band (fixed bottom)
         $pdf->verificationBand('Certificate ID', (string) $doc['cert_uid'], (string) $doc['verify_url'], 254.0);
