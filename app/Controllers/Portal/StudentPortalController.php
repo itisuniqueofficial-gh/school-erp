@@ -11,6 +11,8 @@ use App\Services\CertificatePdfService;
 use App\Services\CertificateRequestService;
 use App\Services\CertificateService;
 use App\Services\DocumentService;
+use App\Services\HallTicketPdfService;
+use App\Services\HallTicketService;
 use App\Services\ReportCardDocumentService;
 use App\Services\ReportCardPdfService;
 use Core\Database\QueryBuilder;
@@ -389,6 +391,67 @@ final class StudentPortalController extends Controller
             abort(404, 'Certificate not available.');
         }
         $pdf = (new CertificatePdfService())->render($doc);
+        $disp = $request->query('inline') ? 'inline' : 'attachment';
+        return (new Response($pdf, 200))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', $disp . '; filename="' . $code . '.pdf"');
+    }
+
+    // ===================================================================
+    // Hall tickets / admit cards — own records only
+    // ===================================================================
+    public function hallTickets(Request $request): Response
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        $tickets = $sid ? (new HallTicketService())->forStudent($sid) : [];
+        return $this->view('portal.student.hall-tickets', [
+            'title'   => 'Hall Tickets / Admit Cards',
+            'tickets' => $tickets,
+            'types'   => HallTicketService::TYPES,
+        ]);
+    }
+
+    private function ownedTicket(string $htUid): ?array
+    {
+        $student = $this->currentStudent();
+        $sid = (int) ($student['id'] ?? 0);
+        if ($sid === 0) {
+            return null;
+        }
+        return QueryBuilder::table('hall_tickets')->where('ht_uid', $htUid)->where('student_id', $sid)->first();
+    }
+
+    public function hallTicket(Request $request, string $code): Response
+    {
+        if ($this->ownedTicket($code) === null) {
+            abort(403, 'You are not authorized to view this hall ticket.');
+        }
+        $doc = (new HallTicketService())->document($code);
+        if ($doc === null) {
+            abort(404, 'Hall ticket not available.');
+        }
+        return $this->view('hall-tickets.show', [
+            'title' => $doc['type_label'], 'doc' => $doc,
+            'downloadUrl' => url('/student/hall-tickets/' . $code . '/download'),
+            'backUrl' => url('/student/hall-tickets'), 'canRevoke' => false,
+        ]);
+    }
+
+    public function downloadHallTicket(Request $request, string $code): Response
+    {
+        $own = $this->ownedTicket($code);
+        if ($own === null) {
+            abort(403, 'You are not authorized to download this hall ticket.');
+        }
+        if (($own['status'] ?? '') === 'revoked') {
+            abort(403, 'This hall ticket has been revoked.');
+        }
+        $doc = (new HallTicketService())->document($code);
+        if ($doc === null) {
+            abort(404, 'Hall ticket not available.');
+        }
+        $pdf = (new HallTicketPdfService())->render($doc);
         $disp = $request->query('inline') ? 'inline' : 'attachment';
         return (new Response($pdf, 200))
             ->header('Content-Type', 'application/pdf')

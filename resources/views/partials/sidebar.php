@@ -55,6 +55,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
             <?php if (auth()->can('academic.view')): ?><?= $link('/admin/academic/classes', 'fa-school', 'Academic') ?><?php endif; ?>
             <?php if (auth()->can('attendance.view')): ?><?= $link('/admin/attendance', 'fa-clipboard-check', 'Attendance') ?><?php endif; ?>
             <?php if (auth()->can('exams.view')): ?><?= $link('/admin/exams', 'fa-award', 'Examinations') ?><?php endif; ?>
+            <?php if (auth()->can('exams.view')): ?><?= $link('/admin/hall-tickets', 'fa-ticket', 'Hall Tickets') ?><?php endif; ?>
             <?php if (auth()->can('certificates.view')): ?><?= $link('/admin/certificates', 'fa-certificate', 'Certificates') ?><?php endif; ?>
             <?php if (auth()->can('certificates.view')): ?><?= $link('/admin/certificate-requests', 'fa-inbox', 'Certificate Requests') ?><?php endif; ?>
         </div>
@@ -90,6 +91,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
         <?= $link('/student/attendance', 'fa-clipboard-check', 'Attendance') ?>
         <?= $link('/student/results', 'fa-award', 'Results') ?>
         <?= $link('/student/report-cards', 'fa-file-lines', 'Report Cards') ?>
+        <?= $link('/student/hall-tickets', 'fa-ticket', 'Hall Tickets') ?>
         <?= $link('/student/certificates', 'fa-certificate', 'Documents & Certificates') ?>
         <?= $link('/student/documents', 'fa-folder-open', 'My Documents') ?>
         <?= $link('/student/fees', 'fa-file-invoice-dollar', 'Fees') ?>

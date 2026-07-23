@@ -234,9 +234,30 @@ try {
             $out("Removed {$n} expired session file(s).", 'green');
             break;
 
+        case 'install:status':
+            $st = (new \App\Services\InstallService())->state();
+            $out('Installation status', 'cyan');
+            $out('  DB reachable        : ' . ($st['db_reachable'] ? 'yes' : 'NO'), $st['db_reachable'] ? 'green' : 'red');
+            $out('  State               : ' . ($st['installed'] ? 'EXISTING installation (data present)' : 'FRESH (no users yet)'), $st['installed'] ? 'green' : 'yellow');
+            $out('  Users               : ' . $st['users']);
+            $out('  Tables              : ' . $st['tables']);
+            $out('  Migrations applied  : ' . $st['migrations_applied']);
+            $out('  Migrations pending  : ' . $st['migrations_pending']);
+            break;
+
         case 'install':
-            // Non-interactive install: migrate + seed (for CLI/CI provisioning).
-            $out('Running migrations...', 'cyan');
+            // Deployment-safe install. Detects fresh vs existing so a redeploy
+            // can never reseed or reset a live database.
+            $installer = new \App\Services\InstallService();
+            if ($installer->isInstalled()) {
+                $out('Existing installation detected — production data is preserved.', 'yellow');
+                $out('Skipping seed/admin creation. Applying pending migrations only (safe).', 'yellow');
+                $ran = (new Migrator())->migrate();
+                $out($ran ? 'Pending migrations applied.' : 'Database already up to date. Nothing changed.', 'green');
+                $out('Tip: use "php bin/console upgrade" for a backup-first production upgrade.', 'cyan');
+                break;
+            }
+            $out('Fresh installation detected. Running migrations...', 'cyan');
             (new Migrator())->migrate();
             $out('Seeding baseline data...', 'cyan');
             (new DatabaseSeeder())->run();
@@ -254,6 +275,7 @@ try {
             $out('  health             Run a full system health check');
             $out('  upgrade            Safe production upgrade: backup + pending migrations only');
             $out('  install            Migrate + seed in one step');
+            $out('  install:status     Show fresh/existing install state (deploy-safe)');
             $out('  key:generate       Generate & write APP_KEY into .env');
             $out('  backup             Dump the database to storage/backups');
             $out('  reminders          Generate birthday/fee/exam/holiday reminders');

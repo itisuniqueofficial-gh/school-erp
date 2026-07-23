@@ -77,6 +77,23 @@ check('empty -> null', $r->resolve('   ') === null);
 // Roll number is NOT globally unique, so it must NOT resolve directly.
 check('roll number does NOT resolve (ambiguous)', $r->resolve('1') === null);
 
+// ---------------------------------------------------------------------------
+section('Canonical normalization (format variants resolve to the same record)');
+check('lowercase cert id resolves', ($r->resolve(strtolower((string) $cert))['type'] ?? '') === 'Certificate');
+check('spaced cert id ("CERT 2026 NNNNN") resolves', ($r->resolve(str_replace('-', ' ', (string) $cert))['uid'] ?? '') === (string) $cert);
+check('hyphen-spacing ("CERT - 2026 - ..") resolves', ($r->resolve(str_replace('-', ' - ', (string) $cert))['uid'] ?? '') === (string) $cert);
+check('leading/trailing + zero-width whitespace resolves', ($r->resolve("\u{200B} " . $cert . " \u{FEFF}")['uid'] ?? '') === (string) $cert);
+check('every hit carries a permission slug', isset($r->resolve((string) $cert)['permission']));
+
+// ---------------------------------------------------------------------------
+section('Archived / soft-deleted records are still findable by ID (not "not found")');
+$arch = Student::create(['uid' => '200000556001', 'admission_no' => 'ADM-ARCH-1', 'first_name' => 'Archie', 'last_name' => 'Gone', 'gender' => 'male', 'class_id' => $classId, 'academic_year_id' => $yearId, 'status' => 'active']);
+QueryBuilder::table('students')->where('id', $arch)->update(['deleted_at' => date('Y-m-d H:i:s')]);
+$ares = $r->resolve('ADM-ARCH-1');
+check('soft-deleted student still resolves (not null)', $ares !== null && $ares['type'] === 'Student');
+check('soft-deleted student flagged archived', ($ares['archived'] ?? false) === true);
+check('active student is NOT flagged archived', ($r->resolve('ADM-LOOKUP-1')['archived'] ?? true) === false);
+
 echo "\n\033[36m==================== RESULT ====================\033[0m\n";
 echo "PASS: {$pass}   FAIL: {$fail}\n";
 if ($fail > 0) { echo "\nFailures:\n - " . implode("\n - ", $failures) . "\n"; exit(1); }

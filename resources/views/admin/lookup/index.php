@@ -2,6 +2,8 @@
 /** @var \Core\View\View $this */
 /** @var string $query */
 /** @var string|null $error */
+/** @var string|null $denied */
+/** @var array<string,string>|null $archived */
 ?>
 <?php $this->extend('layouts.app'); ?>
 <?php $this->section('breadcrumb'); ?>Go to Record by ID<?php $this->endSection(); ?>
@@ -9,10 +11,19 @@
 <div class="mx-auto max-w-xl">
     <div class="card p-6">
         <h2 class="text-lg font-semibold text-slate-800"><i class="fa-solid fa-magnifying-glass-arrow-right text-brand-600"></i> Go to Record by ID</h2>
-        <p class="mt-1 text-sm text-slate-500">Enter any unique ID and jump straight to the record. Access to the record still respects your role permissions, and every lookup is logged.</p>
+        <p class="mt-1 text-sm text-slate-500">Enter any unique ID and jump straight to the record. Spacing, hyphens and letter case are handled automatically. Access still respects your role permissions, and every lookup is logged.</p>
 
         <?php if (!empty($error)): ?>
-            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><i class="fa-solid fa-circle-exclamation"></i> <?= e($error) ?></div>
+            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><i class="fa-solid fa-circle-xmark"></i> <?= e($error) ?></div>
+        <?php endif; ?>
+        <?php if (!empty($denied)): ?>
+            <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><i class="fa-solid fa-lock"></i> <?= e($denied) ?></div>
+        <?php endif; ?>
+        <?php if (!empty($archived)): ?>
+            <div class="mt-4 rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <i class="fa-solid fa-box-archive"></i> This <?= e(strtolower($archived['type'])) ?> <span class="font-mono"><?= e($archived['uid']) ?></span><?= $archived['name'] !== '' ? ' (' . e($archived['name']) . ')' : '' ?> exists but is <b>archived / revoked</b>.
+                <a href="<?= e(url($archived['route'])) ?>" class="ml-1 font-semibold text-brand-600 hover:underline">Open anyway →</a>
+            </div>
         <?php endif; ?>
 
         <form method="GET" action="<?= e(url('/admin/lookup')) ?>" class="mt-4 flex gap-2">

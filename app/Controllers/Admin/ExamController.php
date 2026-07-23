@@ -40,9 +40,18 @@ final class ExamController extends Controller
             'end_date'     => 'nullable|date',
         ]);
 
+        $yearId = (int) ($request->input('academic_year_id') ?: 0) ?: null;
+        $sched = new \App\Services\ExamScheduleService();
+        if (!$sched->datesValid($data['start_date'] ?? null, $data['end_date'] ?? null)) {
+            return $this->redirect('/admin/exams', ['error' => 'End date cannot be before the start date.']);
+        }
+        if ($sched->duplicateExists((string) $data['name'], $yearId, (int) $data['exam_type_id'])) {
+            return $this->redirect('/admin/exams', ['error' => 'An exam with this name already exists for this exam type and academic year.']);
+        }
+
         $id = Exam::create([
             'exam_type_id'     => (int) $data['exam_type_id'],
-            'academic_year_id' => (int) ($request->input('academic_year_id') ?: 0) ?: null,
+            'academic_year_id' => $yearId,
             'uid'              => (new IdSequenceService())->uidExam(),
             'name'             => $data['name'],
             'start_date'       => $data['start_date'] ?: null,
@@ -51,7 +60,71 @@ final class ExamController extends Controller
         ]);
 
         AuditLogger::log('exam.created', 'exam', $id, 'Created exam ' . $data['name']);
-        return $this->redirect('/admin/exams', ['success' => 'Exam created.']);
+        return $this->redirect('/admin/exams', ['success' => 'Exam created. Use “Schedule” to set subject dates class-wise.']);
+    }
+
+    /** Class-wise subject scheduling for an exam. */
+    public function schedule(Request $request, string $id): Response
+    {
+        $examId = (int) $id;
+        $exam = Exam::find($examId);
+        if ($exam === null) {
+            abort(404, 'Exam not found.');
+        }
+        $classId = (int) $request->query('class_id', 0);
+        $svc = new \App\Services\ExamScheduleService();
+        $subjects = [];
+        $current = [];
+        $conflicts = [];
+        if ($classId) {
+            $subjects = $svc->classSubjects($classId);
+            foreach ($svc->currentSchedule($examId, $classId) as $r) {
+                $current[(int) $r['subject_id']] = $r;
+            }
+            $conflicts = $svc->conflicts($examId, $classId);
+        }
+        return $this->view('admin.exams.schedule', [
+            'title'     => 'Schedule · ' . $exam['name'],
+            'exam'      => $exam,
+            'classes'   => QueryBuilder::table('classes')->select(['id', 'name'])->orderBy('numeric_level')->get(),
+            'classId'   => $classId,
+            'subjects'  => $subjects,
+            'current'   => $current,
+            'conflicts' => $conflicts,
+            'otherExams' => QueryBuilder::table('exams')->select(['id', 'name'])->where('id', '!=', $examId)->orderBy('id', 'DESC')->limit(100)->get(),
+        ]);
+    }
+
+    public function saveSchedule(Request $request, string $id): Response
+    {
+        $examId = (int) $id;
+        if (Exam::find($examId) === null) {
+            abort(404, 'Exam not found.');
+        }
+        $classId = (int) $request->input('class_id', 0);
+        if ($classId === 0) {
+            return $this->redirect('/admin/exams/' . $examId . '/schedule', ['error' => 'Select a class first.']);
+        }
+        $rows = (array) $request->input('subjects', []);
+        $r = (new \App\Services\ExamScheduleService())->saveSchedule($examId, $classId, $rows);
+        return $this->redirect('/admin/exams/' . $examId . '/schedule?class_id=' . $classId,
+            ['success' => "Schedule saved: +{$r['created']} scheduled, {$r['updated']} updated, {$r['removed']} removed."]);
+    }
+
+    public function copySchedule(Request $request, string $id): Response
+    {
+        $examId = (int) $id;
+        if (Exam::find($examId) === null) {
+            abort(404, 'Exam not found.');
+        }
+        $classId = (int) $request->input('class_id', 0);
+        $fromExamId = (int) $request->input('from_exam_id', 0);
+        if ($classId === 0 || $fromExamId === 0) {
+            return $this->redirect('/admin/exams/' . $examId . '/schedule', ['error' => 'Select a source exam and class to copy from.']);
+        }
+        $r = (new \App\Services\ExamScheduleService())->copyFrom($fromExamId, $examId, $classId);
+        return $this->redirect('/admin/exams/' . $examId . '/schedule?class_id=' . $classId,
+            ['success' => "Copied {$r['copied']} subject schedule row(s)."]);
     }
 
     /**

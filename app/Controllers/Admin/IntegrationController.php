@@ -31,6 +31,9 @@ final class IntegrationController extends Controller
             'title'     => 'Government Integrations',
             'providers' => $providers,
             'logs'      => GovSyncLog::recent(25),
+            'syncDashboard' => (new \App\Services\SyncJobService())->dashboard(),
+            'syncJobs'  => (new \App\Services\SyncJobService())->recent(15),
+            'directions' => array_map(fn ($p) => $svc->direction($p), array_combine(array_keys(GovernmentIntegrationService::providers()), array_keys(GovernmentIntegrationService::providers()))),
         ]);
     }
 

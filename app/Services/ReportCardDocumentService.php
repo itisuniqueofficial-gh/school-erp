@@ -207,7 +207,7 @@ final class ReportCardDocumentService
         }
         // Board/UDISE/affiliation are optional — pull from any group if present.
         $extra = QueryBuilder::table('settings')
-            ->whereIn('key', ['board_name', 'udise_code', 'affiliation_no', 'school_website'])->get();
+            ->whereIn('key', ['board_name', 'udise_code', 'affiliation_no', 'school_website', 'brand_color'])->get();
         foreach ($extra as $r) {
             $s[(string) $r['key']] = (string) $r['value'];
         }
@@ -220,6 +220,7 @@ final class ReportCardDocumentService
             'board'       => $s['board_name'] ?? '',
             'udise'       => $s['udise_code'] ?? '',
             'affiliation' => $s['affiliation_no'] ?? '',
+            'accent'      => $s['brand_color'] ?? '',
         ];
     }
 

@@ -24,14 +24,32 @@ final class GovernmentIntegrationService
      * @var array<string,array{label:string,fields:array<int,string>,secret:array<int,string>}>
      */
     private const PROVIDERS = [
-        'udise'       => ['label' => 'UDISE+',              'fields' => ['school_code', 'api_key'],                 'secret' => ['api_key']],
-        'apaar'       => ['label' => 'APAAR',               'fields' => ['client_id', 'client_secret', 'base_url'], 'secret' => ['client_secret']],
-        'abc'         => ['label' => 'Academic Bank of Credits', 'fields' => ['client_id', 'client_secret', 'base_url'], 'secret' => ['client_secret']],
-        'digilocker'  => ['label' => 'DigiLocker',          'fields' => ['client_id', 'client_secret', 'redirect_uri'], 'secret' => ['client_secret']],
-        'nad'         => ['label' => 'NAD',                 'fields' => ['client_id', 'client_secret'],             'secret' => ['client_secret']],
-        'emis'        => ['label' => 'State EMIS',          'fields' => ['state_code', 'api_key', 'base_url'],      'secret' => ['api_key']],
-        'scholarship' => ['label' => 'Scholarship Portal',  'fields' => ['portal_id', 'api_key', 'base_url'],       'secret' => ['api_key']],
+        'udise'       => ['label' => 'UDISE+',              'fields' => ['school_code', 'api_key'],                 'secret' => ['api_key'],       'direction' => 'bidirectional'],
+        'apaar'       => ['label' => 'APAAR',               'fields' => ['client_id', 'client_secret', 'base_url'], 'secret' => ['client_secret'], 'direction' => 'bidirectional'],
+        'abc'         => ['label' => 'Academic Bank of Credits', 'fields' => ['client_id', 'client_secret', 'base_url'], 'secret' => ['client_secret'], 'direction' => 'push'],
+        'digilocker'  => ['label' => 'DigiLocker',          'fields' => ['client_id', 'client_secret', 'redirect_uri'], 'secret' => ['client_secret'], 'direction' => 'pull'],
+        'nad'         => ['label' => 'NAD',                 'fields' => ['client_id', 'client_secret'],             'secret' => ['client_secret'], 'direction' => 'push'],
+        'emis'        => ['label' => 'State EMIS',          'fields' => ['state_code', 'api_key', 'base_url'],      'secret' => ['api_key'],       'direction' => 'bidirectional'],
+        'scholarship' => ['label' => 'Scholarship Portal',  'fields' => ['portal_id', 'api_key', 'base_url'],       'secret' => ['api_key'],       'direction' => 'pull'],
     ];
+
+    /** Supported operation direction for a provider: pull | push | bidirectional. */
+    public function direction(string $provider): string
+    {
+        return self::PROVIDERS[$provider]['direction'] ?? 'pull';
+    }
+
+    /** Whether a provider allows reading from the government source. */
+    public function supportsPull(string $provider): bool
+    {
+        return in_array($this->direction($provider), ['pull', 'bidirectional'], true);
+    }
+
+    /** Whether a provider allows writing to the government source. */
+    public function supportsPush(string $provider): bool
+    {
+        return in_array($this->direction($provider), ['push', 'bidirectional'], true);
+    }
 
     /** @return array<string,array{label:string,fields:array<int,string>,secret:array<int,string>}> */
     public static function providers(): array

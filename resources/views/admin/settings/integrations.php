@@ -8,6 +8,19 @@ $statusBadge = ['success' => 'badge-green', 'pending' => 'badge-slate', 'retry' 
 <?php $this->section('breadcrumb'); ?><a href="<?= e(url('/admin/settings')) ?>" class="hover:text-brand-600">Settings</a> / Government Integrations<?php $this->endSection(); ?>
 <?php $this->section('main'); ?>
 
+<?php $sd = $syncDashboard ?? []; ?>
+<div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <?php foreach ([
+        'Sync jobs' => $sd['total_jobs'] ?? 0, 'Completed' => $sd['completed'] ?? 0, 'Partial' => $sd['partial'] ?? 0,
+        'Failed' => $sd['failed'] ?? 0, 'Records created' => $sd['records_created'] ?? 0, 'Records updated' => $sd['records_updated'] ?? 0,
+    ] as $label => $val): ?>
+        <div class="card p-3 text-center">
+            <div class="text-2xl font-bold text-slate-800"><?= (int) $val ?></div>
+            <div class="text-xs text-slate-500"><?= e($label) ?></div>
+        </div>
+    <?php endforeach; ?>
+</div>
+
 <div class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
     <i class="fa-solid fa-building-columns mr-1"></i>
     Configure future government-system adapters. Credentials are <strong>encrypted at rest</strong> and never shown in full. Integrations stay disabled until you connect them; enabling only stores config — no external calls are made automatically.
@@ -20,6 +33,7 @@ $statusBadge = ['success' => 'badge-green', 'pending' => 'badge-slate', 'retry' 
             <h2 class="font-semibold text-slate-800"><?= e($meta['label']) ?></h2>
             <span class="badge <?= !empty($c['enabled']) ? 'badge-green' : 'badge-slate' ?>"><?= !empty($c['enabled']) ? 'Enabled' : 'Disabled' ?></span>
         </div>
+        <div class="mb-2 text-xs text-slate-400"><i class="fa-solid fa-right-left"></i> <?= e(ucfirst((string) ($directions[$key] ?? 'pull'))) ?> integration</div>
         <form method="POST" action="<?= e(url('/admin/settings/integrations/' . $key)) ?>" class="space-y-3" data-loading>
             <?= csrf_field() ?>
             <label class="flex items-center gap-2 text-sm">

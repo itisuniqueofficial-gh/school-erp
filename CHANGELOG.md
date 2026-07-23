@@ -4,6 +4,35 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.0] - 2026-07-23
+
+### Added
+- **Hall Ticket / Admit Card module** (Examinations): 10 document types, real
+  eligibility (class roster; back-paper/supplementary/repeater = failed students),
+  duplicate-safe bulk issuance, professional single-page PDF with QR, admin
+  management, student dashboard access, and public QR verification.
+- **Class-wise exam scheduling engine**: schedule a class's subjects
+  (date/time/marks) in one screen with conflict detection, copy-from-another-exam,
+  and create-time validation (end >= start, no duplicate exam in year+type scope).
+  Feeds hall tickets, marks and report cards from the same records.
+- **Universal “Go to Record by ID”** admin tool with canonical ID normalization
+  (case/space/hyphen tolerant), archive-inclusive lookup, and a clear
+  found / access-denied / archived / not-found distinction.
+- **Government sync backbone**: external-ID mapping + sync-job tracking +
+  duplicate-safe import engine + provider operation-direction gating + dashboard.
+- **Deployment-safe installer**: fresh-vs-existing detection (`InstallService`),
+  guarded `install`, and `install:status` (never reseeds a live database).
+
+### Changed
+- **Unified official-document engine** (`PdfDocument`): certificates and report
+  cards now share one header, verification band, typography and a configurable
+  brand accent colour. Server-side QR embedded directly in PDFs.
+- Certificate & report-card **preview now equals the PDF exactly** (inline embed).
+
+### Fixed
+- Certificate PDF is single-page (no orphan verification page) and free of
+  duplicated wording (e.g. “Class Class 1”).
+
 ## [1.5.1] - 2026-07-23
 
 ### Fixed

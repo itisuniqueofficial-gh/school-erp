@@ -18,6 +18,7 @@ use App\Controllers\Auth\PasswordController;
 use App\Controllers\HomeController;
 use App\Controllers\ReportVerificationController;
 use App\Controllers\CertificateVerificationController;
+use App\Controllers\HallTicketVerificationController;
 use App\Controllers\MediaController;
 use App\Controllers\AccountController;
 use App\Controllers\NotificationController;
@@ -37,6 +38,7 @@ use App\Controllers\Admin\TransportController;
 use App\Controllers\Admin\CommunicationController;
 use App\Controllers\Admin\CertificateController;
 use App\Controllers\Admin\CertificateRequestController;
+use App\Controllers\Admin\HallTicketController;
 use App\Controllers\Admin\ReportController;
 use App\Controllers\Admin\SettingController;
 use App\Controllers\Admin\RoleController;
@@ -53,6 +55,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
     // Public report-card QR verification (no auth; non-sensitive fields only).
     $router->get('/verify/report-card/{code}', ReportVerificationController::class . '@show')->name('verify.report_card');
     $router->get('/verify/certificate/{code}', CertificateVerificationController::class . '@show')->name('verify.certificate');
+    $router->get('/verify/hall-ticket/{code}', HallTicketVerificationController::class . '@show')->name('verify.hall_ticket');
 
     // --- Guest (authentication) -------------------------------------------
     $router->group(['middleware' => ['guest']], function ($router): void {
@@ -184,6 +187,9 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/exams', ExamController::class . '@index')->middleware('can:exams.view');
             $router->post('/exams', ExamController::class . '@store')->middleware('can:exams.manage');
             $router->get('/exams/{id}/marks', ExamController::class . '@marks')->middleware('can:exams.view');
+            $router->get('/exams/{id}/schedule', ExamController::class . '@schedule')->middleware('can:exams.manage');
+            $router->post('/exams/{id}/schedule', ExamController::class . '@saveSchedule')->middleware('can:exams.manage');
+            $router->post('/exams/{id}/schedule/copy', ExamController::class . '@copySchedule')->middleware('can:exams.manage');
             $router->post('/exams/{id}/marks', ExamController::class . '@storeMarks')->middleware('can:exams.manage');
             $router->get('/exams/{id}/report-cards', ExamController::class . '@reportCards')->middleware('can:exams.view');
             $router->post('/exams/{id}/report-cards/{studentId}/regenerate', ExamController::class . '@regenerateReportCard')->middleware('can:exams.manage');
@@ -202,6 +208,14 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/certificate-requests', CertificateRequestController::class . '@index')->middleware('can:certificates.view');
             $router->post('/certificate-requests/{reqUid}/approve', CertificateRequestController::class . '@approve')->middleware('can:certificates.manage');
             $router->post('/certificate-requests/{reqUid}/reject', CertificateRequestController::class . '@reject')->middleware('can:certificates.manage');
+
+            // Hall tickets / admit cards (Examinations)
+            $router->get('/hall-tickets', HallTicketController::class . '@index')->middleware('can:exams.view');
+            $router->get('/hall-tickets/generate', HallTicketController::class . '@generate')->middleware('can:exams.view');
+            $router->post('/hall-tickets', HallTicketController::class . '@store')->middleware('can:exams.manage');
+            $router->get('/hall-tickets/{code}', HallTicketController::class . '@show')->middleware('can:exams.view');
+            $router->get('/hall-tickets/{code}/download', HallTicketController::class . '@download')->middleware('can:exams.view');
+            $router->post('/hall-tickets/{code}/revoke', HallTicketController::class . '@revoke')->middleware('can:exams.manage');
             $router->post('/exams/{id}/marks/workflow', ExamController::class . '@marksWorkflow')->middleware('can:exams.view');
 
             // Fees
@@ -282,6 +296,9 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/certificates/request', StudentPortalController::class . '@submitCertificateRequest');
             $router->post('/certificates/{reqUid}/cancel', StudentPortalController::class . '@cancelCertificateRequest');
             $router->get('/certificates/{code}/download', StudentPortalController::class . '@downloadCertificate');
+            $router->get('/hall-tickets', StudentPortalController::class . '@hallTickets');
+            $router->get('/hall-tickets/{code}', StudentPortalController::class . '@hallTicket');
+            $router->get('/hall-tickets/{code}/download', StudentPortalController::class . '@downloadHallTicket');
             $router->get('/fees', StudentPortalController::class . '@fees');
             $router->get('/timetable', StudentPortalController::class . '@timetable');
             $router->get('/documents', StudentPortalController::class . '@documents');
