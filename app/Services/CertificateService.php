@@ -37,11 +37,11 @@ final class CertificateService
     private function template(string $type): string
     {
         return match ($type) {
-            'bonafide' => 'This is to certify that {name}, {guardian_line}, bearing Admission No. {admission_no} (Student ID {uid}), is a bonafide student of {school} studying in Class {class}{section_line} during the academic year {year}. This certificate is issued on the request of the student/guardian for official purposes.',
-            'transfer' => 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no}, Date of Birth {dob}, was a student of {school} in Class {class}{section_line} during the academic year {year}. The student has been granted a Transfer Certificate. Conduct and character during the period of study were satisfactory. All dues have been cleared.',
-            'leaving'  => 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no}, has left {school} after completing studies in Class {class}{section_line} for the academic year {year}. During the period of study, conduct and character were found to be satisfactory.',
-            'character'=> 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no}, has been a student of {school} in Class {class}{section_line}. To the best of our knowledge, the student bears a good moral character and has maintained satisfactory conduct throughout their association with the institution.',
-            'study'    => 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no} (Student ID {uid}), is currently pursuing studies in Class {class}{section_line} at {school} for the academic year {year}.',
+            'bonafide' => 'This is to certify that {name}, {guardian_line}, bearing Admission No. {admission_no} (Student ID {uid}), is a bonafide student of {school} studying in {class}{section_line} during the academic year {year}. This certificate is issued on the request of the student/guardian for official purposes.',
+            'transfer' => 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no}, Date of Birth {dob}, was a student of {school} in {class}{section_line} during the academic year {year}. The student has been granted a Transfer Certificate. Conduct and character during the period of study were satisfactory. All dues have been cleared.',
+            'leaving'  => 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no}, has left {school} after completing studies in {class}{section_line} for the academic year {year}. During the period of study, conduct and character were found to be satisfactory.',
+            'character'=> 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no}, has been a student of {school} in {class}{section_line}. To the best of our knowledge, the student bears a good moral character and has maintained satisfactory conduct throughout their association with the institution.',
+            'study'    => 'This is to certify that {name}, {guardian_line}, Admission No. {admission_no} (Student ID {uid}), is currently pursuing studies in {class}{section_line} at {school} for the academic year {year}.',
             default    => '',
         };
     }

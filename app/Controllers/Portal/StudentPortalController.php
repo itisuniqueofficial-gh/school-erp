@@ -317,9 +317,10 @@ final class StudentPortalController extends Controller
             abort(404, 'Report card not available.');
         }
         $pdf = (new ReportCardPdfService())->render($doc);
+        $disp = $request->query('inline') ? 'inline' : 'attachment';
         return (new Response($pdf, 200))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $code . '.pdf"');
+            ->header('Content-Disposition', $disp . '; filename="' . $code . '.pdf"');
     }
 
     // ===================================================================
@@ -388,9 +389,10 @@ final class StudentPortalController extends Controller
             abort(404, 'Certificate not available.');
         }
         $pdf = (new CertificatePdfService())->render($doc);
+        $disp = $request->query('inline') ? 'inline' : 'attachment';
         return (new Response($pdf, 200))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $code . '.pdf"');
+            ->header('Content-Disposition', $disp . '; filename="' . $code . '.pdf"');
     }
 
     public function fees(Request $request): Response

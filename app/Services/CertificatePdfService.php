@@ -98,26 +98,42 @@ final class CertificatePdfService
             $pdf->SetTextColor(20, 20, 20);
         }
 
-        // Signatures
-        $pdf->Ln(24);
-        $pdf->SetFont('Helvetica', '', 10);
-        $pdf->Cell(95, 6, '', 0, 0);
-        $pdf->Cell(95, 6, $this->tx('__________________________'), 0, 1, 'R');
-        $pdf->Cell(95, 5, '', 0, 0);
-        $pdf->Cell(95, 5, $this->tx('Principal / Authorised Signatory'), 0, 1, 'R');
+        // Signatures + official stamp area
+        $pdf->Ln(22);
+        $sigY = $pdf->GetY();
+        $pdf->SetFont('Helvetica', '', 9);
+        // Stamp box (left)
+        $pdf->SetDrawColor(180, 180, 180);
+        $pdf->SetLineWidth(0.2);
+        $pdf->Rect(24, $sigY, 45, 22);
+        $pdf->SetTextColor(150, 150, 150);
+        $pdf->Text(34, $sigY + 12, $this->tx('Official Stamp'));
+        // Signature (right)
+        $pdf->SetTextColor(20, 20, 20);
+        $pdf->SetXY(120, $sigY + 16);
+        $pdf->Cell(60, 6, $this->tx('__________________________'), 0, 2, 'C');
+        $pdf->Cell(60, 5, $this->tx('Principal / Authorised Signatory'), 0, 1, 'C');
 
-        // Verification footer
-        $pdf->SetY(-32);
+        // Verification footer with QR image (part of the single source of truth)
+        $pdf->SetY(-34);
         $pdf->SetDrawColor(180, 180, 180);
         $pdf->SetLineWidth(0.2);
         $pdf->Line(14, $pdf->GetY(), 196, $pdf->GetY());
         $pdf->Ln(2);
+        $footY = $pdf->GetY();
+        $qr = (new QrService())->pngPath((string) $doc['verify_url']);
+        if ($qr !== null) {
+            try { $pdf->Image($qr, 16, $footY, 22, 22, 'PNG'); } catch (\Throwable) {}
+        }
+        $pdf->SetXY(42, $footY + 2);
         $pdf->SetFont('Helvetica', 'B', 9);
         $pdf->SetTextColor(30, 64, 120);
-        $pdf->Cell(0, 5, $this->tx('Certificate ID: ' . $doc['cert_uid']), 0, 1, 'C');
+        $pdf->Cell(150, 5, $this->tx('Certificate ID: ' . $doc['cert_uid']), 0, 2, 'L');
         $pdf->SetFont('Helvetica', '', 8);
         $pdf->SetTextColor(90, 90, 90);
-        $pdf->Cell(0, 5, $this->tx('Verify authenticity at: ' . $doc['verify_url']), 0, 1, 'C');
+        $pdf->Cell(150, 5, $this->tx('Scan the QR code or visit the link below to verify authenticity:'), 0, 2, 'L');
+        $pdf->SetTextColor(30, 64, 120);
+        $pdf->Cell(150, 5, $this->tx((string) $doc['verify_url']), 0, 1, 'L');
 
         return $pdf->Output('S');
     }

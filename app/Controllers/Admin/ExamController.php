@@ -277,9 +277,10 @@ final class ExamController extends Controller
         }
         $pdf = (new \App\Services\ReportCardPdfService())->render($doc);
         AuditLogger::log('reportcard.downloaded', 'report_card', $sid, 'Downloaded ' . $doc['rc_uid']);
+        $disp = $request->query('inline') ? 'inline' : 'attachment';
         return (new Response($pdf, 200))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $doc['rc_uid'] . '.pdf"');
+            ->header('Content-Disposition', $disp . '; filename="' . $doc['rc_uid'] . '.pdf"');
     }
 
     /**

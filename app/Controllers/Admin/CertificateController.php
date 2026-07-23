@@ -88,9 +88,10 @@ final class CertificateController extends Controller
             abort(404, 'Certificate not found.');
         }
         $pdf = (new CertificatePdfService())->render($doc);
+        $disp = $request->query('inline') ? 'inline' : 'attachment';
         return (new Response($pdf, 200))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $code . '.pdf"');
+            ->header('Content-Disposition', $disp . '; filename="' . $code . '.pdf"');
     }
 
     public function revoke(Request $request, string $code): Response

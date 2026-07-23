@@ -193,11 +193,20 @@ final class ReportCardPdfService
         $y = $pdf->GetY();
         $pdf->Line(10, $y, 200, $y);
         $pdf->Ln(2);
+        $footY = $pdf->GetY();
+        $qr = (new QrService())->pngPath((string) $doc['verify_url']);
+        if ($qr !== null) {
+            try { $pdf->Image($qr, 12, $footY, 20, 20, 'PNG'); } catch (\Throwable) {}
+        }
+        $pdf->SetXY(36, $footY + 1);
         $pdf->SetFont('Helvetica', 'B', 9);
-        $pdf->Cell(0, 5, $this->tx('Report Card ID: ' . $doc['rc_uid'] . '   (Version ' . $doc['version'] . ')'), 0, 1, 'C');
+        $pdf->SetTextColor(30, 64, 120);
+        $pdf->Cell(160, 5, $this->tx('Report Card ID: ' . $doc['rc_uid'] . '   (Version ' . $doc['version'] . ')'), 0, 2, 'L');
         $pdf->SetFont('Helvetica', '', 8);
         $pdf->SetTextColor(80, 80, 80);
-        $pdf->Cell(0, 5, $this->tx('Verify authenticity at: ' . $doc['verify_url']), 0, 1, 'C');
+        $pdf->Cell(160, 5, $this->tx('Scan the QR code or visit the link below to verify authenticity:'), 0, 2, 'L');
+        $pdf->SetTextColor(30, 64, 120);
+        $pdf->Cell(160, 5, $this->tx((string) $doc['verify_url']), 0, 1, 'L');
 
         return $pdf->Output('S');
     }
