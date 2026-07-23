@@ -59,7 +59,23 @@ final class PdfDocument extends \FPDF
      */
     public function officialHeader(array $b, float $topY = 23.0): void
     {
-        $this->SetY($topY);
+        // Logo centered above the school name, aspect-ratio preserved (never
+        // stretched), width-capped, so the header reads as one balanced unit.
+        $logo = (string) ($b['logo'] ?? '');
+        $y = $topY;
+        if ($logo !== '' && is_file($logo)) {
+            $size = @getimagesize($logo);
+            if (is_array($size) && (int) $size[1] > 0) {
+                $h = 16.0;
+                $w = $h * ((int) $size[0] / (int) $size[1]);
+                if ($w > 45.0) { $w = 45.0; $h = $w * ((int) $size[1] / (int) $size[0]); }
+                try {
+                    $this->Image($logo, (210 - $w) / 2, $y, $w, $h);
+                    $y += $h + 3.0;
+                } catch (\Throwable) {}
+            }
+        }
+        $this->SetY($y);
         $this->SetFont('Helvetica', 'B', 19);
         $this->accentColor();
         $this->Cell(0, 9, $this->tx((string) ($b['name'] ?? 'School')), 0, 1, 'C');

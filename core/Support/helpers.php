@@ -287,18 +287,40 @@ if (!function_exists('abort')) {
             422 => 'Unprocessable Entity',
             429 => 'Too Many Requests',
             500 => 'Internal Server Error',
+            503 => 'Service Unavailable',
         ];
         $title = $messages[$code] ?? 'Error';
-        $message = $message ?: $title;
+        $isServer = $code >= 500;
+
+        // Correlate the friendly page with the private log entry.
+        try {
+            $reference = 'ERR-' . strtoupper(bin2hex(random_bytes(4)));
+        } catch (\Throwable) {
+            $reference = 'ERR-' . strtoupper(substr(md5((string) microtime(true)), 0, 8));
+        }
+
+        // Server errors: log the technical detail privately; never expose it in
+        // production. Client errors: the supplied message is safe to show.
+        $debug = (bool) config('app.debug');
+        if ($isServer) {
+            try {
+                logger()->error('[' . $reference . '] ' . $code . ' ' . $title . ($message !== '' ? ' — ' . $message : ''));
+            } catch (\Throwable) {
+            }
+            $shown = $debug && $message !== '' ? $message : 'An unexpected error occurred on our side. Please try again, or contact your administrator with the reference below.';
+        } else {
+            $shown = $message !== '' ? $message : $title;
+        }
 
         // Try to render a friendly error page; fall back to plain text.
         $genericView = config('paths.views') . '/errors/generic.php';
         if (is_file($genericView)) {
             try {
                 echo view('errors.generic', [
-                    'code'    => $code,
-                    'title'   => $title,
-                    'message' => $message,
+                    'code'      => $code,
+                    'title'     => $title,
+                    'message'   => $shown,
+                    'reference' => $isServer ? $reference : null,
                 ]);
                 exit;
             } catch (\Throwable) {
@@ -307,7 +329,7 @@ if (!function_exists('abort')) {
         }
 
         header('Content-Type: text/plain; charset=UTF-8');
-        echo "{$code} {$title}\n{$message}";
+        echo "{$code} {$title}\n{$shown}" . ($isServer ? "\nReference: {$reference}" : '');
         exit;
     }
 }
@@ -316,6 +338,31 @@ if (!function_exists('logger')) {
     function logger(): \Core\Support\Logger
     {
         return app(\Core\Support\Logger::class);
+    }
+}
+
+if (!function_exists('brand_logo_url')) {
+    /**
+     * Public URL of the configured school logo (also used as the favicon),
+     * cache-busted so a replaced logo is picked up. Null when none is set.
+     */
+    function brand_logo_url(): ?string
+    {
+        static $cached = false;
+        if ($cached !== false) {
+            return $cached;
+        }
+        try {
+            $file = \Core\Database\QueryBuilder::table('settings')->where('key', 'school_logo')->value('value');
+            $file = is_string($file) ? trim($file) : '';
+            if ($file === '') {
+                return $cached = null;
+            }
+            $hex = pathinfo($file, PATHINFO_FILENAME);
+            return $cached = url('/media/avatar/' . $hex) . '?v=' . substr(md5($file), 0, 8);
+        } catch (\Throwable) {
+            return $cached = null;
+        }
     }
 }
 

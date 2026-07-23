@@ -20,9 +20,25 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
     <!-- Profile card -->
     <div class="card p-6 text-center">
         <?php if (!empty($student['photo'])): ?>
-            <img src="<?= e(asset('storage/uploads/students/' . $student['photo'])) ?>" alt="<?= e($name) ?>" class="mx-auto h-28 w-28 rounded-full object-cover">
+            <img src="<?= e(url('/media/avatar/' . pathinfo((string) $student['photo'], PATHINFO_FILENAME))) ?>" alt="<?= e($name) ?>" class="mx-auto h-28 w-28 rounded-full object-cover" onerror="this.style.display='none'">
         <?php else: ?>
             <span class="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-brand-600 text-3xl font-bold text-white"><?= e(strtoupper(substr((string) $student['first_name'], 0, 1))) ?></span>
+        <?php endif; ?>
+        <?php if (auth()->can('students.update')): ?>
+        <div class="mt-3">
+            <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/photo')) ?>" enctype="multipart/form-data" class="flex flex-col items-center gap-2" data-loading>
+                <?= csrf_field() ?>
+                <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required class="text-xs file:mr-2 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-brand-700">
+                <button class="btn btn-primary btn-sm"><i class="fa-solid fa-upload"></i> <?= !empty($student['photo']) ? 'Change' : 'Upload' ?> Photo</button>
+            </form>
+            <?php if (!empty($student['photo'])): ?>
+            <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/photo')) ?>" class="mt-2" data-confirm="Remove this student's profile photo?">
+                <?= csrf_field() ?><?= method_field('DELETE') ?>
+                <button class="text-xs font-medium text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Remove photo</button>
+            </form>
+            <?php endif; ?>
+            <p class="mt-1 text-xs text-slate-400">JPG, PNG or WebP &middot; max 1 MB &middot; square is best</p>
+        </div>
         <?php endif; ?>
         <h2 class="mt-4 text-lg font-bold text-slate-900"><?= e($name) ?></h2>
         <p class="text-sm text-slate-500"><?= e((string) $student['admission_no']) ?></p>

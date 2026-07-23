@@ -30,6 +30,7 @@ node_modules/
 # Backups / database dumps (schema.sql & migrations are intentionally tracked)
 /storage/backups/*.sql
 /storage/backups/*.zip
+/storage/backups/snapshots/
 *.sql.gz
 *.tar
 *.tar.gz

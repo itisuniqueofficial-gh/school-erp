@@ -78,6 +78,56 @@ final class BackupService
         return $code === 0;
     }
 
+    /**
+     * Verify a backup file is a valid, non-empty, restorable SQL dump that
+     * covers the critical tables. This is the "trust but verify" step: a backup
+     * you cannot restore is not data safety.
+     *
+     * @return array{ok:bool,size:int,tables:int,inserts:int,critical:array<string,bool>,missing:array<int,string>,message:string}
+     */
+    public function verify(string $filename): array
+    {
+        $criticalTables = ['migrations', 'users', 'students', 'certificates', 'settings'];
+        $r = ['ok' => false, 'size' => 0, 'tables' => 0, 'inserts' => 0, 'critical' => [], 'missing' => [], 'message' => ''];
+
+        $file = $this->path($filename);
+        if ($file === null) {
+            $r['message'] = 'Backup file not found.';
+            return $r;
+        }
+        $r['size'] = (int) filesize($file);
+        if ($r['size'] <= 0) {
+            $r['message'] = 'Backup file is empty (0 bytes).';
+            return $r;
+        }
+        $content = @file_get_contents($file);
+        if ($content === false || $content === '') {
+            $r['message'] = 'Backup file could not be read.';
+            return $r;
+        }
+
+        $r['tables'] = (int) preg_match_all('/CREATE TABLE/i', $content);
+        $r['inserts'] = (int) preg_match_all('/INSERT INTO/i', $content);
+        if ($r['tables'] === 0) {
+            $r['message'] = 'No CREATE TABLE statements found — this is not a valid schema dump.';
+            return $r;
+        }
+
+        foreach ($criticalTables as $t) {
+            $present = (bool) preg_match('/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?`?' . preg_quote($t, '/') . '`?/i', $content);
+            $r['critical'][$t] = $present;
+            if (!$present) {
+                $r['missing'][] = $t;
+            }
+        }
+
+        $r['ok'] = $r['missing'] === [];
+        $r['message'] = $r['ok']
+            ? sprintf('Valid dump: %d tables, %d insert statements, %s bytes.', $r['tables'], $r['inserts'], number_format($r['size']))
+            : 'Missing critical tables in dump: ' . implode(', ', $r['missing']);
+        return $r;
+    }
+
     /** @return array<int,array{name:string,size:int,created:int}> */
     public function list(): array
     {

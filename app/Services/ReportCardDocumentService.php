@@ -207,10 +207,12 @@ final class ReportCardDocumentService
         }
         // Board/UDISE/affiliation are optional — pull from any group if present.
         $extra = QueryBuilder::table('settings')
-            ->whereIn('key', ['board_name', 'udise_code', 'affiliation_no', 'school_website', 'brand_color'])->get();
+            ->whereIn('key', ['board_name', 'udise_code', 'affiliation_no', 'school_website', 'brand_color', 'school_logo'])->get();
         foreach ($extra as $r) {
             $s[(string) $r['key']] = (string) $r['value'];
         }
+        $logoFile = trim((string) ($s['school_logo'] ?? ''));
+        $logoPath = $logoFile !== '' ? (new AvatarService())->path($logoFile) : null;
         return [
             'name'        => $s['school_name'] ?? 'School',
             'address'     => $s['school_address'] ?? '',
@@ -221,6 +223,8 @@ final class ReportCardDocumentService
             'udise'       => $s['udise_code'] ?? '',
             'affiliation' => $s['affiliation_no'] ?? '',
             'accent'      => $s['brand_color'] ?? '',
+            'logo_file'   => $logoFile,
+            'logo'        => $logoPath, // absolute path for PDF embedding, or null
         ];
     }
 

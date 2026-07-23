@@ -38,6 +38,19 @@ if (is_file($root . '/vendor/autoload.php')) {
 
 // --- Environment & Configuration -------------------------------------------
 Env::load($root . '/.env');
+
+// --- Test-database isolation ----------------------------------------------
+// When APP_TESTING=1 is exported (test harness / CI), transparently switch to a
+// dedicated "<db>_test" database and the "testing" environment so destructive
+// test operations (migrate:fresh) can NEVER touch the real/production database.
+if (getenv('APP_TESTING') === '1') {
+    $baseDb = (string) Env::get('DB_DATABASE', 'school_erp');
+    if (!str_ends_with($baseDb, '_test')) {
+        Env::set('DB_DATABASE', $baseDb . '_test');
+    }
+    Env::set('APP_ENV', 'testing');
+}
+
 Config::load($root . '/config');
 
 date_default_timezone_set((string) Config::get('app.timezone', 'UTC'));

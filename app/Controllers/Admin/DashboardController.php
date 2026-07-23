@@ -27,6 +27,7 @@ final class DashboardController extends Controller
             'studentsByClass'=> $stats->studentsByClass(),
             'activity'       => $stats->recentActivity(),
             'notices'        => $stats->notices(),
+            'attention'      => (new IntegrityService())->attention(6),
         ]);
     }
 

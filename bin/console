@@ -51,13 +51,20 @@ try {
             break;
 
         case 'migrate:fresh':
-            // Guard: migrate:fresh DROPS ALL TABLES. Never allow it to run in a
-            // production environment by accident — require an explicit --force.
-            if (config('app.env') === 'production' && !in_array('--force', $argv, true)) {
-                $out('REFUSED: migrate:fresh drops all tables and would destroy production data.', 'red');
-                $out('This is a destructive operation and APP_ENV=production.', 'yellow');
-                $out('Use "php bin/console migrate" for safe additive upgrades, or', 'yellow');
-                $out('re-run with --force if you are absolutely certain.', 'yellow');
+            // Guard: migrate:fresh DROPS ALL TABLES. Refuse when it would destroy
+            // real data — production env, OR a non-"_test" database that already
+            // holds records — unless an explicit --force is given.
+            $force = in_array('--force', $argv, true);
+            $dbName = (string) config('database.connections.' . config('database.default') . '.database');
+            $isTestDb = str_ends_with($dbName, '_test');
+            $hasData = false;
+            try { $hasData = (int) (\Core\Database\Connection::instance()->selectOne('SELECT COUNT(*) AS c FROM `users`')['c'] ?? 0) > 0; } catch (\Throwable) {}
+            if (!$force && (config('app.env') === 'production' || (!$isTestDb && $hasData))) {
+                $out('REFUSED: migrate:fresh drops ALL tables and would destroy existing data.', 'red');
+                $out("Target database: '{$dbName}'" . ($hasData ? ' (contains records)' : '') . '.', 'yellow');
+                $out('For tests use a dedicated DB: APP_TESTING=1 php bin/console migrate:fresh', 'yellow');
+                $out('For safe upgrades use: php bin/console migrate   (additive, non-destructive)', 'yellow');
+                $out('Re-run with --force only if you are absolutely certain.', 'yellow');
                 exit(1);
             }
             $out('Dropping all tables...', 'yellow');
@@ -207,11 +214,67 @@ try {
 
         case 'backup':
             $out('Running database backup...', 'cyan');
-            $file = (new \App\Services\BackupService())->create();
+            $svc = new \App\Services\BackupService();
+            $file = $svc->create();
             if ($file !== null) {
                 $out("Backup written to: {$file}", 'green');
+                $v = $svc->verify(basename($file));
+                $out(($v['ok'] ? 'VERIFIED: ' : 'WARNING: ') . $v['message'], $v['ok'] ? 'green' : 'red');
+                if (!$v['ok']) {
+                    exit(1);
+                }
             } else {
                 $out('Backup failed. Ensure mysqldump is installed and credentials are correct.', 'red');
+                exit(1);
+            }
+            break;
+
+        case 'backup:verify':
+            $target = $argv[2] ?? '';
+            if ($target === '') {
+                $out('Usage: php bin/console backup:verify <filename.sql>', 'yellow');
+                $list = (new \App\Services\BackupService())->list();
+                if ($list !== []) {
+                    $out('Available backups:', 'cyan');
+                    foreach ($list as $b) { $out('  ' . $b['name'] . ' (' . number_format($b['size']) . ' bytes)'); }
+                }
+                exit(1);
+            }
+            $v = (new \App\Services\BackupService())->verify($target);
+            $out(($v['ok'] ? 'VERIFIED: ' : 'INVALID: ') . $v['message'], $v['ok'] ? 'green' : 'red');
+            exit($v['ok'] ? 0 : 1);
+
+        case 'restore':
+            // Restore OVERWRITES the target database. Verify the dump first, and
+            // refuse to overwrite a populated non-"_test" DB unless --force.
+            $target = $argv[2] ?? '';
+            $force = in_array('--force', $argv, true);
+            if ($target === '') {
+                $out('Usage: php bin/console restore <filename.sql> [--force]', 'yellow');
+                exit(1);
+            }
+            $svc = new \App\Services\BackupService();
+            $v = $svc->verify($target);
+            if (!$v['ok']) {
+                $out('REFUSED: backup did not pass verification — ' . $v['message'], 'red');
+                exit(1);
+            }
+            $dbName = (string) config('database.connections.' . config('database.default') . '.database');
+            $isTestDb = str_ends_with($dbName, '_test');
+            $hasData = false;
+            try { $hasData = (int) (\Core\Database\Connection::instance()->selectOne('SELECT COUNT(*) AS c FROM `users`')['c'] ?? 0) > 0; } catch (\Throwable) {}
+            if (!$force && (config('app.env') === 'production' || (!$isTestDb && $hasData))) {
+                $out('REFUSED: restore OVERWRITES all data in the target database.', 'red');
+                $out("Target database: '{$dbName}'" . ($hasData ? ' (contains records)' : '') . '.', 'yellow');
+                $out('Take a fresh backup first, then re-run with --force if you are certain.', 'yellow');
+                exit(1);
+            }
+            $out("Restoring '{$target}' into '{$dbName}'...", 'cyan');
+            if ($svc->restore($target)) {
+                $out('Restore complete. Verify with: php bin/console health', 'green');
+            } else {
+                $out('Restore failed. Ensure the mysql client is installed and credentials are correct.', 'red');
+                exit(1);
             }
             break;
 
@@ -232,6 +295,43 @@ try {
         case 'cleanup:sessions':
             $n = (new \App\Services\BackupService())->cleanupSessions();
             $out("Removed {$n} expired session file(s).", 'green');
+            break;
+
+        case 'snapshot':
+            $svc = new \App\Services\MigrationSnapshotService();
+            $file = $svc->save();
+            $snap = $svc->load($file);
+            $out('Migration snapshot written: ' . $file, 'green');
+            $out('  DB: ' . ($snap['database'] ?? '?') . ' (' . ($snap['driver'] ?? '?') . ')  env: ' . ($snap['environment'] ?? '?'), 'cyan');
+            $out('  Total records: ' . ($snap['total_records'] ?? 0) . '   Migrations applied: ' . ($snap['migrations_applied'] ?? 0), 'cyan');
+            break;
+
+        case 'snapshot:compare':
+            $path = $argv[2] ?? '';
+            $svc = new \App\Services\MigrationSnapshotService();
+            $before = $path !== '' ? $svc->load($path) : null;
+            if ($before === null) {
+                $out('Usage: php bin/console snapshot:compare <path-to-snapshot.json>', 'red');
+                $out('The file is a snapshot taken on the SOURCE server (php bin/console snapshot).', 'yellow');
+                exit(1);
+            }
+            $r = $svc->compareToCurrent($before);
+            $out('Comparing source snapshot -> current database...', 'cyan');
+            foreach ($r['dropped'] as $d) {
+                $out("  [DATA LOSS] {$d['table']}: {$d['before']} -> {$d['after']}", 'red');
+            }
+            foreach ($r['missing'] as $m) {
+                $out("  [MISSING TABLE] {$m}", 'red');
+            }
+            foreach ($r['added'] as $a) {
+                $out("  [grew] {$a['table']}: {$a['before']} -> {$a['after']}", 'yellow');
+            }
+            if ($r['safe']) {
+                $out('SAFE: no records were lost. Migration integrity verified.', 'green');
+            } else {
+                $out('UNSAFE: record loss detected. DO NOT switch production traffic. Investigate before proceeding.', 'red');
+                exit(1);
+            }
             break;
 
         case 'install:status':
@@ -277,7 +377,9 @@ try {
             $out('  install            Migrate + seed in one step');
             $out('  install:status     Show fresh/existing install state (deploy-safe)');
             $out('  key:generate       Generate & write APP_KEY into .env');
-            $out('  backup             Dump the database to storage/backups');
+            $out('  backup             Dump the database to storage/backups (auto-verified)');
+            $out('  backup:verify <f>  Verify a backup file is valid & restorable');
+            $out('  restore <f>        Restore DB from a verified backup (guarded; --force to overwrite)');
             $out('  reminders          Generate birthday/fee/exam/holiday reminders');
             $out('  cleanup:logs [days] Delete log files older than N days (default 30)');
             $out('  cleanup:sessions   Delete expired session files');

@@ -96,6 +96,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
         $router->group(['prefix' => 'admin', 'middleware' => ['role:super_admin,school_admin,principal,vice_principal,receptionist,hr,accountant']], function ($router): void {
             $router->get('/dashboard', DashboardController::class . '@index')->name('admin.dashboard');
             $router->get('/lookup', \App\Controllers\Admin\IdLookupController::class . '@index')->name('admin.lookup');
+            $router->get('/system/status', \App\Controllers\Admin\SystemStatusController::class . '@index')->middleware('can:settings.view')->name('admin.system.status');
             $router->get('/dashboard/stats', DashboardController::class . '@stats')->name('admin.dashboard.stats');
             $router->get('/setup', DashboardController::class . '@setupCenter')->middleware('can:academic.view');
             $router->get('/academic/health', DashboardController::class . '@academicHealth')->middleware('can:academic.view');
@@ -105,6 +106,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/students/create', StudentController::class . '@create')->middleware('can:students.create');
             $router->post('/students', StudentController::class . '@store')->middleware('can:students.create');
             $router->get('/students/{id}', StudentController::class . '@show')->middleware('can:students.view');
+            $router->post('/students/{id}/photo', StudentController::class . '@uploadPhoto')->middleware('can:students.update');
+            $router->delete('/students/{id}/photo', StudentController::class . '@removePhoto')->middleware('can:students.update');
             $router->get('/students/{id}/edit', StudentController::class . '@edit')->middleware('can:students.update');
             $router->put('/students/{id}', StudentController::class . '@update')->middleware('can:students.update');
             $router->delete('/students/{id}', StudentController::class . '@destroy')->middleware('can:students.delete');
@@ -159,6 +162,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/academic/class-subjects', AcademicController::class . '@classSubjects')->middleware('can:academic.view');
             $router->post('/academic/class-subjects', AcademicController::class . '@storeClassSubject')->middleware('can:academic.manage');
             $router->delete('/academic/class-subjects/{id}', AcademicController::class . '@removeClassSubject')->middleware('can:academic.manage');
+            $router->post('/academic/class-subjects/copy', AcademicController::class . '@copyClassSubjects')->middleware('can:academic.manage');
+            $router->post('/academic/class-subjects/{id}/move', AcademicController::class . '@moveClassSubject')->middleware('can:academic.manage');
             $router->get('/academic/classes', AcademicController::class . '@classes')->middleware('can:academic.view');
             $router->post('/academic/classes', AcademicController::class . '@storeClass')->middleware('can:academic.manage');
             $router->get('/academic/classes/{id}', AcademicController::class . '@classDashboard')->middleware('can:academic.view');
@@ -259,6 +264,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             // Settings
             $router->get('/settings', SettingController::class . '@index')->middleware('can:settings.view');
             $router->post('/settings', SettingController::class . '@update')->middleware('can:settings.manage');
+            $router->post('/settings/logo', SettingController::class . '@uploadLogo')->middleware('can:settings.manage');
+            $router->delete('/settings/logo', SettingController::class . '@removeLogo')->middleware('can:settings.manage');
             $router->get('/settings/payments', \App\Controllers\Admin\PaymentSettingsController::class . '@index')->middleware('can:settings.manage');
             $router->post('/settings/payments/{gateway}', \App\Controllers\Admin\PaymentSettingsController::class . '@save')->middleware('can:settings.manage');
             $router->get('/settings/institution', \App\Controllers\Admin\InstitutionController::class . '@index')->middleware('can:settings.manage');

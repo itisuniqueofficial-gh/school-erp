@@ -412,14 +412,8 @@ final class AcademicController extends Controller
     {
         $classId = (int) $request->query('class_id', 0);
         $yearId = (int) (QueryBuilder::table('academic_years')->where('is_current', 1)->value('id') ?? 0);
-        $allocations = [];
-        if ($classId) {
-            $allocations = QueryBuilder::table('class_subjects')
-                ->select(['class_subjects.*', 'subjects.name AS subject_name', 'subjects.code AS subject_code'])
-                ->join('subjects', 'class_subjects.subject_id', '=', 'subjects.id')
-                ->where('class_subjects.class_id', $classId)
-                ->orderBy('subjects.name')->get();
-        }
+        $svc = new \App\Services\ClassSubjectService();
+        $allocations = $classId ? $svc->forClass($classId) : [];
         return $this->view('admin.academic.class-subjects', [
             'title'       => 'Class Subjects',
             'classes'     => ClassModel::ordered(),
@@ -427,6 +421,8 @@ final class AcademicController extends Controller
             'allocations' => $allocations,
             'selected'    => ['class_id' => $classId],
             'yearId'      => $yearId,
+            'types'       => $svc->types(),
+            'health'      => $svc->setupHealth(),
         ]);
     }
 
@@ -440,23 +436,40 @@ final class AcademicController extends Controller
         ]);
         $classId = (int) $data['class_id'];
         $subjectId = (int) $data['subject_id'];
-
-        // Application-level duplicate guard (DB UNIQUE(class_id,subject_id) is the backstop).
-        if (QueryBuilder::table('class_subjects')->where('class_id', $classId)->where('subject_id', $subjectId)->exists()) {
-            return $this->redirect('/admin/academic/class-subjects?class_id=' . $classId, ['error' => 'That subject is already allocated to this class.']);
-        }
+        $existed = QueryBuilder::table('class_subjects')->where('class_id', $classId)->where('subject_id', $subjectId)->exists();
         try {
-            $csId = QueryBuilder::table('class_subjects')->insert([
-                'class_id' => $classId, 'subject_id' => $subjectId,
-                'full_marks' => (int) ($data['full_marks'] ?? 100), 'pass_marks' => (int) ($data['pass_marks'] ?? 33),
-                'status' => 'active', 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+            (new \App\Services\ClassSubjectService())->assign($classId, $subjectId, [
+                'type'       => (string) $request->input('subject_type', 'core'),
+                'mandatory'  => $request->input('is_mandatory') !== null ? (bool) $request->input('is_mandatory') : null,
+                'full_marks' => (int) ($data['full_marks'] ?? 100),
+                'pass_marks' => (int) ($data['pass_marks'] ?? 33),
             ]);
-            QueryBuilder::table('class_subjects')->where('id', $csId)->update(['public_id' => sprintf('CSA-%04d', $csId)]);
         } catch (\Throwable) {
             return $this->redirect('/admin/academic/class-subjects?class_id=' . $classId, ['error' => 'Duplicate allocation prevented by the database.']);
         }
-        AuditLogger::log('academic.class_subject_allocated', 'class_subject', $csId, "Allocated subject {$subjectId} to class {$classId}");
-        return $this->redirect('/admin/academic/class-subjects?class_id=' . $classId, ['success' => 'Subject allocated to class.']);
+        return $this->redirect('/admin/academic/class-subjects?class_id=' . $classId,
+            [$existed ? 'success' : 'success' => $existed ? 'Subject allocation updated.' : 'Subject allocated to class.']);
+    }
+
+    /** Reorder a class-subject allocation up/down. */
+    public function moveClassSubject(Request $request, string $id): Response
+    {
+        $dir = $request->input('direction') === 'up' ? 'up' : 'down';
+        $row = QueryBuilder::table('class_subjects')->where('id', (int) $id)->first();
+        (new \App\Services\ClassSubjectService())->move((int) $id, $dir);
+        return $this->redirect('/admin/academic/class-subjects?class_id=' . (int) ($row['class_id'] ?? 0), ['success' => 'Order updated.']);
+    }
+
+    /** Copy the whole subject structure from another class. */
+    public function copyClassSubjects(Request $request): Response
+    {
+        $toClassId = (int) $request->input('class_id', 0);
+        $fromClassId = (int) $request->input('from_class_id', 0);
+        if ($toClassId === 0 || $fromClassId === 0 || $toClassId === $fromClassId) {
+            return $this->redirect('/admin/academic/class-subjects?class_id=' . $toClassId, ['error' => 'Select a different source class to copy from.']);
+        }
+        $r = (new \App\Services\ClassSubjectService())->copyFromClass($fromClassId, $toClassId);
+        return $this->redirect('/admin/academic/class-subjects?class_id=' . $toClassId, ['success' => "Copied {$r['copied']} subject(s) from the selected class."]);
     }
 
     public function removeClassSubject(Request $request, string $id): Response

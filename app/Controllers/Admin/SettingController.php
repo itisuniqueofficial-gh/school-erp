@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Services\AuditLogger;
+use App\Services\AvatarService;
 use Core\Config\Config;
 use Core\Database\QueryBuilder;
 use Core\Http\Request;
@@ -62,6 +63,52 @@ final class SettingController extends Controller
 
         AuditLogger::log('settings.updated', 'settings', null, 'Updated system settings');
         return $this->redirect('/admin/settings', ['success' => 'Settings saved.']);
+    }
+
+    /** Upload/replace the school logo (used in navigation, login and all documents). */
+    public function uploadLogo(Request $request): Response
+    {
+        $file = $request->file('logo');
+        if ($file === null || !$file->isValid()) {
+            return $this->redirect('/admin/settings', ['error' => 'Please choose a logo image to upload.']);
+        }
+        $svc = new AvatarService();
+        $res = $svc->store($file, 5242880); // 5 MB
+        if (!$res['ok']) {
+            return $this->redirect('/admin/settings', ['error' => $res['message']]);
+        }
+        $old = QueryBuilder::table('settings')->where('key', 'school_logo')->value('value');
+        $this->putSetting('school_logo', (string) $res['filename']);
+        if (!empty($old)) {
+            $svc->delete((string) $old);
+        }
+        AuditLogger::log('settings.logo_updated', 'settings', null, 'Updated school logo');
+        return $this->redirect('/admin/settings', ['success' => 'School logo updated. It now appears across the ERP and generated documents.']);
+    }
+
+    /** Remove the school logo (falls back to the default). */
+    public function removeLogo(Request $request): Response
+    {
+        $old = QueryBuilder::table('settings')->where('key', 'school_logo')->value('value');
+        if (!empty($old)) {
+            (new AvatarService())->delete((string) $old);
+        }
+        $this->putSetting('school_logo', '');
+        AuditLogger::log('settings.logo_removed', 'settings', null, 'Removed school logo');
+        return $this->redirect('/admin/settings', ['success' => 'School logo removed. The default logo will be used.']);
+    }
+
+    /** Upsert a single general setting. */
+    private function putSetting(string $key, string $value): void
+    {
+        if (QueryBuilder::table('settings')->where('key', $key)->first() !== null) {
+            QueryBuilder::table('settings')->where('key', $key)->update(['value' => $value, 'updated_at' => date('Y-m-d H:i:s')]);
+        } else {
+            QueryBuilder::table('settings')->insert([
+                'group' => 'general', 'key' => $key, 'value' => $value, 'type' => 'string',
+                'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
     }
 
     public function backup(Request $request): Response

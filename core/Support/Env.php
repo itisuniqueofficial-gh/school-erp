@@ -67,6 +67,12 @@ final class Env
     /**
      * Retrieve an environment value with optional default and type casting.
      */
+    /** Override or set a variable at runtime (used e.g. for test-database isolation). */
+    public static function set(string $key, mixed $value): void
+    {
+        self::$variables[$key] = $value;
+    }
+
     public static function get(string $key, mixed $default = null): mixed
     {
         $value = self::$variables[$key] ?? getenv($key);

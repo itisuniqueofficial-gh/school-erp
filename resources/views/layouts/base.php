@@ -8,6 +8,14 @@
     <title><?= e($this->yield('title', ($title ?? 'Dashboard') . ' · ' . ($appName ?? config('app.name')))) ?></title>
     <meta name="description" content="<?= e(($appName ?? config('app.name'))) ?> — School management system.">
 
+    <?php $faviconUrl = function_exists('brand_logo_url') ? brand_logo_url() : null; ?>
+    <?php if ($faviconUrl): ?>
+        <link rel="icon" type="image/png" href="<?= e($faviconUrl) ?>">
+        <link rel="apple-touch-icon" href="<?= e($faviconUrl) ?>">
+    <?php else: ?>
+        <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%232563eb'/%3E%3Cpath d='M12 5L3 9l9 4 7-3.1V15h2V9z' fill='white'/%3E%3Cpath d='M6 12.5V16c0 1.1 2.7 2 6 2s6-.9 6-2v-3.5l-6 2.7z' fill='white'/%3E%3C/svg%3E">
+    <?php endif; ?>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>

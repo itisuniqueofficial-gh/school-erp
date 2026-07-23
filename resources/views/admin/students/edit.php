@@ -75,8 +75,14 @@ $v = static fn (string $k, $d = '') => e((string) (old($k) !== '' ? old($k) : ($
                 <input id="phone" name="phone" class="form-input" value="<?= $v('phone') ?>">
             </div>
             <div>
-                <label class="form-label" for="photo">Replace photo</label>
-                <input id="photo" name="photo" type="file" accept="image/*" class="form-input">
+                <label class="form-label" for="photo">Profile photo</label>
+                <div class="flex items-center gap-3">
+                    <?php if (!empty($student['photo'])): ?>
+                        <img src="<?= e(url('/media/avatar/' . pathinfo((string) $student['photo'], PATHINFO_FILENAME))) ?>" alt="Current photo" class="h-12 w-12 rounded-full object-cover" onerror="this.style.display='none'">
+                    <?php endif; ?>
+                    <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="form-input">
+                </div>
+                <p class="mt-1 text-xs text-slate-400">Leave empty to keep the current photo. JPG, PNG or WebP &middot; max 1 MB.</p>
             </div>
             <div class="sm:col-span-2 lg:col-span-3">
                 <label class="form-label" for="address">Address</label>

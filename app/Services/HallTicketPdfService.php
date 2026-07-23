@@ -137,6 +137,10 @@ final class HallTicketPdfService
         if ($photo === '') {
             return null;
         }
+        $avatar = (new AvatarService())->path($photo);
+        if ($avatar !== null) {
+            return $avatar;
+        }
         foreach ([
             dirname(__DIR__, 2) . '/storage/uploads/' . ltrim($photo, '/'),
             dirname(__DIR__, 2) . '/public/' . ltrim($photo, '/'),

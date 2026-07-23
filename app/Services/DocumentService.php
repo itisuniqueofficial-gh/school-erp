@@ -60,6 +60,13 @@ final class DocumentService
             return ['ok' => false, 'message' => 'File exceeds the maximum allowed size.', 'id' => null];
         }
 
+        // Defence in depth: verify magic-byte signature + reject embedded code.
+        $category = str_starts_with($mime, 'image/') ? 'image' : 'document';
+        $check = (new FileValidator())->inspect($file->path(), $category, null, $maxSize);
+        if (!$check['ok']) {
+            return ['ok' => false, 'message' => $check['reason'], 'id' => null];
+        }
+
         $dir = $this->baseDir() . '/' . $studentId;
         try {
             $stored = $file->store($dir);

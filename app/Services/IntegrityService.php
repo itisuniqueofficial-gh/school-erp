@@ -139,4 +139,18 @@ final class IntegrityService
     {
         return ['key' => $key, 'label' => $label, 'count' => $count, 'severity' => $severity, 'link' => $link];
     }
+
+    /**
+     * Prioritised "what needs your attention" list for the dashboard assistant:
+     * only checks that currently have items, most severe first.
+     *
+     * @return array<int,array{key:string,label:string,count:int,severity:string,link:string}>
+     */
+    public function attention(int $limit = 6): array
+    {
+        $weight = ['critical' => 0, 'warning' => 1, 'info' => 2];
+        $items = array_values(array_filter($this->checks(), static fn ($c) => (int) $c['count'] > 0));
+        usort($items, static fn ($a, $b) => ($weight[$a['severity']] ?? 3) <=> ($weight[$b['severity']] ?? 3));
+        return array_slice($items, 0, max(1, $limit));
+    }
 }

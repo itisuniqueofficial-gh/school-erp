@@ -57,16 +57,12 @@ $txt = uf("just some text, not an image");
 check('Plain text rejected', $svc->store($txt)['ok'] === false);
 
 // A real PNG but with PHP appended (polyglot) — decodes as image, but re-encode
-// strips the trailing payload, so the STORED file cannot contain the PHP.
+// A real PNG but with PHP appended (polyglot). The validator now REJECTS any
+// file containing embedded code outright (stricter than accept-and-re-encode,
+// and required so the capability fallback can never store a payload).
 $polyglot = uf(pngBytes(64, 64) . "<?php echo 'x'; ?>");
 $rp = $svc->store($polyglot);
-check('Polyglot PNG accepted but re-encoded', $rp['ok'] === true);
-if ($rp['ok']) {
-    $stored = (string) file_get_contents($svc->path($rp['filename']));
-    check('Stored file contains NO PHP payload', strpos($stored, '<?php') === false);
-    check('Stored file is a valid image', @getimagesizefromstring($stored) !== false);
-    $svc->delete($rp['filename']);
-}
+check('Polyglot PNG (embedded PHP) is rejected', $rp['ok'] === false && empty($rp['filename']));
 
 section('Rejects oversized files');
 $big = uf(pngBytes(64, 64), 99 * 1024 * 1024); // report 99 MB via size()

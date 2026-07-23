@@ -22,6 +22,13 @@ if (!is_file(dirname(__DIR__) . '/storage/installed.lock') && is_file(__DIR__ . 
     exit;
 }
 
+// Startup data-safety guard: never serve a half-working UI on an unavailable or
+// unmigrated database. Show a clear critical error instead of empty data.
+if (($guardReason = \App\Support\StartupGuard::check()) !== null) {
+    \App\Support\StartupGuard::respond($guardReason);
+    exit;
+}
+
 /** @var Router $router */
 $router = $app->make(Router::class);
 

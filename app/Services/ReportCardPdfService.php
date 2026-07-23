@@ -184,6 +184,12 @@ final class ReportCardPdfService
         if ($photo === '') {
             return null;
         }
+        // Photos uploaded via the centralized AvatarService live under
+        // storage/uploads/avatars as "<hex>.<ext>" — resolve those first.
+        $avatar = (new AvatarService())->path($photo);
+        if ($avatar !== null) {
+            return $avatar;
+        }
         $candidates = [
             dirname(__DIR__, 2) . '/storage/uploads/' . ltrim($photo, '/'),
             dirname(__DIR__, 2) . '/public/' . ltrim($photo, '/'),

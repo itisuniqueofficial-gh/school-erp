@@ -44,15 +44,16 @@ final class AvatarService
      *
      * @return array{ok:bool,message:string,filename:?string}
      */
-    public function store(UploadedFile $file): array
+    public function store(UploadedFile $file, ?int $maxBytes = null): array
     {
         $mime = $file->mimeType();
         if (!isset(self::ALLOWED[$mime])) {
             return ['ok' => false, 'message' => 'Only JPG, PNG or WebP images are allowed.', 'filename' => null];
         }
-        $maxSize = (int) config('app.upload_max_size', 5242880);
+        $maxSize = $maxBytes ?? (int) config('app.upload_max_size', 5242880);
         if ($file->size() <= 0 || $file->size() > $maxSize) {
-            return ['ok' => false, 'message' => 'Image must be between 1 byte and ' . (int) ($maxSize / 1048576) . ' MB.', 'filename' => null];
+            $mb = $maxSize >= 1048576 ? (int) ($maxSize / 1048576) . ' MB' : (int) ($maxSize / 1024) . ' KB';
+            return ['ok' => false, 'message' => 'Image is too large. Maximum allowed size is ' . $mb . '.', 'filename' => null];
         }
 
         $tmp = $file->path();
@@ -60,28 +61,54 @@ final class AvatarService
             return ['ok' => false, 'message' => 'Upload failed. Please try again.', 'filename' => null];
         }
 
-        $raw = (string) file_get_contents($tmp);
-        $src = @imagecreatefromstring($raw);
-        if ($src === false) {
-            return ['ok' => false, 'message' => 'The file is not a valid image.', 'filename' => null];
+        // Validate it is genuinely an image WITHOUT relying on a GD codec being
+        // present: getimagesize reads the header for jpeg/png/webp/gif on any
+        // build. This is why a valid JPG no longer wrongly reports "not a valid
+        // image" on a PNG-only GD installation.
+        $info = @getimagesize($tmp);
+        if ($info === false || (int) ($info[0] ?? 0) <= 0) {
+            return ['ok' => false, 'message' => 'The file is not a valid image. Please choose a JPG, PNG or WebP.', 'filename' => null];
+        }
+
+        // Reject embedded code / signature mismatch (defence in depth).
+        $fv = (new FileValidator())->inspect($tmp, 'image', null, $maxSize);
+        if (!$fv['ok']) {
+            return ['ok' => false, 'message' => $fv['reason'], 'filename' => null];
         }
 
         if (!is_dir($this->dir) && !mkdir($this->dir, 0775, true) && !is_dir($this->dir)) {
-            imagedestroy($src);
             return ['ok' => false, 'message' => 'Storage is not writable.', 'filename' => null];
         }
 
         $ext      = self::ALLOWED[$mime];
         $filename = bin2hex(random_bytes(16)) . '.' . $ext;
+        $main     = $this->dir . '/' . $filename;
+        $thumb    = $this->dir . '/thumb_' . $filename;
+        $raw      = (string) file_get_contents($tmp);
 
-        $ok = $this->encode($this->resample($src, self::MAX_DIM), $ext, $this->dir . '/' . $filename)
-            && $this->encode($this->resample($src, self::THUMB_DIM), $ext, $this->dir . '/thumb_' . $filename);
-        imagedestroy($src);
+        // Preferred path: decode + resample + re-encode (strips any payload,
+        // normalises size). Only works when this GD build supports the codec.
+        $optimized = false;
+        $src = @imagecreatefromstring($raw);
+        if ($src !== false) {
+            $m = $this->encode($this->resample($src, self::MAX_DIM), $ext, $main);
+            $t = $this->encode($this->resample($src, self::THUMB_DIM), $ext, $thumb);
+            imagedestroy($src);
+            $optimized = $m && $t && is_file($main) && is_file($thumb);
+        }
 
-        if (!$ok) {
-            @unlink($this->dir . '/' . $filename);
-            @unlink($this->dir . '/thumb_' . $filename);
-            return ['ok' => false, 'message' => 'Could not process the image.', 'filename' => null];
+        // Capability fallback: this GD build cannot process the format (e.g. no
+        // JPEG/WebP codec). The bytes are already validated as a real image with
+        // no embedded code, so store them unchanged. Served with nosniff, so it
+        // can never execute.
+        if (!$optimized) {
+            if (@file_put_contents($main, $raw) === false) {
+                @unlink($main); @unlink($thumb);
+                return ['ok' => false, 'message' => 'Could not store the image. Please try again.', 'filename' => null];
+            }
+            @copy($main, $thumb);
+            @chmod($main, 0644);
+            @chmod($thumb, 0644);
         }
 
         return ['ok' => true, 'message' => 'Profile picture updated.', 'filename' => $filename];

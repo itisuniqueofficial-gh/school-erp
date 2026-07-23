@@ -11,6 +11,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\AvatarService;
 use App\Services\AttendanceService;
 use App\Services\DocumentService;
 use App\Services\EnrollmentService;
@@ -164,6 +165,49 @@ final class StudentController extends Controller
         return $this->redirect('/admin/students/' . $studentId, ['success' => 'Student admitted successfully.' . $rollMsg]);
     }
 
+    /** Upload or replace a student's profile picture (admin-managed, max 1 MB). */
+    public function uploadPhoto(Request $request, string $id): Response
+    {
+        $sid = (int) $id;
+        $student = QueryBuilder::table('students')->where('id', $sid)->whereNull('deleted_at')->first();
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+        $file = $request->file('photo');
+        if ($file === null || !$file->isValid()) {
+            return $this->redirect('/admin/students/' . $sid, ['error' => 'Please choose an image to upload.']);
+        }
+        $svc = new AvatarService();
+        $res = $svc->store($file, 1048576); // 1 MB profile-photo limit
+        if (!$res['ok']) {
+            return $this->redirect('/admin/students/' . $sid, ['error' => $res['message']]);
+        }
+        $svc->delete($student['photo'] ?? null); // remove previous only after the new one succeeds
+        QueryBuilder::table('students')->where('id', $sid)->update(['photo' => $res['filename'], 'updated_at' => date('Y-m-d H:i:s')]);
+        if (!empty($student['user_id'])) {
+            User::updateById((int) $student['user_id'], ['avatar' => $res['filename']]);
+        }
+        AuditLogger::log('student.photo_updated', 'student', $sid, 'Updated profile picture');
+        return $this->redirect('/admin/students/' . $sid, ['success' => 'Profile picture updated.']);
+    }
+
+    /** Remove a student's profile picture. */
+    public function removePhoto(Request $request, string $id): Response
+    {
+        $sid = (int) $id;
+        $student = QueryBuilder::table('students')->where('id', $sid)->first();
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+        (new AvatarService())->delete($student['photo'] ?? null);
+        QueryBuilder::table('students')->where('id', $sid)->update(['photo' => null, 'updated_at' => date('Y-m-d H:i:s')]);
+        if (!empty($student['user_id'])) {
+            User::updateById((int) $student['user_id'], ['avatar' => null]);
+        }
+        AuditLogger::log('student.photo_removed', 'student', $sid, 'Removed profile picture');
+        return $this->redirect('/admin/students/' . $sid, ['success' => 'Profile picture removed.']);
+    }
+
     public function show(Request $request, string $id): Response
     {
         $student = Student::profile((int) $id);
@@ -243,14 +287,29 @@ final class StudentController extends Controller
         ];
 
         $photo = $this->handlePhoto($request);
-        if ($photo !== null) {
-            $update['photo'] = $photo;
+        if ($photo['status'] === 'error') {
+            return $this->redirect('/admin/students/' . $id . '/edit', ['error' => $photo['message'] ?? 'Photo upload failed.']);
+        }
+        if ($photo['status'] === 'ok') {
+            $update['photo'] = $photo['filename'];
         }
 
         // Government IDs (only overwrite fields actually provided).
         $update = array_merge($update, $this->govIdData($request));
 
         Student::updateById((int) $id, $update);
+
+        // Replace the old photo only AFTER the DB update succeeds (no orphan, no
+        // data loss). "No new photo selected" never clears the existing photo.
+        if ($photo['status'] === 'ok') {
+            if (!empty($student['photo']) && $student['photo'] !== $photo['filename']) {
+                (new AvatarService())->delete((string) $student['photo']);
+            }
+            if (!empty($student['user_id'])) {
+                User::updateById((int) $student['user_id'], ['avatar' => $photo['filename']]);
+            }
+        }
+
         AuditLogger::log('student.updated', 'student', (int) $id, 'Updated student');
 
         return $this->redirect('/admin/students/' . $id, ['success' => 'Student updated successfully.']);
@@ -454,25 +513,25 @@ final class StudentController extends Controller
     /**
      * Validate and store an uploaded photo; returns the stored filename or null.
      */
-    private function handlePhoto(Request $request): ?string
+    /**
+     * Handle an optional photo on the edit form using the SAME centralized
+     * pipeline as the profile page (AvatarService). Returns a status:
+     *  - 'none'  : no file was submitted -> preserve the existing photo
+     *  - 'ok'    : validated + stored (filename returned)
+     *  - 'error' : a file was submitted but rejected (message returned)
+     *
+     * @return array{status:string,filename?:string,message?:string}
+     */
+    private function handlePhoto(Request $request): array
     {
         $file = $request->file('photo');
-        if ($file === null) {
-            return null;
+        if ($file === null || !$file->isValid()) {
+            return ['status' => 'none'];
         }
-
-        $allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
-        $maxSize = (int) config('app.upload_max_size', 5242880);
-
-        if (!$file->isValid() || !in_array($file->mimeType(), $allowedMime, true) || $file->size() > $maxSize) {
-            return null;
+        $res = (new AvatarService())->store($file, 1048576); // 1 MB, same as profile page
+        if (!$res['ok']) {
+            return ['status' => 'error', 'message' => $res['message']];
         }
-
-        try {
-            return $file->store(base_path(self::UPLOAD_DIR));
-        } catch (\Throwable $e) {
-            logger()->warning('Photo upload failed: ' . $e->getMessage());
-            return null;
-        }
+        return ['status' => 'ok', 'filename' => (string) $res['filename']];
     }
 }

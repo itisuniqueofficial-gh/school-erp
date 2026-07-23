@@ -6,6 +6,7 @@
 /** @var array{labels:string[],values:int[]} $studentsByClass */
 /** @var array<int,array<string,mixed>> $activity */
 /** @var array<int,array<string,mixed>> $notices */
+/** @var array<int,array<string,mixed>> $attention */
 $currency = (string) config('app.currency', '₹');
 ?>
 <?php $this->extend('layouts.app'); ?>
@@ -13,6 +14,25 @@ $currency = (string) config('app.currency', '₹');
 <?php $this->section('breadcrumb'); ?>Overview of your institution<?php $this->endSection(); ?>
 
 <?php $this->section('main'); ?>
+<?php if (!empty($attention)): ?>
+<?php $sevBadge = ['critical' => 'border-red-200 bg-red-50 text-red-700', 'warning' => 'border-amber-200 bg-amber-50 text-amber-800', 'info' => 'border-blue-200 bg-blue-50 text-blue-700']; ?>
+<div class="mb-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+        <h2 class="font-semibold text-slate-800">Needs your attention</h2>
+        <span class="ml-auto text-xs text-slate-400">The ERP checks your setup and suggests the next step.</span>
+    </div>
+    <ul class="space-y-2">
+        <?php foreach ($attention as $a): ?>
+        <li class="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-2.5 text-sm <?= $sevBadge[$a['severity']] ?? 'border-slate-200 bg-slate-50 text-slate-700' ?>">
+            <span><i class="fa-solid <?= ($a['severity'] ?? '') === 'critical' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation' ?>"></i>
+                <b><?= (int) $a['count'] ?></b> &middot; <?= e((string) $a['label']) ?></span>
+            <a href="<?= e(url((string) $a['link'])) ?>" class="inline-flex items-center gap-1 rounded-md bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-white">Fix now <i class="fa-solid fa-arrow-right"></i></a>
+        </li>
+        <?php endforeach; ?>
+    </ul>
+</div>
+<?php endif; ?>
 <?php
 $cards = [
     ['Students', $overview['students'], 'fa-user-graduate', 'bg-blue-50 text-blue-600'],

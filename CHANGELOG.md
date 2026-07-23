@@ -4,6 +4,45 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.1] - 2026-07-23
+
+### Added
+- **Centralized profile-photo upload**: student create/edit/profile (and
+  teacher/staff) now share one `AvatarService` pipeline — the Edit page no
+  longer uses a divergent handler that stored files where the UI never looked.
+- **School branding logo**: upload/replace/remove in Settings, rendered on every
+  generated PDF (certificates, report cards, hall tickets) via the shared
+  `PdfDocument` engine, with a centered, aspect-preserved header layout.
+- **Dynamic favicon** across the whole ERP, driven by the branding logo with
+  cache-busting (`?v=`) and a safe inline SVG fallback (fixes missing favicon).
+- **Backup verification** (`BackupService::verify`) + `backup:verify` CLI, and a
+  guarded `restore` CLI that verifies the dump and refuses to overwrite a
+  populated non-`_test` database without `--force`.
+- **Startup data-safety guard**: HTTP requests are stopped with a clear 503
+  critical page (with reference id + how-to-fix) when the database is
+  unavailable or unmigrated — never silently serving empty data.
+- **System status** page (`/admin/system/status`) and a dashboard
+  "Needs your attention" integrity panel.
+- **`FileValidator`** service (extension/MIME/magic-byte/size + polyglot &
+  executable rejection) wired into document + avatar uploads.
+- **Migration tooling**: snapshot capture + data-loss comparison
+  (`snapshot` / `snapshot:compare`), Postgres connection block, and
+  `DATA_PERSISTENCE.md` / `MIGRATION.md`.
+- **Class-subject typing** (migration 026): subject type, mandatory flag, and
+  ordering with an idempotent assignment/reorder/copy service.
+
+### Fixed
+- Capability-aware image handling: JPG/WebP no longer rejected as "not a valid
+  image" on PNG-only GD builds (validated via `getimagesize`, stored safely).
+- Certificate/document header logo placement (was fixed top-left, now balanced).
+- Edit forms preserve the existing photo when no new file is selected; the old
+  file is replaced only after a successful DB update (no orphans, no data loss).
+- Errors now carry a private reference id with safe user-facing messages (+503).
+
+### Safety
+- Test-database isolation: `APP_TESTING=1` transparently targets `<db>_test`;
+  `migrate:fresh` refuses to drop a populated non-`_test`/production database.
+
 ## [1.6.0] - 2026-07-23
 
 ### Added
