@@ -67,5 +67,20 @@ $check('install.log exists', is_file(rtrim($logDir, '/') . '/install.log'));
 //    container filesystem is NOT bounced back to the installer.
 $check('InstallService reports installed on a seeded DB', (new \App\Services\InstallService())->isInstalled() === true);
 
+// 6. Re-seed idempotency across the installer's email-rename (the 1062 case):
+//    the installer renames superadmin's email to the admin's address, then a
+//    re-submit re-runs the seeder. createUser must match on username and NOT
+//    insert a duplicate 'superadmin'.
+$conn->statement("UPDATE `users` SET `email` = 'admin@myschool.example' WHERE `username` = 'superadmin'");
+$reSeedThrew = false;
+try {
+    (new \Database\Seeds\DatabaseSeeder())->run();
+} catch (\Throwable $e) {
+    $reSeedThrew = true;
+    echo '  exception: ' . $e->getMessage() . "\n";
+}
+$check('re-seeding after admin email change does not throw (no 1062)', $reSeedThrew === false);
+$check('exactly one superadmin username row exists', (int) ($conn->selectOne("SELECT COUNT(*) c FROM `users` WHERE `username`='superadmin'")['c'] ?? 0) === 1);
+
 echo "PASS: {$pass}   FAIL: {$fail}\n";
 exit($fail === 0 ? 0 : 1);

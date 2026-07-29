@@ -160,8 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (new \Database\Seeds\DatabaseSeeder())->run();
 
                 // 4. Configure the super admin account with the chosen credentials.
+                //    Target the stable username (email may be changed to the
+                //    admin's address, so it is not a reliable key on re-run).
                 \Core\Database\QueryBuilder::table('users')
-                    ->where('email', 'superadmin@school.test')
+                    ->where('username', 'superadmin')
                     ->update([
                         'name'     => $a['name'],
                         'email'    => $a['email'],

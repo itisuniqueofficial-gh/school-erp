@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.9] - 2026-07-30
+
+### Fixed
+- **Duplicate-entry crash on install retry** (`1062 Duplicate entry 'superadmin'
+  for key 'uq_users_username'`). The installer's admin step renames superadmin's
+  email to the administrator's address, so the seeder's email-only idempotency
+  check missed the existing row on a re-run and re-inserted the `superadmin`
+  username. `DatabaseSeeder::createUser()` now matches on **email OR username**
+  (idempotent against both unique keys), and the installer updates the admin by
+  the stable `username` instead of the mutable email. Re-running the installer
+  (refresh, double-submit, redeploy, retry) no longer produces duplicate-key
+  errors.
+- Added regression coverage in `integration_installer.php`: re-seeding after the
+  admin email is changed completes cleanly and leaves exactly one `superadmin`.
+
 ## [1.6.8] - 2026-07-30
 
 ### Fixed

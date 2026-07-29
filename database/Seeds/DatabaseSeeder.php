@@ -160,7 +160,14 @@ final class DatabaseSeeder
 
     private function createUser(string $name, string $email, string $username, string $role): int
     {
+        // Idempotent against BOTH unique keys: a prior install may have changed
+        // this user's email (e.g. the installer renames superadmin to the admin's
+        // address), so match on email OR the stable username to avoid a
+        // duplicate-username (1062) on re-run.
         $existing = QueryBuilder::table('users')->where('email', $email)->first();
+        if (!$existing) {
+            $existing = QueryBuilder::table('users')->where('username', $username)->first();
+        }
         if ($existing) {
             $userId = (int) $existing['id'];
         } else {
