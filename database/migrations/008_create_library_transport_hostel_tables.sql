@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `books` (
     PRIMARY KEY (`id`),
     KEY `idx_book_category` (`book_category_id`),
     KEY `idx_book_isbn` (`isbn`),
-    KEY `idx_book_title` (`title`),
+    KEY `idx_book_title` (`title`(191)),
     CONSTRAINT `fk_book_category` FOREIGN KEY (`book_category_id`) REFERENCES `book_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 

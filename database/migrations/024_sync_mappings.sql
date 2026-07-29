@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `external_mappings` (
   `created_at`  DATETIME DEFAULT NULL,
   `updated_at`  DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_extmap_provider_type_external` (`provider`, `entity_type`, `external_id`),
+  UNIQUE KEY `uq_extmap_provider_type_external` (`provider`, `entity_type`, `external_id`(100)),
   UNIQUE KEY `uq_extmap_provider_type_entity` (`provider`, `entity_type`, `entity_id`),
   KEY `idx_extmap_entity` (`entity_type`, `entity_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

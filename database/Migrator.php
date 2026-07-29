@@ -28,12 +28,12 @@ final class Migrator
         Connection::instance()->pdo()->exec(
             'CREATE TABLE IF NOT EXISTS `migrations` (
                 `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                `migration` VARCHAR(255) NOT NULL,
+                `migration` VARCHAR(191) NOT NULL,
                 `batch` INT NOT NULL,
                 `executed_at` DATETIME NOT NULL,
                 PRIMARY KEY (`id`),
                 UNIQUE KEY `uq_migration` (`migration`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC'
         );
     }
 

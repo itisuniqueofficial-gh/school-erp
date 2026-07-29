@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.5] - 2026-07-29
+
+### Fixed
+- **Completed the MySQL 1071 fix for strict 767-byte servers** (MySQL 5.6 /
+  MariaDB with `innodb_large_prefix` off, where `ROW_FORMAT=DYNAMIC` alone is
+  not enough). Audited every index's real prefix byte-length and brought all
+  within 767 bytes:
+  - `migrations` tracking table (created by the Migrator before any migration):
+    indexed `migration` column `VARCHAR(255)`→`VARCHAR(191)` + `ROW_FORMAT=DYNAMIC`
+    — this was the *first* statement to fail on a strict server.
+  - `external_mappings.uq_extmap_provider_type_external` composite (was 1084
+    bytes): now indexes a 100-char prefix of `external_id` (column stays
+    `VARCHAR(191)`, no data-capacity loss).
+  - `books.idx_book_title`: indexes a 191-char prefix of `title` (column stays
+    `VARCHAR(255)`).
+- Added `tests/integration_dbcompat.php`: measures every index's prefix bytes
+  from `information_schema` and fails if any exceeds 767 — a permanent guard so
+  a fresh install cannot hit error 1071 on any MySQL 5.6+/MariaDB 10.x host.
+
 ## [1.6.4] - 2026-07-29
 
 ### Fixed
