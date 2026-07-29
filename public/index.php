@@ -16,10 +16,25 @@ use Core\Routing\Router;
 /** @var \Core\Application $app */
 $app = require dirname(__DIR__) . '/bootstrap/app.php';
 
-// If the app has not been installed yet, send visitors to the web installer.
-if (!is_file(dirname(__DIR__) . '/storage/installed.lock') && is_file(__DIR__ . '/install.php')) {
-    header('Location: /install.php');
-    exit;
+// Installer gate. The lock file lives on the (often ephemeral) container
+// filesystem, so we ALSO treat the system as installed when the database
+// already holds an installed instance (users present). This keeps env-driven
+// deploys (Koyeb/Docker) from bouncing back to the installer after every
+// redeploy, while a genuinely fresh database still routes to the installer.
+$installLock = dirname(__DIR__) . '/storage/installed.lock';
+if (!is_file($installLock) && is_file(__DIR__ . '/install.php')) {
+    $dbInstalled = false;
+    try {
+        $dbInstalled = (new \App\Services\InstallService())->isInstalled();
+    } catch (\Throwable) {
+        $dbInstalled = false;
+    }
+    if ($dbInstalled) {
+        @touch($installLock); // persist for subsequent requests on this instance
+    } else {
+        header('Location: /install.php');
+        exit;
+    }
 }
 
 // Startup data-safety guard: never serve a half-working UI on an unavailable or

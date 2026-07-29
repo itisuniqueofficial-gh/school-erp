@@ -62,5 +62,10 @@ $check('certificates table still intact', (int) ($conn->selectOne("SELECT COUNT(
 $logDir = (string) \Core\Config\Config::get('paths.logs');
 $check('install.log exists', is_file(rtrim($logDir, '/') . '/install.log'));
 
+// 5. DB-aware installed detection (backs the ephemeral-filesystem-safe gate):
+//    a migrated + seeded database reports installed, so a redeploy on a fresh
+//    container filesystem is NOT bounced back to the installer.
+$check('InstallService reports installed on a seeded DB', (new \App\Services\InstallService())->isInstalled() === true);
+
 echo "PASS: {$pass}   FAIL: {$fail}\n";
 exit($fail === 0 ? 0 : 1);

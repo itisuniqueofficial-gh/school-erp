@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.8] - 2026-07-30
+
+### Fixed
+- **Installer no longer re-triggers after every redeploy on ephemeral hosts**
+  (Koyeb/Docker). The installer gate is now database-aware: if the connected
+  database already holds an installed system (users present), the app treats it
+  as installed and persists the lock, instead of relying solely on the
+  `storage/installed.lock` file (which is wiped on each container rebuild). A
+  genuinely fresh database still routes to the installer.
+
 ## [1.6.7] - 2026-07-29
 
 ### Fixed
