@@ -171,16 +171,31 @@ final class DatabaseSeeder
         if ($existing) {
             $userId = (int) $existing['id'];
         } else {
-            $userId = QueryBuilder::table('users')->insert([
-                'name'       => $name,
-                'email'      => $email,
-                'username'   => $username,
-                'password'   => Hash::make('Password123!'),
-                'is_active'  => 1,
-                'email_verified_at' => $this->now(),
-                'created_at' => $this->now(),
-                'updated_at' => $this->now(),
-            ]);
+            try {
+                $userId = QueryBuilder::table('users')->insert([
+                    'name'       => $name,
+                    'email'      => $email,
+                    'username'   => $username,
+                    'password'   => Hash::make('Password123!'),
+                    'is_active'  => 1,
+                    'email_verified_at' => $this->now(),
+                    'created_at' => $this->now(),
+                    'updated_at' => $this->now(),
+                ]);
+            } catch (\PDOException $e) {
+                // Duplicate key (23000/1062): a concurrent/repeated install created
+                // this user between our check and insert. Re-fetch and reuse
+                // instead of crashing — installation stays idempotent.
+                if (((string) ($e->errorInfo[0] ?? '')) !== '23000') {
+                    throw $e;
+                }
+                $row = QueryBuilder::table('users')->where('email', $email)->first()
+                    ?? QueryBuilder::table('users')->where('username', $username)->first();
+                if ($row === null) {
+                    throw $e;
+                }
+                $userId = (int) $row['id'];
+            }
         }
 
         $roleId = $this->roleIds[$role] ?? null;

@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.10] - 2026-07-30
+
+### Fixed
+- **Seeder is now bulletproof against duplicate users**: `createUser()` catches
+  duplicate-key (SQLSTATE 23000 / 1062) on insert and re-fetches the existing
+  row instead of crashing, covering concurrent/double-submit installs in
+  addition to the email-or-username match added in 1.6.9. Installation can no
+  longer fail with "Duplicate entry 'superadmin'".
+
 ## [1.6.9] - 2026-07-30
 
 ### Fixed
