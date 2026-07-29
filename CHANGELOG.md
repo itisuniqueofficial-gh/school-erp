@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.7] - 2026-07-29
+
+### Fixed
+- **Removed the unsupported `JSON` column type** (installer error *"Syntax error
+  near JSON DEFAULT NULL"*). The `payment_transactions.meta` column is now
+  `LONGTEXT` — the JSON type doesn't exist on MySQL 5.6 and cannot take a
+  `DEFAULT` before MySQL 8.0.13. The app already stores/reads this value with
+  `json_encode`/`json_decode` (no SQL `JSON_*` functions), so behaviour is
+  unchanged and it now installs on every MySQL 5.7/8 and MariaDB 10/11 server.
+- `integration_dbcompat.php` now also fails if any column uses the `JSON` type,
+  guaranteeing the schema stays on the portable common subset.
+
 ## [1.6.6] - 2026-07-29
 
 ### Fixed

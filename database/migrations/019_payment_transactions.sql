@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `payment_transactions` (
   `method`             VARCHAR(40)     DEFAULT NULL,          -- upi | card | netbanking ...
   `mode`               ENUM('test','live') NOT NULL DEFAULT 'test',
   `signature_verified` TINYINT(1)      NOT NULL DEFAULT 0,
-  `meta`               JSON            DEFAULT NULL,
+  `meta`               LONGTEXT        DEFAULT NULL,
   `created_at`         DATETIME        DEFAULT NULL,
   `updated_at`         DATETIME        DEFAULT NULL,
   PRIMARY KEY (`id`),

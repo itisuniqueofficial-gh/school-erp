@@ -62,6 +62,15 @@ if ($offenders !== []) {
 }
 $check('no index exceeds the 767-byte limit (MySQL 5.6-safe)', $offenders === []);
 
+// Portable data types only: the JSON type is unsupported on MySQL 5.6 and
+// cannot take a DEFAULT before 8.0.13, so we store JSON as LONGTEXT and validate
+// in the app. Guard against any column reintroducing the JSON type.
+$jsonCols = $conn->select("SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND DATA_TYPE = 'json'");
+if ($jsonCols !== []) {
+    foreach ($jsonCols as $j) { echo "  JSON column: {$j['t']}.{$j['c']}\n"; }
+}
+$check('no column uses the non-portable JSON type (use LONGTEXT)', $jsonCols === []);
+
 // The previously-oversized composite is now within budget.
 $extmap = null;
 foreach ($rows as $r) {
