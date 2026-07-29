@@ -73,7 +73,7 @@ check('Status updated to absent on re-mark',
 // Raw duplicate insert blocked by UNIQUE(year,class,section,subject,date,period,student).
 check('Duplicate subject attendance blocked by DB UNIQUE', throws(fn () =>
     QueryBuilder::table('subject_attendance')->insert([
-        'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId,
+        'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0),
         'subject_id' => $mathId, 'student_id' => $sid, 'date' => $today, 'period' => 0,
         'status' => 'present', 'created_at' => now(), 'updated_at' => now(),
     ])

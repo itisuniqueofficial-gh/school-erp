@@ -71,10 +71,7 @@ final class Migrator
             }
 
             $sql = (string) file_get_contents($file);
-            $pdo = Connection::instance()->pdo();
-
-            // Execute the whole file (may contain multiple statements).
-            $pdo->exec($sql);
+            $this->runMigrationFile($name, $sql);
 
             Connection::instance()->statement(
                 'INSERT INTO `migrations` (`migration`, `batch`, `executed_at`) VALUES (?, ?, ?)',
@@ -84,6 +81,104 @@ final class Migrator
         }
 
         return $ran;
+    }
+
+    /**
+     * Execute one migration file statement-by-statement. Idempotent &
+     * recovery-safe: statements that fail because an object already exists
+     * (duplicate column/key/table) or does not exist to drop are logged and
+     * skipped, so a re-run over a partially-applied database completes cleanly
+     * instead of aborting. Any other error is a real failure and is re-raised
+     * with a clear, migration-scoped message.
+     */
+    private function runMigrationFile(string $name, string $sql): void
+    {
+        $pdo = Connection::instance()->pdo();
+        $t0 = microtime(true);
+        $this->log("MIGRATION {$name}: start");
+
+        foreach ($this->splitStatements($sql) as $stmt) {
+            try {
+                $pdo->exec($stmt);
+            } catch (\PDOException $e) {
+                $code = (int) ($e->errorInfo[1] ?? 0);
+                if ($this->isIgnorable($code)) {
+                    $this->log("  SKIP (already applied, MySQL {$code}): " . $this->summarize($stmt));
+                    continue;
+                }
+                $this->log("  FAIL (MySQL {$code}): " . $this->summarize($stmt) . ' -- ' . $e->getMessage());
+                throw new \RuntimeException(
+                    "Migration {$name} failed: " . $e->getMessage() . ' [statement: ' . $this->summarize($stmt) . ']',
+                    0,
+                    $e
+                );
+            }
+        }
+
+        $ms = (int) round((microtime(true) - $t0) * 1000);
+        $this->log("MIGRATION {$name}: done ({$ms} ms)");
+    }
+
+    /**
+     * MySQL error codes that mean the object is already in the desired state —
+     * safe to skip for idempotent re-runs / partial-install recovery.
+     */
+    private function isIgnorable(int $code): bool
+    {
+        return in_array($code, [
+            1050, // table already exists
+            1060, // duplicate column name
+            1061, // duplicate key name
+            1091, // can't DROP; column/key does not exist
+            1051, // unknown table (DROP)
+            1826, // duplicate foreign key constraint name
+            1022, // duplicate key
+        ], true);
+    }
+
+    /**
+     * Split a migration file into individual statements. Strips SQL line
+     * comments and splits on semicolons (these migrations contain plain DDL/DML,
+     * no stored routines), so each statement is executed and checked
+     * independently.
+     *
+     * @return string[]
+     */
+    private function splitStatements(string $sql): array
+    {
+        $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
+        $parts = preg_split('/;\s*(\r?\n|$)/', $sql) ?: [];
+        $out = [];
+        foreach ($parts as $p) {
+            $p = trim($p);
+            if ($p !== '') {
+                $out[] = $p;
+            }
+        }
+        return $out;
+    }
+
+    private function summarize(string $stmt): string
+    {
+        $s = preg_replace('/\s+/', ' ', trim($stmt)) ?? $stmt;
+        return strlen($s) > 90 ? substr($s, 0, 90) . '...' : $s;
+    }
+
+    private function log(string $line): void
+    {
+        try {
+            $dir = (string) Config::get('paths.logs');
+            if ($dir !== '' && !is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            @file_put_contents(
+                rtrim($dir, '/') . '/install.log',
+                '[' . date('Y-m-d H:i:s') . '] ' . $line . PHP_EOL,
+                FILE_APPEND
+            );
+        } catch (\Throwable) {
+            // logging is best-effort; never let it break a migration
+        }
     }
 
     private function nextBatch(): int

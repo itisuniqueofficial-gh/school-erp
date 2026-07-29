@@ -124,7 +124,7 @@ $dup = $ta->assign($yearId, $classId, $secA, $mathId, $teacherStaffId, 'subject_
 check('Duplicate teacher assignment blocked (application)', $dup['ok'] === false);
 check('Duplicate teacher assignment blocked (database UNIQUE)', throws(fn () =>
     QueryBuilder::table('teacher_assignments')->insert([
-        'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $secA,
+        'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $secA, 'section_key' => (int) ($secA ?? 0),
         'subject_id' => $mathId, 'staff_id' => $teacherStaffId, 'role' => 'subject_teacher',
         'created_at' => now(), 'updated_at' => now(),
     ])

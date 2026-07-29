@@ -13,7 +13,7 @@ use Core\Database\QueryBuilder;
 final class TeacherAssignment extends Model
 {
     protected string $table = 'teacher_assignments';
-    protected array $fillable = ['academic_year_id', 'class_id', 'section_id', 'subject_id', 'staff_id', 'role'];
+    protected array $fillable = ['academic_year_id', 'class_id', 'section_id', 'section_key', 'subject_id', 'staff_id', 'role'];
 
     /** @return array<int,array<string,mixed>> Assignments for a teacher, with names. */
     public static function forTeacher(int $staffId, ?int $yearId = null): array

@@ -57,7 +57,7 @@ final class SubjectAttendanceService
         }
 
         QueryBuilder::table('subject_attendance')->insert([
-            'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId,
+            'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0),
             'subject_id' => $subjectId, 'student_id' => $studentId, 'date' => $date, 'period' => $period,
             'status' => $status, 'marked_by' => $markedBy,
             'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),

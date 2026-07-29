@@ -54,7 +54,7 @@ final class EnrollmentService
                 $roll = $rollNo ?? $this->nextRollNumber($yearId, $classId, $sectionId);
                 StudentEnrollment::create([
                     'student_id' => $studentId, 'academic_year_id' => $yearId,
-                    'class_id' => $classId, 'section_id' => $sectionId,
+                    'class_id' => $classId, 'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0),
                     'roll_no' => $roll, 'status' => 'active',
                 ]);
                 QueryBuilder::table('students')->where('id', $studentId)->update([
@@ -98,7 +98,7 @@ final class EnrollmentService
                 $roll = $this->nextRollNumber($toYearId, $toClassId, $toSectionId);
                 StudentEnrollment::create([
                     'student_id' => $studentId, 'academic_year_id' => $toYearId,
-                    'class_id' => $toClassId, 'section_id' => $toSectionId,
+                    'class_id' => $toClassId, 'section_id' => $toSectionId, 'section_key' => (int) ($toSectionId ?? 0),
                     'roll_no' => $roll, 'status' => 'active',
                 ]);
                 // History record (student_promotions) — never overwrites past data.

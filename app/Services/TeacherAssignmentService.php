@@ -59,7 +59,7 @@ final class TeacherAssignmentService
         try {
             $id = Connection::instance()->transaction(function () use ($yearId, $classId, $sectionId, $subjectId, $staffId, $role): int {
                 $aid = TeacherAssignment::create([
-                    'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId,
+                    'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0),
                     'subject_id' => $subjectId, 'staff_id' => $staffId, 'role' => $role,
                 ]);
                 // Open the first ownership period in the history timeline.
@@ -98,7 +98,7 @@ final class TeacherAssignmentService
                         ->update(['staff_id' => $staffId, 'updated_at' => date('Y-m-d H:i:s')]);
                 } else {
                     QueryBuilder::table('class_teachers')->insert([
-                        'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId,
+                        'academic_year_id' => $yearId, 'class_id' => $classId, 'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0),
                         'staff_id' => $staffId, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
                     ]);
                 }

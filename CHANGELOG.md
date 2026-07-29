@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.6] - 2026-07-29
+
+### Fixed
+- **Removed unsupported generated/VIRTUAL columns** (installer error *"Syntax
+  error near AS (COALESCE(...)) VIRTUAL"* on MySQL 5.6 / pre-5.7.6). The
+  `section_key` columns on `student_enrollments`, `teacher_assignments`,
+  `class_teachers` and `subject_attendance` are now plain `INT` columns
+  maintained by the application (all write paths set `section_key =
+  COALESCE(section_id,0)`), with a one-time backfill — portable to every
+  MySQL/MariaDB version.
+- **Idempotent, recovery-safe migration runner** (installer error *"Duplicate
+  column name uses_sections"* when re-running after a partial install). The
+  Migrator now executes each migration statement-by-statement and safely skips
+  “already exists / duplicate / nothing to drop” errors (MySQL 1050/1060/1061/
+  1091/1051/1826/1022), so re-running over a partially-applied database
+  completes instead of crashing — no manual DB reset required.
+- **`storage/logs/install.log`**: every migration, skipped statement, timing and
+  failure is now logged.
+
+### Added
+- `tests/integration_installer.php`: verifies re-runs are no-ops and that a
+  partially-applied migration (duplicate column *and* duplicate table) recovers
+  without throwing.
+
 ## [1.6.5] - 2026-07-29
 
 ### Fixed

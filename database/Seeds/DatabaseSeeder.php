@@ -463,7 +463,7 @@ final class DatabaseSeeder
             && !QueryBuilder::table('student_enrollments')->where('academic_year_id', $yearId)->where('student_id', (int) $student['id'])->first()) {
             QueryBuilder::table('student_enrollments')->insert([
                 'student_id' => (int) $student['id'], 'academic_year_id' => $yearId,
-                'class_id' => (int) $student['class_id'], 'section_id' => (int) $student['section_id'],
+                'class_id' => (int) $student['class_id'], 'section_id' => (int) $student['section_id'], 'section_key' => (int) $student['section_id'],
                 'roll_no' => 1, 'status' => 'active',
                 'created_at' => $this->now(), 'updated_at' => $this->now(),
             ]);
@@ -478,7 +478,7 @@ final class DatabaseSeeder
                 ->where('staff_id', (int) $teacher['id'])->first()) {
             QueryBuilder::table('teacher_assignments')->insert([
                 'academic_year_id' => $yearId, 'class_id' => (int) $student['class_id'],
-                'section_id' => (int) $student['section_id'], 'subject_id' => (int) $subject['id'],
+                'section_id' => (int) $student['section_id'], 'section_key' => (int) $student['section_id'], 'subject_id' => (int) $subject['id'],
                 'staff_id' => (int) $teacher['id'], 'role' => 'subject_teacher',
                 'created_at' => $this->now(), 'updated_at' => $this->now(),
             ]);
@@ -494,7 +494,7 @@ final class DatabaseSeeder
             }
             QueryBuilder::table('class_teachers')->insert([
                 'academic_year_id' => $yearId, 'class_id' => (int) $student['class_id'],
-                'section_id' => (int) $student['section_id'], 'staff_id' => (int) $teacher['id'],
+                'section_id' => (int) $student['section_id'], 'section_key' => (int) $student['section_id'], 'staff_id' => (int) $teacher['id'],
                 'created_at' => $this->now(), 'updated_at' => $this->now(),
             ]);
 

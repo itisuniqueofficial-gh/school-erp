@@ -13,7 +13,7 @@ use Core\Database\QueryBuilder;
 final class StudentEnrollment extends Model
 {
     protected string $table = 'student_enrollments';
-    protected array $fillable = ['student_id', 'academic_year_id', 'class_id', 'section_id', 'roll_no', 'status'];
+    protected array $fillable = ['student_id', 'academic_year_id', 'class_id', 'section_id', 'section_key', 'roll_no', 'status'];
 
     /** @return array<int,array<string,mixed>> Full enrollment history for a student. */
     public static function history(int $studentId): array

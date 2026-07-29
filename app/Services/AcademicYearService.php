@@ -52,7 +52,7 @@ final class AcademicYearService
                         }
                         $newId = QueryBuilder::table('teacher_assignments')->insert([
                             'academic_year_id' => $toYearId, 'class_id' => (int) $r['class_id'],
-                            'section_id' => $sectionId, 'subject_id' => (int) $r['subject_id'],
+                            'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0), 'subject_id' => (int) $r['subject_id'],
                             'staff_id' => (int) $r['staff_id'], 'role' => (string) $r['role'],
                             'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
                         ]);
@@ -76,7 +76,7 @@ final class AcademicYearService
                         }
                         QueryBuilder::table('class_teachers')->insert([
                             'academic_year_id' => $toYearId, 'class_id' => (int) $r['class_id'],
-                            'section_id' => $sectionId, 'staff_id' => (int) $r['staff_id'],
+                            'section_id' => $sectionId, 'section_key' => (int) ($sectionId ?? 0), 'staff_id' => (int) $r['staff_id'],
                             'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
                         ]);
                         $ct++;
