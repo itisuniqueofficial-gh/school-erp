@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `external_mappings` (
   UNIQUE KEY `uq_extmap_provider_type_external` (`provider`, `entity_type`, `external_id`),
   UNIQUE KEY `uq_extmap_provider_type_entity` (`provider`, `entity_type`, `entity_id`),
   KEY `idx_extmap_entity` (`entity_type`, `entity_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `sync_jobs` (
   `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -42,4 +42,4 @@ CREATE TABLE IF NOT EXISTS `sync_jobs` (
   PRIMARY KEY (`id`),
   KEY `idx_sync_jobs_provider` (`provider`),
   KEY `idx_sync_jobs_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

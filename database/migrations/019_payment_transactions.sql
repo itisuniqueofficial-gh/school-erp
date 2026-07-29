@@ -39,4 +39,4 @@ CREATE TABLE IF NOT EXISTS `payment_transactions` (
   KEY `idx_ptx_status`  (`status`),
   CONSTRAINT `fk_ptx_student` FOREIGN KEY (`student_id`)     REFERENCES `students`(`id`)      ON DELETE SET NULL,
   CONSTRAINT `fk_ptx_invoice` FOREIGN KEY (`fee_invoice_id`) REFERENCES `fee_invoices`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

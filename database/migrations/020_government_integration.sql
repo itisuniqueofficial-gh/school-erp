@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `government_sync_logs` (
   KEY `idx_gsl_student`  (`student_id`),
   KEY `idx_gsl_status`   (`status`),
   CONSTRAINT `fk_gsl_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Per-student digital-identity verification status (default 'pending').
 ALTER TABLE `students`

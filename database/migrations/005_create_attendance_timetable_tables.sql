@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `student_attendance` (
     KEY `idx_att_status` (`status`),
     CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_att_marker` FOREIGN KEY (`marked_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Staff attendance.
 CREATE TABLE IF NOT EXISTS `staff_attendance` (
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `staff_attendance` (
     UNIQUE KEY `uq_staff_attendance_date` (`staff_id`, `date`),
     KEY `idx_satt_date` (`date`),
     CONSTRAINT `fk_satt_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Rooms (for timetable allocation).
 CREATE TABLE IF NOT EXISTS `rooms` (
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `rooms` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_room_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Timetable periods/slots.
 CREATE TABLE IF NOT EXISTS `timetable_slots` (
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS `timetable_slots` (
     `is_break`   TINYINT(1) NOT NULL DEFAULT 0,
     `sort_order` INT NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Timetable entries.
 CREATE TABLE IF NOT EXISTS `timetables` (
@@ -88,4 +88,4 @@ CREATE TABLE IF NOT EXISTS `timetables` (
     CONSTRAINT `fk_tt_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_tt_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_tt_slot` FOREIGN KEY (`slot_id`) REFERENCES `timetable_slots` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

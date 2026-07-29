@@ -42,4 +42,4 @@ CREATE TABLE IF NOT EXISTS `teacher_assignment_history` (
     KEY `idx_tah_staff` (`staff_id`),
     CONSTRAINT `fk_tah_assignment` FOREIGN KEY (`assignment_id`) REFERENCES `teacher_assignments` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_tah_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

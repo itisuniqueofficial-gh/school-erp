@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_setting_key` (`key`),
     KEY `idx_setting_group` (`group`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Notices (public/board announcements).
 CREATE TABLE IF NOT EXISTS `notices` (
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `notices` (
     KEY `idx_notice_audience` (`audience`),
     KEY `idx_notice_published` (`is_published`),
     CONSTRAINT `fk_notice_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Internal messages (one-to-one/broadcast).
 CREATE TABLE IF NOT EXISTS `messages` (
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
     PRIMARY KEY (`id`),
     KEY `idx_message_sender` (`sender_id`),
     CONSTRAINT `fk_message_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `message_recipients` (
     `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS `message_recipients` (
     KEY `idx_mr_recipient` (`recipient_id`),
     CONSTRAINT `fk_mr_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_mr_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Notifications (in-app), pluggable channel log for SMS/email.
 CREATE TABLE IF NOT EXISTS `notifications` (
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
     KEY `idx_notif_user` (`user_id`),
     KEY `idx_notif_read` (`read_at`),
     CONSTRAINT `fk_notif_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Outbound communication log (email/SMS providers pluggable).
 CREATE TABLE IF NOT EXISTS `communication_logs` (
@@ -87,4 +87,4 @@ CREATE TABLE IF NOT EXISTS `communication_logs` (
     PRIMARY KEY (`id`),
     KEY `idx_commlog_channel` (`channel`),
     KEY `idx_commlog_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

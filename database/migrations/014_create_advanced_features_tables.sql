@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `subject_attendance` (
     CONSTRAINT `fk_subatt_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_subatt_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_subatt_marker` FOREIGN KEY (`marked_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Government / academic identifiers. Aadhaar is stored encrypted at rest
 -- (AES-256-GCM); the others are less sensitive but still permission-gated in UI.

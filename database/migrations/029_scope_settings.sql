@@ -17,4 +17,4 @@ CREATE TABLE IF NOT EXISTS `scope_settings` (
   `updated_at` DATETIME     NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_scope_key` (`scope_type`, `scope_id`, `key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;

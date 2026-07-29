@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `attendance_unlock_requests` (
     KEY `idx_aur_ctx` (`class_id`, `section_id`, `date`),
     KEY `idx_aur_status` (`status`),
     CONSTRAINT `fk_aur_requester` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Document verification workflow columns.
 ALTER TABLE `student_documents`

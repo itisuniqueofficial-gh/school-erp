@@ -28,4 +28,4 @@ CREATE TABLE IF NOT EXISTS `certificate_requests` (
   KEY `idx_cert_requests_student` (`student_id`),
   KEY `idx_cert_requests_status` (`status`),
   CONSTRAINT `fk_cert_requests_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

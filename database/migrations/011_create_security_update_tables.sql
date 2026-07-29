@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
     KEY `idx_login_ip` (`ip_address`),
     KEY `idx_login_time` (`attempted_at`),
     KEY `idx_login_success` (`successful`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Tracks applied application updates (for the update system).
 CREATE TABLE IF NOT EXISTS `update_logs` (
@@ -27,4 +27,4 @@ CREATE TABLE IF NOT EXISTS `update_logs` (
     `created_at`   DATETIME NOT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_update_version` (`to_version`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

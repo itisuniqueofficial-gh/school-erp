@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `uq_users_username` (`username`),
     KEY `idx_users_active` (`is_active`),
     KEY `idx_users_deleted` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Roles (RBAC).
 CREATE TABLE IF NOT EXISTS `roles` (
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_roles_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Permissions (RBAC).
 CREATE TABLE IF NOT EXISTS `permissions` (
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `permissions` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_permissions_slug` (`slug`),
     KEY `idx_permissions_module` (`module`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Role <-> Permission (many-to-many).
 CREATE TABLE IF NOT EXISTS `role_permissions` (
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
     KEY `idx_rp_permission` (`permission_id`),
     CONSTRAINT `fk_rp_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_rp_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- User <-> Role (many-to-many).
 CREATE TABLE IF NOT EXISTS `user_roles` (
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
     KEY `idx_ur_role` (`role_id`),
     CONSTRAINT `fk_ur_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ur_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Remember-me tokens (selector/validator split).
 CREATE TABLE IF NOT EXISTS `remember_tokens` (
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS `remember_tokens` (
     UNIQUE KEY `uq_remember_selector` (`selector`),
     KEY `idx_remember_user` (`user_id`),
     CONSTRAINT `fk_remember_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Password reset tokens.
 CREATE TABLE IF NOT EXISTS `password_resets` (
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `password_resets` (
     PRIMARY KEY (`id`),
     KEY `idx_pwreset_email` (`email`),
     KEY `idx_pwreset_token` (`token`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- API access tokens (Bearer) for the REST API.
 CREATE TABLE IF NOT EXISTS `api_tokens` (
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `api_tokens` (
     UNIQUE KEY `uq_api_token` (`token`),
     KEY `idx_api_user` (`user_id`),
     CONSTRAINT `fk_api_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Audit log (security & activity trail).
 CREATE TABLE IF NOT EXISTS `audit_logs` (
@@ -128,4 +128,4 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     KEY `idx_audit_action` (`action`),
     KEY `idx_audit_entity` (`entity_type`, `entity_id`),
     CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

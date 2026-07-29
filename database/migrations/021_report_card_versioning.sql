@@ -34,4 +34,4 @@ CREATE TABLE IF NOT EXISTS `report_card_versions` (
   UNIQUE KEY `uq_rcv_exam_student_version` (`exam_id`, `student_id`, `version`),
   KEY `idx_rcv_student` (`student_id`),
   CONSTRAINT `fk_rcv_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `fee_categories` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_fee_category_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Fee structure per class + academic year.
 CREATE TABLE IF NOT EXISTS `fee_structures` (
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `fee_structures` (
     KEY `idx_fs_year` (`academic_year_id`),
     CONSTRAINT `fk_fs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_fs_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Line items within a fee structure.
 CREATE TABLE IF NOT EXISTS `fee_structure_items` (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `fee_structure_items` (
     KEY `idx_fsi_category` (`fee_category_id`),
     CONSTRAINT `fk_fsi_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structures` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fsi_category` FOREIGN KEY (`fee_category_id`) REFERENCES `fee_categories` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Scholarships / discounts.
 CREATE TABLE IF NOT EXISTS `fee_discounts` (
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `fee_discounts` (
     `created_at`  DATETIME DEFAULT NULL,
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Student fee invoices.
 CREATE TABLE IF NOT EXISTS `fee_invoices` (
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `fee_invoices` (
     CONSTRAINT `fk_inv_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_inv_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structures` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_inv_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Invoice line items.
 CREATE TABLE IF NOT EXISTS `fee_invoice_items` (
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `fee_invoice_items` (
     KEY `idx_fii_invoice` (`fee_invoice_id`),
     CONSTRAINT `fk_fii_invoice` FOREIGN KEY (`fee_invoice_id`) REFERENCES `fee_invoices` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fii_category` FOREIGN KEY (`fee_category_id`) REFERENCES `fee_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Payments against invoices (supports installments).
 CREATE TABLE IF NOT EXISTS `fee_payments` (
@@ -116,4 +116,4 @@ CREATE TABLE IF NOT EXISTS `fee_payments` (
     CONSTRAINT `fk_pay_invoice` FOREIGN KEY (`fee_invoice_id`) REFERENCES `fee_invoices` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pay_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pay_collector` FOREIGN KEY (`collected_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

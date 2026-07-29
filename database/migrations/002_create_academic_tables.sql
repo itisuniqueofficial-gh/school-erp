@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `academic_years` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_year_name` (`name`),
     KEY `idx_year_current` (`is_current`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Classes / grades (e.g. Grade 1, Class X).
 CREATE TABLE IF NOT EXISTS `classes` (
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `classes` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_class_name` (`name`),
     KEY `idx_class_level` (`numeric_level`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Sections within a class (e.g. A, B, C).
 CREATE TABLE IF NOT EXISTS `sections` (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `sections` (
     UNIQUE KEY `uq_section_class_name` (`class_id`, `name`),
     KEY `idx_section_class` (`class_id`),
     CONSTRAINT `fk_section_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Subjects.
 CREATE TABLE IF NOT EXISTS `subjects` (
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `subjects` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_subject_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Subjects allocated to a class.
 CREATE TABLE IF NOT EXISTS `class_subjects` (
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `class_subjects` (
     KEY `idx_cs_subject` (`subject_id`),
     CONSTRAINT `fk_cs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Syllabus / curriculum documents per class-subject.
 CREATE TABLE IF NOT EXISTS `syllabi` (
@@ -87,4 +87,4 @@ CREATE TABLE IF NOT EXISTS `syllabi` (
     CONSTRAINT `fk_syllabus_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_syllabus_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_syllabus_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

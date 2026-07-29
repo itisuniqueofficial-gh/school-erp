@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `book_categories` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_bookcat_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `books` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `books` (
     KEY `idx_book_isbn` (`isbn`),
     KEY `idx_book_title` (`title`),
     CONSTRAINT `fk_book_category` FOREIGN KEY (`book_category_id`) REFERENCES `book_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `book_issues` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `book_issues` (
     CONSTRAINT `fk_issue_book` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_issue_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_issue_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ---- Transport ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `transport_routes` (
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `transport_routes` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_route_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `vehicles` (
     `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
     UNIQUE KEY `uq_vehicle_reg` (`registration_no`),
     KEY `idx_vehicle_route` (`route_id`),
     CONSTRAINT `fk_vehicle_route` FOREIGN KEY (`route_id`) REFERENCES `transport_routes` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `transport_assignments` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `transport_assignments` (
     CONSTRAINT `fk_ta_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ta_route` FOREIGN KEY (`route_id`) REFERENCES `transport_routes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ta_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ---- Hostel ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `hostels` (
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS `hostels` (
     `created_at` DATETIME DEFAULT NULL,
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `hostel_rooms` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS `hostel_rooms` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_hostel_room` (`hostel_id`, `room_no`),
     CONSTRAINT `fk_hroom_hostel` FOREIGN KEY (`hostel_id`) REFERENCES `hostels` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `hostel_allocations` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -144,4 +144,4 @@ CREATE TABLE IF NOT EXISTS `hostel_allocations` (
     KEY `idx_halloc_room` (`hostel_room_id`),
     CONSTRAINT `fk_halloc_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_halloc_room` FOREIGN KEY (`hostel_room_id`) REFERENCES `hostel_rooms` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `students` (
     CONSTRAINT `fk_student_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_student_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_student_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Guardians / parents.
 CREATE TABLE IF NOT EXISTS `guardians` (
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `guardians` (
     PRIMARY KEY (`id`),
     KEY `idx_guardian_user` (`user_id`),
     CONSTRAINT `fk_guardian_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Student <-> guardian (many-to-many; a guardian may have several children).
 CREATE TABLE IF NOT EXISTS `student_guardians` (
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `student_guardians` (
     KEY `idx_sg_guardian` (`guardian_id`),
     CONSTRAINT `fk_sg_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sg_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `guardians` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Student uploaded documents (certificates, ID proofs, etc.).
 CREATE TABLE IF NOT EXISTS `student_documents` (
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `student_documents` (
     KEY `idx_sd_student` (`student_id`),
     CONSTRAINT `fk_sd_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sd_uploader` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Promotion / transfer history.
 CREATE TABLE IF NOT EXISTS `student_promotions` (
@@ -107,4 +107,4 @@ CREATE TABLE IF NOT EXISTS `student_promotions` (
     PRIMARY KEY (`id`),
     KEY `idx_sp_student` (`student_id`),
     CONSTRAINT `fk_sp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

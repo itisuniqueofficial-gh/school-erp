@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.4] - 2026-07-29
+
+### Fixed
+- **MySQL error 1071 (“Specified key was too long; max 767 bytes”)** on
+  installation/migration against MySQL 5.7 / MariaDB / servers defaulting to a
+  non-DYNAMIC InnoDB row format. All `CREATE TABLE` statements (migrations +
+  `schema.sql`) now declare `ROW_FORMAT=DYNAMIC`, which raises the index prefix
+  limit to 3072 bytes so `utf8mb4` indexed columns install cleanly everywhere.
+  Purely a DDL/table-creation change — no data or column sizes altered.
+
 ## [1.6.3] - 2026-07-23
 
 ### Added

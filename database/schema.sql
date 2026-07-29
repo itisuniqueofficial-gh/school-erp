@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `uq_users_username` (`username`),
     KEY `idx_users_active` (`is_active`),
     KEY `idx_users_deleted` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Roles (RBAC).
 CREATE TABLE IF NOT EXISTS `roles` (
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_roles_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Permissions (RBAC).
 CREATE TABLE IF NOT EXISTS `permissions` (
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `permissions` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_permissions_slug` (`slug`),
     KEY `idx_permissions_module` (`module`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Role <-> Permission (many-to-many).
 CREATE TABLE IF NOT EXISTS `role_permissions` (
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
     KEY `idx_rp_permission` (`permission_id`),
     CONSTRAINT `fk_rp_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_rp_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- User <-> Role (many-to-many).
 CREATE TABLE IF NOT EXISTS `user_roles` (
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
     KEY `idx_ur_role` (`role_id`),
     CONSTRAINT `fk_ur_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ur_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Remember-me tokens (selector/validator split).
 CREATE TABLE IF NOT EXISTS `remember_tokens` (
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `remember_tokens` (
     UNIQUE KEY `uq_remember_selector` (`selector`),
     KEY `idx_remember_user` (`user_id`),
     CONSTRAINT `fk_remember_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Password reset tokens.
 CREATE TABLE IF NOT EXISTS `password_resets` (
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS `password_resets` (
     PRIMARY KEY (`id`),
     KEY `idx_pwreset_email` (`email`),
     KEY `idx_pwreset_token` (`token`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- API access tokens (Bearer) for the REST API.
 CREATE TABLE IF NOT EXISTS `api_tokens` (
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `api_tokens` (
     UNIQUE KEY `uq_api_token` (`token`),
     KEY `idx_api_user` (`user_id`),
     CONSTRAINT `fk_api_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Audit log (security & activity trail).
 CREATE TABLE IF NOT EXISTS `audit_logs` (
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     KEY `idx_audit_action` (`action`),
     KEY `idx_audit_entity` (`entity_type`, `entity_id`),
     CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 002 - Academic structure: years, classes, sections, subjects, syllabus
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `academic_years` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_year_name` (`name`),
     KEY `idx_year_current` (`is_current`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Classes / grades (e.g. Grade 1, Class X).
 CREATE TABLE IF NOT EXISTS `classes` (
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS `classes` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_class_name` (`name`),
     KEY `idx_class_level` (`numeric_level`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Sections within a class (e.g. A, B, C).
 CREATE TABLE IF NOT EXISTS `sections` (
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS `sections` (
     UNIQUE KEY `uq_section_class_name` (`class_id`, `name`),
     KEY `idx_section_class` (`class_id`),
     CONSTRAINT `fk_section_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Subjects.
 CREATE TABLE IF NOT EXISTS `subjects` (
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS `subjects` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_subject_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Subjects allocated to a class.
 CREATE TABLE IF NOT EXISTS `class_subjects` (
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `class_subjects` (
     KEY `idx_cs_subject` (`subject_id`),
     CONSTRAINT `fk_cs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Syllabus / curriculum documents per class-subject.
 CREATE TABLE IF NOT EXISTS `syllabi` (
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS `syllabi` (
     CONSTRAINT `fk_syllabus_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_syllabus_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_syllabus_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 003 - Staff & Teachers: departments, staff, qualifications, allocations
@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS `departments` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_department_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Staff/employees: teaching and non-teaching.
 CREATE TABLE IF NOT EXISTS `staff` (
@@ -273,7 +273,7 @@ CREATE TABLE IF NOT EXISTS `staff` (
     KEY `idx_staff_status` (`status`),
     CONSTRAINT `fk_staff_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_staff_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Teacher qualifications (one-to-many).
 CREATE TABLE IF NOT EXISTS `teacher_qualifications` (
@@ -288,7 +288,7 @@ CREATE TABLE IF NOT EXISTS `teacher_qualifications` (
     PRIMARY KEY (`id`),
     KEY `idx_tq_staff` (`staff_id`),
     CONSTRAINT `fk_tq_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Teacher <-> subject/class/section allocation.
 CREATE TABLE IF NOT EXISTS `teacher_subjects` (
@@ -308,7 +308,7 @@ CREATE TABLE IF NOT EXISTS `teacher_subjects` (
     CONSTRAINT `fk_ts_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ts_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_ts_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 004 - Students: students, guardians, documents, promotion history
@@ -355,7 +355,7 @@ CREATE TABLE IF NOT EXISTS `students` (
     CONSTRAINT `fk_student_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_student_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_student_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Guardians / parents.
 CREATE TABLE IF NOT EXISTS `guardians` (
@@ -372,7 +372,7 @@ CREATE TABLE IF NOT EXISTS `guardians` (
     PRIMARY KEY (`id`),
     KEY `idx_guardian_user` (`user_id`),
     CONSTRAINT `fk_guardian_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Student <-> guardian (many-to-many; a guardian may have several children).
 CREATE TABLE IF NOT EXISTS `student_guardians` (
@@ -383,7 +383,7 @@ CREATE TABLE IF NOT EXISTS `student_guardians` (
     KEY `idx_sg_guardian` (`guardian_id`),
     CONSTRAINT `fk_sg_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sg_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `guardians` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Student uploaded documents (certificates, ID proofs, etc.).
 CREATE TABLE IF NOT EXISTS `student_documents` (
@@ -401,7 +401,7 @@ CREATE TABLE IF NOT EXISTS `student_documents` (
     KEY `idx_sd_student` (`student_id`),
     CONSTRAINT `fk_sd_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sd_uploader` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Promotion / transfer history.
 CREATE TABLE IF NOT EXISTS `student_promotions` (
@@ -419,7 +419,7 @@ CREATE TABLE IF NOT EXISTS `student_promotions` (
     PRIMARY KEY (`id`),
     KEY `idx_sp_student` (`student_id`),
     CONSTRAINT `fk_sp_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 005 - Attendance & Timetable
@@ -445,7 +445,7 @@ CREATE TABLE IF NOT EXISTS `student_attendance` (
     KEY `idx_att_status` (`status`),
     CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_att_marker` FOREIGN KEY (`marked_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Staff attendance.
 CREATE TABLE IF NOT EXISTS `staff_attendance` (
@@ -462,7 +462,7 @@ CREATE TABLE IF NOT EXISTS `staff_attendance` (
     UNIQUE KEY `uq_staff_attendance_date` (`staff_id`, `date`),
     KEY `idx_satt_date` (`date`),
     CONSTRAINT `fk_satt_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Rooms (for timetable allocation).
 CREATE TABLE IF NOT EXISTS `rooms` (
@@ -474,7 +474,7 @@ CREATE TABLE IF NOT EXISTS `rooms` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_room_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Timetable periods/slots.
 CREATE TABLE IF NOT EXISTS `timetable_slots` (
@@ -485,7 +485,7 @@ CREATE TABLE IF NOT EXISTS `timetable_slots` (
     `is_break`   TINYINT(1) NOT NULL DEFAULT 0,
     `sort_order` INT NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Timetable entries.
 CREATE TABLE IF NOT EXISTS `timetables` (
@@ -511,7 +511,7 @@ CREATE TABLE IF NOT EXISTS `timetables` (
     CONSTRAINT `fk_tt_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_tt_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_tt_slot` FOREIGN KEY (`slot_id`) REFERENCES `timetable_slots` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 006 - Examination: exam types, exams, schedules, grades, marks, report cards
@@ -525,7 +525,7 @@ CREATE TABLE IF NOT EXISTS `exam_types` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_exam_type_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `exams` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -542,7 +542,7 @@ CREATE TABLE IF NOT EXISTS `exams` (
     KEY `idx_exam_year` (`academic_year_id`),
     CONSTRAINT `fk_exam_type` FOREIGN KEY (`exam_type_id`) REFERENCES `exam_types` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_exam_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Per class-subject schedule within an exam.
 CREATE TABLE IF NOT EXISTS `exam_schedules` (
@@ -566,7 +566,7 @@ CREATE TABLE IF NOT EXISTS `exam_schedules` (
     CONSTRAINT `fk_es_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_es_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_es_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Grading scale.
 CREATE TABLE IF NOT EXISTS `grades` (
@@ -578,7 +578,7 @@ CREATE TABLE IF NOT EXISTS `grades` (
     `remark`      VARCHAR(60) DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_grade_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Individual student marks per exam-subject.
 CREATE TABLE IF NOT EXISTS `exam_marks` (
@@ -599,7 +599,7 @@ CREATE TABLE IF NOT EXISTS `exam_marks` (
     CONSTRAINT `fk_mark_schedule` FOREIGN KEY (`exam_schedule_id`) REFERENCES `exam_schedules` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_mark_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_mark_grade` FOREIGN KEY (`grade_id`) REFERENCES `grades` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Aggregated report cards per student per exam.
 CREATE TABLE IF NOT EXISTS `report_cards` (
@@ -622,7 +622,7 @@ CREATE TABLE IF NOT EXISTS `report_cards` (
     CONSTRAINT `fk_rc_exam` FOREIGN KEY (`exam_id`) REFERENCES `exams` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_rc_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_rc_grade` FOREIGN KEY (`grade_id`) REFERENCES `grades` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 007 - Fees: categories, structures, invoices, payments, discounts
@@ -637,7 +637,7 @@ CREATE TABLE IF NOT EXISTS `fee_categories` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_fee_category_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Fee structure per class + academic year.
 CREATE TABLE IF NOT EXISTS `fee_structures` (
@@ -653,7 +653,7 @@ CREATE TABLE IF NOT EXISTS `fee_structures` (
     KEY `idx_fs_year` (`academic_year_id`),
     CONSTRAINT `fk_fs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_fs_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Line items within a fee structure.
 CREATE TABLE IF NOT EXISTS `fee_structure_items` (
@@ -667,7 +667,7 @@ CREATE TABLE IF NOT EXISTS `fee_structure_items` (
     KEY `idx_fsi_category` (`fee_category_id`),
     CONSTRAINT `fk_fsi_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structures` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fsi_category` FOREIGN KEY (`fee_category_id`) REFERENCES `fee_categories` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Scholarships / discounts.
 CREATE TABLE IF NOT EXISTS `fee_discounts` (
@@ -679,7 +679,7 @@ CREATE TABLE IF NOT EXISTS `fee_discounts` (
     `created_at`  DATETIME DEFAULT NULL,
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Student fee invoices.
 CREATE TABLE IF NOT EXISTS `fee_invoices` (
@@ -703,7 +703,7 @@ CREATE TABLE IF NOT EXISTS `fee_invoices` (
     CONSTRAINT `fk_inv_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_inv_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structures` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_inv_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Invoice line items.
 CREATE TABLE IF NOT EXISTS `fee_invoice_items` (
@@ -716,7 +716,7 @@ CREATE TABLE IF NOT EXISTS `fee_invoice_items` (
     KEY `idx_fii_invoice` (`fee_invoice_id`),
     CONSTRAINT `fk_fii_invoice` FOREIGN KEY (`fee_invoice_id`) REFERENCES `fee_invoices` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fii_category` FOREIGN KEY (`fee_category_id`) REFERENCES `fee_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Payments against invoices (supports installments).
 CREATE TABLE IF NOT EXISTS `fee_payments` (
@@ -742,7 +742,7 @@ CREATE TABLE IF NOT EXISTS `fee_payments` (
     CONSTRAINT `fk_pay_invoice` FOREIGN KEY (`fee_invoice_id`) REFERENCES `fee_invoices` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pay_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pay_collector` FOREIGN KEY (`collected_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 008 - Library, Transport & Hostel
@@ -756,7 +756,7 @@ CREATE TABLE IF NOT EXISTS `book_categories` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_bookcat_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `books` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -777,7 +777,7 @@ CREATE TABLE IF NOT EXISTS `books` (
     KEY `idx_book_isbn` (`isbn`),
     KEY `idx_book_title` (`title`),
     CONSTRAINT `fk_book_category` FOREIGN KEY (`book_category_id`) REFERENCES `book_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `book_issues` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -799,7 +799,7 @@ CREATE TABLE IF NOT EXISTS `book_issues` (
     CONSTRAINT `fk_issue_book` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_issue_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_issue_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ---- Transport ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `transport_routes` (
@@ -813,7 +813,7 @@ CREATE TABLE IF NOT EXISTS `transport_routes` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_route_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `vehicles` (
     `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -832,7 +832,7 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
     UNIQUE KEY `uq_vehicle_reg` (`registration_no`),
     KEY `idx_vehicle_route` (`route_id`),
     CONSTRAINT `fk_vehicle_route` FOREIGN KEY (`route_id`) REFERENCES `transport_routes` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `transport_assignments` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -848,7 +848,7 @@ CREATE TABLE IF NOT EXISTS `transport_assignments` (
     CONSTRAINT `fk_ta_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ta_route` FOREIGN KEY (`route_id`) REFERENCES `transport_routes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ta_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ---- Hostel ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `hostels` (
@@ -860,7 +860,7 @@ CREATE TABLE IF NOT EXISTS `hostels` (
     `created_at` DATETIME DEFAULT NULL,
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `hostel_rooms` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -874,7 +874,7 @@ CREATE TABLE IF NOT EXISTS `hostel_rooms` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_hostel_room` (`hostel_id`, `room_no`),
     CONSTRAINT `fk_hroom_hostel` FOREIGN KEY (`hostel_id`) REFERENCES `hostels` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `hostel_allocations` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -890,7 +890,7 @@ CREATE TABLE IF NOT EXISTS `hostel_allocations` (
     KEY `idx_halloc_room` (`hostel_room_id`),
     CONSTRAINT `fk_halloc_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_halloc_room` FOREIGN KEY (`hostel_room_id`) REFERENCES `hostel_rooms` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 009 - Inventory & HR/Payroll
@@ -904,7 +904,7 @@ CREATE TABLE IF NOT EXISTS `item_categories` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_itemcat_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `vendors` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -916,7 +916,7 @@ CREATE TABLE IF NOT EXISTS `vendors` (
     `created_at` DATETIME DEFAULT NULL,
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `inventory_items` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -933,7 +933,7 @@ CREATE TABLE IF NOT EXISTS `inventory_items` (
     PRIMARY KEY (`id`),
     KEY `idx_item_category` (`item_category_id`),
     CONSTRAINT `fk_item_category` FOREIGN KEY (`item_category_id`) REFERENCES `item_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `purchases` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -948,7 +948,7 @@ CREATE TABLE IF NOT EXISTS `purchases` (
     PRIMARY KEY (`id`),
     KEY `idx_purchase_vendor` (`vendor_id`),
     CONSTRAINT `fk_purchase_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `purchase_items` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -961,7 +961,7 @@ CREATE TABLE IF NOT EXISTS `purchase_items` (
     KEY `idx_pi_purchase` (`purchase_id`),
     CONSTRAINT `fk_pi_purchase` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pi_item` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ---- HR / Payroll ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `leave_types` (
@@ -973,7 +973,7 @@ CREATE TABLE IF NOT EXISTS `leave_types` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_leavetype_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `leaves` (
     `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -993,7 +993,7 @@ CREATE TABLE IF NOT EXISTS `leaves` (
     CONSTRAINT `fk_leave_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_types` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_leave_approver` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `holidays` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1004,7 +1004,7 @@ CREATE TABLE IF NOT EXISTS `holidays` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_holiday_date` (`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `payrolls` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1023,7 +1023,7 @@ CREATE TABLE IF NOT EXISTS `payrolls` (
     UNIQUE KEY `uq_payroll_period` (`staff_id`, `month`, `year`),
     KEY `idx_payroll_staff` (`staff_id`),
     CONSTRAINT `fk_payroll_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ===========================================================================
 -- 010 - Communication & Settings
@@ -1041,7 +1041,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_setting_key` (`key`),
     KEY `idx_setting_group` (`group`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Notices (public/board announcements).
 CREATE TABLE IF NOT EXISTS `notices` (
@@ -1059,7 +1059,7 @@ CREATE TABLE IF NOT EXISTS `notices` (
     KEY `idx_notice_audience` (`audience`),
     KEY `idx_notice_published` (`is_published`),
     CONSTRAINT `fk_notice_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Internal messages (one-to-one/broadcast).
 CREATE TABLE IF NOT EXISTS `messages` (
@@ -1071,7 +1071,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
     PRIMARY KEY (`id`),
     KEY `idx_message_sender` (`sender_id`),
     CONSTRAINT `fk_message_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `message_recipients` (
     `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1083,7 +1083,7 @@ CREATE TABLE IF NOT EXISTS `message_recipients` (
     KEY `idx_mr_recipient` (`recipient_id`),
     CONSTRAINT `fk_mr_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_mr_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Notifications (in-app), pluggable channel log for SMS/email.
 CREATE TABLE IF NOT EXISTS `notifications` (
@@ -1099,7 +1099,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
     KEY `idx_notif_user` (`user_id`),
     KEY `idx_notif_read` (`read_at`),
     CONSTRAINT `fk_notif_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Outbound communication log (email/SMS providers pluggable).
 CREATE TABLE IF NOT EXISTS `communication_logs` (
@@ -1114,6 +1114,6 @@ CREATE TABLE IF NOT EXISTS `communication_logs` (
     PRIMARY KEY (`id`),
     KEY `idx_commlog_channel` (`channel`),
     KEY `idx_commlog_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS=1;

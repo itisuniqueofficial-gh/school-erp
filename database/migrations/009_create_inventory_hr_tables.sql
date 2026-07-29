@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `item_categories` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_itemcat_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `vendors` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `vendors` (
     `created_at` DATETIME DEFAULT NULL,
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `inventory_items` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `inventory_items` (
     PRIMARY KEY (`id`),
     KEY `idx_item_category` (`item_category_id`),
     CONSTRAINT `fk_item_category` FOREIGN KEY (`item_category_id`) REFERENCES `item_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `purchases` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `purchases` (
     PRIMARY KEY (`id`),
     KEY `idx_purchase_vendor` (`vendor_id`),
     CONSTRAINT `fk_purchase_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `purchase_items` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `purchase_items` (
     KEY `idx_pi_purchase` (`purchase_id`),
     CONSTRAINT `fk_pi_purchase` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pi_item` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ---- HR / Payroll ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `leave_types` (
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `leave_types` (
     `updated_at`  DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_leavetype_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `leaves` (
     `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS `leaves` (
     CONSTRAINT `fk_leave_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_types` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_leave_approver` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `holidays` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `holidays` (
     `updated_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_holiday_date` (`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `payrolls` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -129,4 +129,4 @@ CREATE TABLE IF NOT EXISTS `payrolls` (
     UNIQUE KEY `uq_payroll_period` (`staff_id`, `month`, `year`),
     KEY `idx_payroll_staff` (`staff_id`),
     CONSTRAINT `fk_payroll_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;

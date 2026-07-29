@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `teacher_assignments` (
     CONSTRAINT `fk_ta2_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ta2_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ta2_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Exactly one class teacher per (year, class, section).
 CREATE TABLE IF NOT EXISTS `class_teachers` (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `class_teachers` (
     CONSTRAINT `fk_ct_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ct_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ct_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Historical student academic enrollment (one row per year); roll number is
 -- unique within (year, class, section); one enrollment per student per year.
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `student_enrollments` (
     CONSTRAINT `fk_enr_year` FOREIGN KEY (`academic_year_id`) REFERENCES `academic_years` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_enr_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_enr_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Permanent public identifiers (never reused). admission_no/employee_code stay
 -- as domain codes; public_id is the universal STU-/TCH-/PAR-/STF- identifier.
@@ -85,4 +85,4 @@ CREATE TABLE IF NOT EXISTS `id_sequences` (
     `next_value` INT UNSIGNED NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_idseq_prefix_year` (`prefix`, `year`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
