@@ -11,8 +11,8 @@ $link = static function (string $href, string $icon, string $label) use ($path):
     $classes = $active
         ? 'bg-brand-50 text-brand-700'
         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
-    return '<a href="' . e(url($href)) . '" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ' . $classes . '">'
-        . '<i class="fa-solid ' . e($icon) . ' w-5 text-center"></i><span>' . e($label) . '</span></a>';
+    return '<a href="' . e(url($href)) . '" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ' . $classes . '"' . ($active ? ' aria-current="page"' : '') . '>'
+        . '<i class="fa-solid ' . e($icon) . ' w-5 text-center" aria-hidden="true"></i><span>' . e($label) . '</span></a>';
 };
 
 $roles = $user['roles'] ?? [];
@@ -30,7 +30,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <span class="truncate text-lg font-bold text-slate-900"><?= e($appName ?? config('app.name')) ?></span>
 </div>
 
-<nav class="space-y-6 px-3 py-5">
+<nav class="space-y-6 px-3 py-5" aria-label="Main navigation">
     <div class="space-y-1">
         <?php if ($isStaff): ?>
             <?= $link('/admin/dashboard', 'fa-gauge-high', 'Dashboard') ?>

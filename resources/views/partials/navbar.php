@@ -9,7 +9,7 @@ $__unread = 0;
 try { $__unread = (new \App\Services\NotificationService())->unreadCount((int) auth()->id()); } catch (\Throwable) {}
 ?>
 <header class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
-    <button data-sidebar-toggle class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Toggle sidebar">
+    <button data-sidebar-toggle class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Toggle sidebar" aria-controls="app-sidebar">
         <i class="fa-solid fa-bars"></i>
     </button>
 

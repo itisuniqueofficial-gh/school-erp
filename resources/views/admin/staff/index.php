@@ -30,7 +30,7 @@
                             <td><span class="badge <?= $s['status'] === 'active' ? 'badge-green' : 'badge-slate' ?>"><?= e(ucfirst(str_replace('_',' ',(string) $s['status']))) ?></span></td>
                             <td class="text-right">
                                 <?php if (auth()->can('staff.delete')): ?>
-                                <button type="button" data-delete-url="<?= e(url('/admin/staff/' . $s['id'])) ?>" data-confirm="Remove this staff member?" class="text-slate-500 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                <button type="button" data-delete-url="<?= e(url('/admin/staff/' . $s['id'])) ?>" data-confirm="Remove this staff member?" class="text-slate-500 hover:text-red-600" aria-label="Remove staff member"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                                 <?php endif; ?>
                             </td>
                         </tr>

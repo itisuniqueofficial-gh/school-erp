@@ -184,7 +184,7 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
                                     <input type="hidden" name="type" value="<?= e((string) $item['code']) ?>">
                                     <input type="hidden" name="title" value="<?= e((string) $item['name']) ?>">
                                     <input type="file" name="document" class="form-input text-xs" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
-                                    <button class="btn btn-secondary btn-sm"><i class="fa-solid fa-upload"></i></button>
+                                    <button class="btn btn-secondary btn-sm" aria-label="Upload document"><i class="fa-solid fa-upload" aria-hidden="true"></i></button>
                                 </form>
                             <?php endif; ?>
                             <?php if (!empty($canDocs)): ?>

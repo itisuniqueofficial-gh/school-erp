@@ -13,7 +13,7 @@
         <form method="GET" class="card p-4">
             <div class="flex gap-3">
                 <input type="text" name="search" value="<?= e($search) ?>" placeholder="Search title / author / ISBN" class="form-input">
-                <button class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button class="btn btn-secondary" aria-label="Search books"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
             </div>
         </form>
         <div class="card overflow-hidden">

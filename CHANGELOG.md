@@ -4,6 +4,49 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.14] - 2026-08-15
+
+### Changed
+- **Full-width responsive layout** — the "Go to Record by ID" lookup page no
+  longer caps its content at a narrow centered `max-w-5xl` container; it now uses
+  the full available width after the sidebar via a responsive grid (search
+  ~66-75% / Supported IDs ~25-33% on `lg`/`xl`, stacked on small screens). The
+  global shell was already fluid; this removed the last page-level width cap that
+  caused large empty left/right margins. Legitimately-narrow layouts (printable
+  A4 documents, receipts, auth/verify/error cards, short forms) were left as-is.
+- **Responsive tables** — data tables that do not opt into the mobile card layout
+  now scroll horizontally inside their own container on small screens (CSS-only,
+  `.data-table:not(.table-cards)`), instead of being clipped by
+  `.card.overflow-hidden`. No per-view markup or JS changes.
+
+### Fixed
+- **Duplicate QR code on the Student Profile** — root cause was two client-side
+  QR initializers in `app.js` both binding `[data-qr]` on DOM-ready (the
+  canonical `ERP.initQRCodes` plus a legacy leftover block that loaded qrcodejs
+  a second time and called `new QRCode` again on the same element). Removed the
+  legacy initializer, leaving a single canonical path that is idempotent
+  (`data-qr-init` guard) and self-clearing (`innerHTML=''` before render) so a
+  QR can never stack. Server-side QR (`QrService` + bundled phpqrcode) for
+  PDF/print documents is unchanged; web verify pages keep their "Verify" links.
+
+### Accessibility
+- Project-wide WCAG 2.2 AA layer applied via shared files (no per-view churn):
+  skip-to-content link + focus-targetable `<main id="main-content" tabindex="-1">`;
+  `aria-current="page"` on the active nav item and `aria-label` on the main nav;
+  `aria-controls` on the mobile sidebar toggle; decorative icons `aria-hidden`;
+  flash messages use `role="status"`/`role="alert"` with matching `aria-live`.
+- Added accessible names to 10 icon-only controls (library search; personal-file
+  upload; class-subject move/remove; teaching-assignment assign/remove; teacher
+  view/edit/delete; staff delete).
+- New `ACCESSIBILITY.md` documenting standards, conventions, and honest scope.
+
+### Testing
+- New `tests/integration_accessibility.php` (icon-only controls need an
+  accessible name; `<img>` needs `alt`; skip link / focusable main / `<html lang>`
+  present) and `tests/integration_qr.php` (single QR init path, single library
+  include, idempotency guard, at most one `data-qr` container per view,
+  server-side QR intact). Full suite: 48 suites, 0 failures.
+
 ## [1.6.13] - 2026-08-15
 
 ### Added

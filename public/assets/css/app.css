@@ -156,11 +156,45 @@ small, .caption { font-size: var(--fs-caption); color: var(--color-text-muted); 
     table.table-cards td[data-label=""]::before { content: ""; }
 }
 
+/* Responsive fallback for tables that do NOT opt into the card layout above:
+   let the table scroll horizontally inside its own container on small screens
+   instead of being clipped by a parent `.card.overflow-hidden`. Reusable and
+   CSS-only — no markup or JS changes needed per table. */
+@media (max-width: 768px) {
+    .data-table:not(.table-cards) {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
 /* Prevent layout overflow on very small screens. */
 img, svg, video, canvas { max-width: 100%; height: auto; }
 .container-safe { width: 100%; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
 
-/* Client-side validation feedback. */
+/* Skip-to-content link: visually hidden until focused (keyboard users). */
+.skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: -3rem;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--brand);
+    color: #fff;
+    border-radius: 0 0 .5rem .5rem;
+    font-size: .875rem;
+    font-weight: 600;
+    transition: top .15s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+    top: 0;
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+/* main should not show a focus ring when programmatically focused via skip link. */
+main[tabindex="-1"]:focus { outline: none; }
 .field-invalid { border-color: var(--color-danger) !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important; }
 .field-error-msg { color: var(--color-danger); font-size: var(--fs-caption); margin-top: .25rem; }
 

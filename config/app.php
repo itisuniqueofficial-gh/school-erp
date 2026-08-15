@@ -14,7 +14,7 @@ return [
     'locale'   => Env::get('APP_LOCALE', 'en'),
 
     // Application version.
-    'version'  => '1.6.13',
+    'version'  => '1.6.14',
 
     // Pagination defaults.
     'per_page' => 15,

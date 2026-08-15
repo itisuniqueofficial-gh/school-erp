@@ -34,10 +34,10 @@
                     <td class="text-slate-500"><?= e((string) ($t['email'] ?? '—')) ?></td>
                     <td><span class="badge <?= $t['status'] === 'active' ? 'badge-green' : 'badge-slate' ?>"><?= e(ucfirst((string) str_replace('_', ' ', $t['status']))) ?></span></td>
                     <td class="text-right">
-                        <a href="<?= e(url('/admin/teachers/' . $t['id'])) ?>" class="text-slate-500 hover:text-brand-600"><i class="fa-solid fa-eye"></i></a>
-                        <?php if (auth()->can('teachers.update')): ?><a href="<?= e(url('/admin/teachers/' . $t['id'] . '/edit')) ?>" class="ml-2 text-slate-500 hover:text-brand-600"><i class="fa-solid fa-pen"></i></a><?php endif; ?>
+                        <a href="<?= e(url('/admin/teachers/' . $t['id'])) ?>" class="text-slate-500 hover:text-brand-600" aria-label="View teacher"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
+                        <?php if (auth()->can('teachers.update')): ?><a href="<?= e(url('/admin/teachers/' . $t['id'] . '/edit')) ?>" class="ml-2 text-slate-500 hover:text-brand-600" aria-label="Edit teacher"><i class="fa-solid fa-pen" aria-hidden="true"></i></a><?php endif; ?>
                         <?php if (auth()->can('teachers.delete')): ?>
-                        <button type="button" data-delete-url="<?= e(url('/admin/teachers/' . $t['id'])) ?>" data-confirm="Delete this teacher?" class="ml-2 text-slate-500 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                        <button type="button" data-delete-url="<?= e(url('/admin/teachers/' . $t['id'])) ?>" data-confirm="Delete this teacher?" class="ml-2 text-slate-500 hover:text-red-600" aria-label="Delete teacher"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                         <?php endif; ?>
                     </td>
                 </tr>

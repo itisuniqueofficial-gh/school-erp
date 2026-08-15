@@ -3,12 +3,13 @@
 
 <?php $this->section('content'); ?>
 <?php $user = auth()->user() ?? []; ?>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="min-h-full lg:flex">
     <!-- Sidebar backdrop (mobile) -->
     <div data-sidebar-backdrop class="fixed inset-0 z-30 hidden bg-slate-900/40 lg:hidden"></div>
 
     <!-- Sidebar -->
-    <aside data-sidebar
+    <aside id="app-sidebar" data-sidebar
            class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transform overflow-y-auto border-r border-slate-200 bg-white transition-transform duration-200 lg:static lg:translate-x-0"
            aria-label="Sidebar">
         <?php $this->include('partials.sidebar', ['user' => $user]); ?>
@@ -18,7 +19,7 @@
     <div class="flex min-w-0 flex-1 flex-col">
         <?php $this->include('partials.navbar', ['user' => $user]); ?>
 
-        <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8 2xl:px-12">
+        <main id="main-content" tabindex="-1" class="flex-1 px-4 py-6 sm:px-6 lg:px-8 2xl:px-12">
             <!-- Breadcrumb / page header -->
             <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>

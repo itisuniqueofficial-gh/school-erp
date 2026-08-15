@@ -46,7 +46,7 @@
         <select name="staff_id" class="form-select" required><option value="">Teacher *</option><?php foreach ($teachers as $t): ?><option value="<?= (int) $t['id'] ?>"><?= e((string) ($t['first_name'] . ' ' . $t['last_name'])) ?></option><?php endforeach; ?></select>
         <div class="flex gap-2">
             <select name="role" class="form-select"><option value="subject_teacher">Subject Teacher</option><option value="assistant_teacher">Assistant</option></select>
-            <button class="btn btn-primary"><i class="fa-solid fa-check"></i></button>
+            <button class="btn btn-primary" aria-label="Assign teacher"><i class="fa-solid fa-check" aria-hidden="true"></i></button>
         </div>
     </form>
 </details>
@@ -80,7 +80,7 @@
                                 <button class="btn btn-primary btn-sm w-full justify-center">Reassign</button>
                             </form>
                         </details>
-                        <form method="POST" action="<?= e(url('/admin/teaching-assignments/' . $a['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:text-red-800" data-confirm="End/remove this assignment?"><i class="fa-solid fa-trash"></i></button></form>
+                        <form method="POST" action="<?= e(url('/admin/teaching-assignments/' . $a['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:text-red-800" aria-label="End or remove assignment" data-confirm="End/remove this assignment?"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form>
                         <?php endif; ?>
                     </td>
                 </tr>

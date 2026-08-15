@@ -299,6 +299,7 @@
                     var val = el.getAttribute('data-qr') || '';
                     var size = parseInt(el.getAttribute('data-qr-size') || '104', 10);
                     if (val === '') { return; }
+                    el.innerHTML = '';  // idempotent: never stack a second QR into the same container
                     try { new window.QRCode(el, { text: val, width: size, height: size, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) { console.error('QRCode', e); }
                 });
             });
@@ -394,19 +395,9 @@
             }
         });
 
-        // --- QR code rendering (client-side, dependency loaded on demand) -----
-        const $qr = $('[data-qr]');
-        if ($qr.length) {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
-            s.onload = function () {
-                $qr.each(function () {
-                    // eslint-disable-next-line no-new
-                    new QRCode(this, { text: $(this).data('qr').toString(), width: 128, height: 128, correctLevel: QRCode.CorrectLevel.M });
-                });
-            };
-            document.head.appendChild(s);
-        }
+        // Client-side QR is rendered by the single canonical initializer
+        // (ERP.initQRCodes, called above). Do not add a second [data-qr] handler
+        // here — duplicate initializers stack multiple QR codes in one container.
     });
 })(jQuery);
 

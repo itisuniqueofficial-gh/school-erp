@@ -54,13 +54,13 @@ $active = 'class-subjects';
                         <td><?= e((string) $a['pass_marks']) ?></td>
                         <td class="whitespace-nowrap">
                             <?php if (auth()->can('academic.manage')): ?>
-                            <form method="POST" action="<?= e(url('/admin/academic/class-subjects/' . $a['id'] . '/move')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="direction" value="up"><button class="text-slate-500 hover:text-slate-800" title="Move up"><i class="fa-solid fa-arrow-up"></i></button></form>
-                            <form method="POST" action="<?= e(url('/admin/academic/class-subjects/' . $a['id'] . '/move')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="direction" value="down"><button class="ml-1 text-slate-500 hover:text-slate-800" title="Move down"><i class="fa-solid fa-arrow-down"></i></button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/class-subjects/' . $a['id'] . '/move')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="direction" value="up"><button class="text-slate-500 hover:text-slate-800" title="Move up" aria-label="Move subject up"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/class-subjects/' . $a['id'] . '/move')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="direction" value="down"><button class="ml-1 text-slate-500 hover:text-slate-800" title="Move down" aria-label="Move subject down"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button></form>
                             <?php endif; ?>
                         </td>
                         <td class="text-right">
                             <?php if (auth()->can('academic.manage')): ?>
-                            <form method="POST" action="<?= e(url('/admin/academic/class-subjects/' . $a['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="text-red-600 hover:text-red-800" data-confirm="Remove this subject allocation? (Historical marks are not affected.)"><i class="fa-solid fa-trash"></i></button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/class-subjects/' . $a['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="text-red-600 hover:text-red-800" aria-label="Remove subject allocation" data-confirm="Remove this subject allocation? (Historical marks are not affected.)"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form>
                             <?php endif; ?>
                         </td>
                     </tr>
