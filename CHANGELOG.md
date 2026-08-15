@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.13] - 2026-08-15
+
+### Added
+- **Personal File printable checklist PDF** (server-side, reusing the existing
+  `PdfDocument` engine): branded A4 with student info, requirement table
+  (status/required/remarks), completion summary, signature/stamp footer,
+  multi-page-safe. Route `GET /admin/students/{id}/personal-file/pdf`
+  (`can:students.view`), audit-logged. Official certs/hall-tickets unchanged.
+- **Reusable, opt-in, lazy-loaded client library layer** in `app.js`
+  (dormant unless an element opts in via data-attribute, so existing views are
+  unaffected): **Tom Select** (`select[data-tomselect]`), **DataTables**
+  (`table[data-datatable]`, client-side for small tables), **QRCode.js**
+  (`[data-qr]`), and a lazy **Day.js** `ERP.formatDate` utility. All load from
+  CDN on demand and fail safe to the native element.
+- Wired a **non-sensitive student-ID QR** (public UID) on the student profile.
+
 ## [1.6.12] - 2026-08-15
 
 ### Added

@@ -535,6 +535,20 @@ final class StudentController extends Controller
         return $this->redirect('/admin/students/' . $id, ['success' => 'Requirement restored to the checklist.']);
     }
 
+    /** Printable Personal File checklist PDF (A4). Authorized via students.view route. */
+    public function personalFilePdf(Request $request, string $id): Response
+    {
+        $pdf = (new \App\Services\PersonalFilePdfService())->render((int) $id);
+        if ($pdf === null) {
+            abort(404, 'Student not found.');
+        }
+        AuditLogger::log('document.checklist_printed', 'student', (int) $id, 'Generated Personal File checklist PDF');
+        return (new Response($pdf, 200))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="personal-file-' . (int) $id . '.pdf"')
+            ->header('X-Content-Type-Options', 'nosniff');
+    }
+
     /**
      * Validate and store an uploaded photo; returns the stored filename or null.
      */

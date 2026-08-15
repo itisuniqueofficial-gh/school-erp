@@ -230,6 +230,96 @@
                 .html('<i class="fa-solid fa-spinner fa-spin"></i> Please wait...');
         });
 
+        // ==================================================================
+        // Reusable, lazy-loaded, OPT-IN client enhancements. Each activates
+        // only on elements explicitly marked with a data-attribute, so pages
+        // that don't opt in behave exactly as before (no regressions). All
+        // libraries load from CDN on demand and fail safe (the underlying
+        // native element keeps working if a CDN is unavailable).
+        // ==================================================================
+        window.ERP = window.ERP || {};
+        var loadedCss = {};
+        function ensureCss(href) {
+            if (loadedCss[href]) { return; }
+            loadedCss[href] = true;
+            var l = document.createElement('link');
+            l.rel = 'stylesheet'; l.href = href;
+            document.head.appendChild(l);
+        }
+        function ensureLib(test, src, cb) {
+            if (test()) { cb(); return; }
+            var existing = document.querySelector('script[data-src="' + src + '"]');
+            if (existing) { existing.addEventListener('load', function () { if (test()) cb(); }); return; }
+            var s = document.createElement('script');
+            s.src = src; s.setAttribute('data-src', src);
+            s.onload = function () { if (test()) { cb(); } };
+            s.onerror = function () { /* fail safe: native element still works */ };
+            document.head.appendChild(s);
+        }
+
+        // Tom Select — searchable selects: <select data-tomselect ...>
+        ERP.initTomSelect = function (root) {
+            var nodes = (root || document).querySelectorAll('select[data-tomselect]:not([data-ts-init])');
+            if (!nodes.length) { return; }
+            ensureCss('https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css');
+            ensureLib(function () { return !!window.TomSelect; }, 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js', function () {
+                nodes.forEach(function (el) {
+                    el.setAttribute('data-ts-init', '1');
+                    try { new window.TomSelect(el, { allowEmptyOption: true, maxOptions: 1000 }); } catch (e) { console.error('TomSelect', e); }
+                });
+            });
+        };
+
+        // DataTables — client-side for SMALL, fully-rendered tables: <table data-datatable>
+        ERP.initDataTables = function (root) {
+            var nodes = (root || document).querySelectorAll('table[data-datatable]:not([data-dt-init])');
+            if (!nodes.length) { return; }
+            ensureCss('https://cdn.datatables.net/1.13.8/css/dataTables.dataTables.min.css');
+            ensureLib(function () { return !!(window.jQuery && $.fn && $.fn.dataTable); }, 'https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js', function () {
+                nodes.forEach(function (t) {
+                    t.setAttribute('data-dt-init', '1');
+                    try {
+                        $(t).DataTable({
+                            pageLength: parseInt(t.getAttribute('data-dt-page') || '25', 10),
+                            order: [], // preserve server order by default
+                            columnDefs: [{ targets: 'no-sort', orderable: false }]
+                        });
+                    } catch (e) { console.error('DataTables', e); }
+                });
+            });
+        };
+
+        // QRCode — client-side QR for non-sensitive identifiers: <div data-qr="value" data-qr-size="110">
+        ERP.initQRCodes = function (root) {
+            var nodes = (root || document).querySelectorAll('[data-qr]:not([data-qr-init])');
+            if (!nodes.length) { return; }
+            ensureLib(function () { return !!window.QRCode; }, 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js', function () {
+                nodes.forEach(function (el) {
+                    el.setAttribute('data-qr-init', '1');
+                    var val = el.getAttribute('data-qr') || '';
+                    var size = parseInt(el.getAttribute('data-qr-size') || '104', 10);
+                    if (val === '') { return; }
+                    try { new window.QRCode(el, { text: val, width: size, height: size, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) { console.error('QRCode', e); }
+                });
+            });
+        };
+
+        // Day.js — lazy date utility (never force-reformats server-rendered dates).
+        ERP.formatDate = function (value, fmt, cb) {
+            fmt = fmt || 'DD MMM YYYY';
+            ensureLib(function () { return !!window.dayjs; }, 'https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js', function () {
+                var d = window.dayjs(value);
+                var out = d.isValid() ? d.format(fmt) : '';
+                if (typeof cb === 'function') { cb(out); }
+            });
+        };
+
+        // Auto-initialize opt-in elements present on load.
+        ERP.initTomSelect();
+        ERP.initDataTables();
+        ERP.initQRCodes();
+
+
         // --- Entrance animations (safe: content is visible by default) ----
         if (window.ERPAnim) {
             window.ERPAnim.staggerCards('[data-animate-card]');

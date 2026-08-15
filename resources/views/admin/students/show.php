@@ -47,6 +47,9 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
             <span class="font-mono text-slate-700"><?= e((string) $student['uid']) ?></span>
             <button type="button" data-copy="<?= e((string) $student['uid']) ?>" class="text-brand-600 hover:text-brand-800" title="Copy Student ID" aria-label="Copy Student ID"><i class="fa-solid fa-copy"></i></button>
         </p>
+        <div class="mt-3 flex justify-center">
+            <div data-qr="<?= e((string) $student['uid']) ?>" data-qr-size="96" title="Student ID QR" aria-label="QR code for student ID <?= e((string) $student['uid']) ?>"></div>
+        </div>
         <?php endif; ?>
         <span class="badge <?= $student['status'] === 'active' ? 'badge-green' : 'badge-slate' ?> mt-2"><?= e(ucfirst((string) $student['status'])) ?></span>
         <?php if (!empty($attendance)): ?>
@@ -137,10 +140,13 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
     <div class="card p-6 lg:col-span-3">
         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 class="font-semibold text-slate-800"><i class="fa-solid fa-folder-open mr-1 text-brand-600"></i> Personal File</h2>
-            <div class="text-sm text-slate-500">
+            <div class="flex items-center gap-3">
+                <a href="<?= e(url('/admin/students/' . $student['id'] . '/personal-file/pdf')) ?>" target="_blank" class="btn btn-secondary btn-sm"><i class="fa-solid fa-print"></i> Print Checklist</a>
+                <div class="text-sm text-slate-500">
                 <?= (int) $pfSum['verified'] ?>/<?= (int) $pfSum['applicable'] ?> required verified
                 &middot; <?= (int) $pfSum['pending'] ?> pending &middot; <?= (int) $pfSum['missing'] ?> missing
                 <?php if ((int) $pfSum['rejected'] > 0): ?>&middot; <span class="text-red-600"><?= (int) $pfSum['rejected'] ?> rejected</span><?php endif; ?>
+                </div>
             </div>
         </div>
         <?php if (!$pfSum['complete']): ?>
