@@ -113,6 +113,19 @@ final class FeeController extends Controller
             'method'         => 'required|in:cash,card,bank_transfer,cheque,online,upi',
         ]);
 
+        // Never trust client-supplied invoice/student/amount: validate server-side.
+        $invoice = QueryBuilder::table('fee_invoices')->where('id', (int) $data['fee_invoice_id'])->first();
+        if ($invoice === null || (int) $invoice['student_id'] !== (int) $data['student_id']) {
+            return $this->back(['payment' => ['The selected invoice does not belong to this student.']]);
+        }
+        if (($invoice['status'] ?? '') === 'cancelled') {
+            return $this->back(['payment' => ['This invoice has been cancelled and cannot accept payments.']]);
+        }
+        $outstanding = FeeInvoice::outstanding((int) $data['fee_invoice_id']) ?? 0.0;
+        if ((float) $data['amount'] > $outstanding + 0.001) {
+            return $this->back(['payment' => ['Amount exceeds the outstanding balance of ' . number_format($outstanding, 2) . '.']]);
+        }
+
         try {
             $paymentId = Connection::instance()->transaction(function () use ($data, $request): int {
                 $pid = FeePayment::create([

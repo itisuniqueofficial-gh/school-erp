@@ -195,11 +195,16 @@ final class ExamController extends Controller
 
         $fullMarks = (float) ($schedule['full_marks'] ?? 100);
 
+        $rejected = 0;
         foreach ($marks as $studentId => $obtained) {
             if ($obtained === '' || $obtained === null) {
                 continue;
             }
             $obtained = (float) $obtained;
+            if (!Exam::isValidMark($obtained, $fullMarks)) {
+                $rejected++;
+                continue; // enforce 0 <= marks <= full_marks (server-side data integrity)
+            }
             $percent = $fullMarks > 0 ? ($obtained / $fullMarks) * 100 : 0;
             $gradeId = Exam::gradeForPercentage($percent);
 
@@ -224,7 +229,11 @@ final class ExamController extends Controller
         }
 
         AuditLogger::log('exam.marks_entered', 'exam', $examId, 'Entered marks');
-        return $this->redirect("/admin/exams/{$examId}/marks?class_id={$classId}&section_id={$sectionId}&subject_id={$subjectId}", ['success' => 'Marks saved.']);
+        $redirectTo = "/admin/exams/{$examId}/marks?class_id={$classId}&section_id={$sectionId}&subject_id={$subjectId}";
+        if ($rejected > 0) {
+            return $this->redirect($redirectTo, ['warning' => "Marks saved. {$rejected} entry(ies) were rejected for being below 0 or above the maximum ({$fullMarks})."]);
+        }
+        return $this->redirect($redirectTo, ['success' => 'Marks saved.']);
     }
 
     /**

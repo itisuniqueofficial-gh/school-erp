@@ -45,10 +45,12 @@
                     <td class="font-mono text-xs"><?= e((string) $c['admission_no']) ?></td>
                     <td><?= e((string) $c['issued_on']) ?></td>
                     <td><span class="badge <?= $c['status'] === 'issued' ? 'badge-green' : 'badge-red' ?>"><?= e(ucfirst((string) $c['status'])) ?></span></td>
-                    <td class="text-right whitespace-nowrap">
-                        <a href="<?= e(url('/admin/certificates/' . $c['cert_uid'])) ?>" class="text-slate-600 hover:underline"><i class="fa-solid fa-eye"></i> View</a>
-                        <a href="<?= e(url('/admin/certificates/' . $c['cert_uid'] . '/download')) ?>" class="ml-2 text-brand-600 hover:underline"><i class="fa-solid fa-file-arrow-down"></i> PDF</a>
-                        <a href="<?= e(url('/verify/certificate/' . $c['cert_uid'])) ?>" target="_blank" rel="noopener" class="ml-2 text-slate-600 hover:underline"><i class="fa-solid fa-qrcode"></i> Verify</a>
+                    <td class="text-right">
+                        <div class="action-group action-end">
+                            <a href="<?= e(url('/admin/certificates/' . $c['cert_uid'])) ?>" class="action-link text-slate-600" aria-label="View certificate"><i class="fa-solid fa-eye"></i> View</a>
+                            <a href="<?= e(url('/admin/certificates/' . $c['cert_uid'] . '/download')) ?>" class="action-link text-brand-600" aria-label="Download certificate PDF"><i class="fa-solid fa-file-arrow-down"></i> PDF</a>
+                            <a href="<?= e(url('/verify/certificate/' . $c['cert_uid'])) ?>" target="_blank" rel="noopener" class="action-link text-slate-600" aria-label="Verify certificate"><i class="fa-solid fa-qrcode"></i> Verify</a>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; endif; ?>

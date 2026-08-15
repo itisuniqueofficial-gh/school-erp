@@ -29,17 +29,19 @@
                             <td><?= (int) ($role['user_count'] ?? 0) ?></td>
                             <td><span class="badge badge-blue"><?= (int) ($role['permission_count'] ?? 0) ?></span></td>
                             <td class="text-right">
+                                <div class="action-group action-end">
                                 <?php if ((int) ($role['is_system'] ?? 0) === 1): ?>
                                     <span class="badge badge-slate">System</span>
                                 <?php else: ?>
                                     <form method="POST" action="<?= e(url('/admin/roles/' . $role['id'])) ?>" class="inline">
                                         <?= csrf_field() ?><?= method_field('DELETE') ?>
                                         <button type="submit" data-confirm="Delete role '<?= e((string) $role['name']) ?>'?"
-                                                class="text-red-600 hover:text-red-800" aria-label="Delete role">
+                                                class="action-icon action-danger" aria-label="Delete role">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
                                 <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>

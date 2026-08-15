@@ -29,7 +29,7 @@ $active = 'sections';
                         <td data-label="" class="text-right">
                             <?php if (auth()->can('academic.manage')): ?>
                             <details class="inline-block text-left align-middle">
-                                <summary class="cursor-pointer text-brand-600 hover:underline" title="Edit"><i class="fa-solid fa-pen"></i> Edit</summary>
+                                <summary class="action-link cursor-pointer text-brand-600" title="Edit"><i class="fa-solid fa-pen"></i> Edit</summary>
                                 <form method="POST" action="<?= e(url('/admin/academic/sections/' . $s['id'])) ?>" class="mt-2 space-y-2 rounded-lg border border-slate-200 p-3" data-loading>
                                     <?= csrf_field() ?><?= method_field('PUT') ?>
                                     <input name="name" class="form-input" value="<?= e((string) $s['name']) ?>" required>
@@ -38,8 +38,8 @@ $active = 'sections';
                                     <button class="btn btn-primary btn-sm w-full justify-center">Save</button>
                                 </form>
                             </details>
-                            <form method="POST" action="<?= e(url('/admin/academic/sections/' . $s['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this section?' : 'Archive this section? Historical data is preserved.' ?>"><?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline" title="<?= $arch ? 'Restore' : 'Archive' ?>"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button></form>
-                            <form method="POST" action="<?= e(url('/admin/academic/sections/' . $s['id'])) ?>" class="inline" data-confirm="Delete this section permanently? Only allowed when it has no students, enrollments or attendance."><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:underline" title="Delete"><i class="fa-solid fa-trash"></i> Delete</button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/sections/' . $s['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this section?' : 'Archive this section? Historical data is preserved.' ?>"><?= csrf_field() ?><button class="action-link ml-2 text-amber-600" title="<?= $arch ? 'Restore' : 'Archive' ?>"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/sections/' . $s['id'])) ?>" class="inline" data-confirm="Delete this section permanently? Only allowed when it has no students, enrollments or attendance."><?= csrf_field() ?><?= method_field('DELETE') ?><button class="action-link ml-2 text-red-600" title="Delete"><i class="fa-solid fa-trash"></i> Delete</button></form>
                             <?php endif; ?>
                         </td>
                     </tr>

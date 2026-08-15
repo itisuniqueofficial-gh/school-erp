@@ -49,12 +49,14 @@
                         <td class="text-slate-500"><?= e((string) $i['due_date']) ?></td>
                         <td><span class="badge <?= $i['status'] === 'returned' ? 'badge-green' : 'badge-amber' ?>"><?= e(ucfirst((string) $i['status'])) ?></span></td>
                         <td class="text-right">
+                            <div class="action-group action-end">
                             <?php if ($i['status'] !== 'returned' && auth()->can('library.manage')): ?>
                             <form method="POST" action="<?= e(url('/admin/library/return')) ?>" class="inline">
                                 <?= csrf_field() ?><input type="hidden" name="issue_id" value="<?= (int) $i['id'] ?>">
-                                <button class="text-brand-600 hover:underline text-sm">Return</button>
+                                <button class="action-link text-brand-600" aria-label="Return book"><i class="fa-solid fa-rotate-left"></i> Return</button>
                             </form>
                             <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; endif; ?>

@@ -60,14 +60,16 @@
                     <td><?= e(ucfirst((string) $s['gender'])) ?></td>
                     <td><span class="badge <?= $s['status'] === 'active' ? 'badge-green' : 'badge-slate' ?>"><?= e(ucfirst((string) $s['status'])) ?></span></td>
                     <td class="text-right">
-                        <a href="<?= e(url('/admin/students/' . $s['id'])) ?>" class="text-slate-500 hover:text-brand-600" aria-label="View"><i class="fa-solid fa-eye"></i></a>
+                        <div class="action-group action-end">
+                        <a href="<?= e(url('/admin/students/' . $s['id'])) ?>" class="action-icon" aria-label="View student"><i class="fa-solid fa-eye"></i></a>
                         <?php if (auth()->can('students.update')): ?>
-                        <a href="<?= e(url('/admin/students/' . $s['id'] . '/edit')) ?>" class="ml-2 text-slate-500 hover:text-brand-600" aria-label="Edit"><i class="fa-solid fa-pen"></i></a>
+                        <a href="<?= e(url('/admin/students/' . $s['id'] . '/edit')) ?>" class="action-icon" aria-label="Edit student"><i class="fa-solid fa-pen"></i></a>
                         <?php endif; ?>
                         <?php if (auth()->can('students.delete')): ?>
                         <button type="button" data-delete-url="<?= e(url('/admin/students/' . $s['id'])) ?>" data-confirm="Delete this student?"
-                                class="ml-2 text-slate-500 hover:text-red-600" aria-label="Delete"><i class="fa-solid fa-trash"></i></button>
+                                class="action-icon action-danger" aria-label="Delete student"><i class="fa-solid fa-trash"></i></button>
                         <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; endif; ?>

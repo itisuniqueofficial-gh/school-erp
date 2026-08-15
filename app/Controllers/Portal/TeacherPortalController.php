@@ -489,7 +489,7 @@ final class TeacherPortalController extends Controller
                 continue;
             }
             $obtained = (float) $obtained;
-            if ($obtained < 0 || $obtained > $fullMarks) {
+            if (!Exam::isValidMark($obtained, $fullMarks)) {
                 continue; // enforce 0 <= marks <= max
             }
             $percent = $fullMarks > 0 ? ($obtained / $fullMarks) * 100 : 0;

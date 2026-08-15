@@ -36,6 +36,34 @@ html { scroll-behavior: smooth; }
 .btn-danger { background: #dc2626; color: #fff; }
 .btn-danger:hover { background: #b91c1c; }
 
+/* ==========================================================================
+   Canonical ACTION CONTROLS for table/list "Actions" columns.
+   One reusable system — do not add per-page action styles or margin hacks.
+     .action-group  flex container: vertically centres + evenly spaces items
+     .action-end    right-align the group (for text-right action columns)
+     .action-link   icon + text action (View, PDF, Verify, Download, Print)
+     .action-icon   icon-only square action (view, edit, delete)
+   Colour/intent stays on the element via existing utilities (text-brand-600,
+   text-red-600, …); these classes handle layout/alignment only.
+   ========================================================================== */
+.action-group { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.action-group.action-end { justify-content: flex-end; }
+.action-link {
+    display: inline-flex; align-items: center; gap: .375rem;
+    font-size: var(--fs-sm); line-height: 1.25; white-space: nowrap;
+    border-radius: .375rem;
+}
+.action-link:hover { text-decoration: underline; }
+.action-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 2rem; height: 2rem; border-radius: .5rem; line-height: 1;
+    color: #64748b; transition: background-color .12s ease, color .12s ease;
+}
+.action-icon:hover { background: #f1f5f9; color: #0f172a; }
+.action-icon.action-danger:hover { background: #fef2f2; color: #dc2626; }
+/* Fixed icon box so different glyph widths never shift the alignment. */
+.action-link > i, .action-icon > i { display: inline-block; width: 1.1em; text-align: center; }
+
 .card { background: #fff; border: 1px solid #e2e8f0; border-radius: .75rem; }
 
 .form-input, .form-select, .form-textarea {

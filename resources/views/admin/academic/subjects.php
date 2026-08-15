@@ -27,7 +27,7 @@ $active = 'subjects';
                         <td class="text-right">
                             <?php if (auth()->can('academic.manage')): ?>
                             <details class="inline-block text-left">
-                                <summary class="cursor-pointer text-brand-600 hover:underline"><i class="fa-solid fa-pen"></i> Edit</summary>
+                                <summary class="action-link cursor-pointer text-brand-600"><i class="fa-solid fa-pen"></i> Edit</summary>
                                 <form method="POST" action="<?= e(url('/admin/academic/subjects/' . $s['id'])) ?>" class="mt-2 space-y-2 rounded-lg border border-slate-200 p-3" data-loading>
                                     <?= csrf_field() ?><?= method_field('PUT') ?>
                                     <input name="name" class="form-input" value="<?= e((string) $s['name']) ?>" required>
@@ -39,10 +39,10 @@ $active = 'subjects';
                                 </form>
                             </details>
                             <form method="POST" action="<?= e(url('/admin/academic/subjects/' . $s['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this subject?' : 'Archive this subject? Historical marks are preserved.' ?>">
-                                <?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button>
+                                <?= csrf_field() ?><button class="action-link ml-2 text-amber-600"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button>
                             </form>
                             <form method="POST" action="<?= e(url('/admin/academic/subjects/' . $s['id'])) ?>" class="inline" data-confirm="Delete this subject permanently? This is only allowed when it has no assignments, exams or marks.">
-                                <?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Delete</button>
+                                <?= csrf_field() ?><?= method_field('DELETE') ?><button class="action-link ml-2 text-red-600"><i class="fa-solid fa-trash"></i> Delete</button>
                             </form>
                             <?php endif; ?>
                         </td>

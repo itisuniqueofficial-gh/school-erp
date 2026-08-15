@@ -23,7 +23,7 @@ $active = 'classes';
                         <td class="font-medium text-slate-800"><?= e((string) $c['name']) ?><?php if (!empty($c['code'])): ?> <span class="text-xs text-slate-400">(<?= e((string) $c['code']) ?>)</span><?php endif; ?></td>
                         <td><?= e((string) $c['numeric_level']) ?></td>
                         <td><span class="badge <?= $arch ? 'badge-red' : 'badge-green' ?>"><?= e(ucfirst((string) ($c['status'] ?? 'active'))) ?></span></td>
-                        <td class="text-right"><a href="<?= e(url('/admin/academic/classes/' . $c['id'])) ?>" class="text-brand-600 hover:underline"><i class="fa-solid fa-gear"></i> Manage</a></td>
+                        <td class="text-right"><div class="action-group action-end"><a href="<?= e(url('/admin/academic/classes/' . $c['id'])) ?>" class="action-link text-brand-600" aria-label="Manage class"><i class="fa-solid fa-gear"></i> Manage</a></div></td>
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>

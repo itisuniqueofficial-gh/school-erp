@@ -28,14 +28,16 @@
                 <td><?= e((string) $c['percentage']) ?>%</td>
                 <td><span class="badge <?= $c['result'] === 'pass' ? 'badge-green' : 'badge-red' ?>"><?= e(ucfirst((string) $c['result'])) ?></span></td>
                 <td class="text-right no-print">
-                    <a href="<?= e(url('/admin/exams/' . $exam['id'] . '/report-cards/' . $c['student_id'])) ?>" class="text-slate-600 hover:underline" title="View report card"><i class="fa-solid fa-eye"></i> View</a>
-                    <a href="<?= e(url('/admin/exams/' . $exam['id'] . '/report-cards/' . $c['student_id'] . '/download')) ?>" class="ml-2 text-brand-600 hover:underline" title="Download PDF"><i class="fa-solid fa-file-arrow-down"></i> PDF</a>
-                    <a href="<?= e((string) ($c['verify_url'] ?? '#')) ?>" target="_blank" rel="noopener" class="ml-2 text-slate-600 hover:underline" title="Verify"><i class="fa-solid fa-qrcode"></i> Verify</a>
+                    <div class="action-group action-end">
+                    <a href="<?= e(url('/admin/exams/' . $exam['id'] . '/report-cards/' . $c['student_id'])) ?>" class="action-link text-slate-600" aria-label="View report card"><i class="fa-solid fa-eye"></i> View</a>
+                    <a href="<?= e(url('/admin/exams/' . $exam['id'] . '/report-cards/' . $c['student_id'] . '/download')) ?>" class="action-link text-brand-600" aria-label="Download report card PDF"><i class="fa-solid fa-file-arrow-down"></i> PDF</a>
+                    <a href="<?= e((string) ($c['verify_url'] ?? '#')) ?>" target="_blank" rel="noopener" class="action-link text-slate-600" aria-label="Verify report card"><i class="fa-solid fa-qrcode"></i> Verify</a>
                     <?php if (auth()->can('exams.manage')): ?>
                     <form method="POST" action="<?= e(url('/admin/exams/' . $exam['id'] . '/report-cards/' . $c['student_id'] . '/regenerate')) ?>" class="inline" data-confirm="Regenerate this report card as a new version? The previous version is preserved.">
-                        <?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-rotate"></i> Regenerate</button>
+                        <?= csrf_field() ?><button class="action-link text-amber-600" aria-label="Regenerate report card"><i class="fa-solid fa-rotate"></i> Regenerate</button>
                     </form>
                     <?php endif; ?>
+                    </div>
                 </td>
             </tr>
         <?php endforeach; endif; ?>

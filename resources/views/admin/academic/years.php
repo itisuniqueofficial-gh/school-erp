@@ -29,10 +29,10 @@ $active = 'years';
                         <td class="text-right">
                             <?php if (auth()->can('academic.manage')): ?>
                             <?php if (!$cur): ?>
-                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/activate')) ?>" class="inline" data-confirm="Make <?= e((string) $y['name']) ?> the current academic year?"><?= csrf_field() ?><button class="text-green-600 hover:underline"><i class="fa-solid fa-circle-check"></i> Activate</button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/activate')) ?>" class="inline" data-confirm="Make <?= e((string) $y['name']) ?> the current academic year?"><?= csrf_field() ?><button class="action-link text-green-600" aria-label="Activate year"><i class="fa-solid fa-circle-check"></i> Activate</button></form>
                             <?php endif; ?>
                             <details class="inline-block text-left align-middle">
-                                <summary class="ml-2 cursor-pointer text-brand-600 hover:underline"><i class="fa-solid fa-pen"></i> Edit</summary>
+                                <summary class="action-link ml-2 cursor-pointer text-brand-600"><i class="fa-solid fa-pen"></i> Edit</summary>
                                 <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'])) ?>" class="mt-2 space-y-2 rounded-lg border border-slate-200 p-3" data-loading>
                                     <?= csrf_field() ?><?= method_field('PUT') ?>
                                     <input name="name" class="form-input" value="<?= e((string) $y['name']) ?>" required>
@@ -43,8 +43,8 @@ $active = 'years';
                                 </form>
                             </details>
                             <?php if (!$cur): ?>
-                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this year?' : 'Archive this year? Historical records are preserved.' ?>"><?= csrf_field() ?><button class="ml-2 text-amber-600 hover:underline"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button></form>
-                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'])) ?>" class="inline" data-confirm="Permanently delete this academic year? Only allowed when it has no enrollments, assignments or exams."><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:underline"><i class="fa-solid fa-trash"></i> Delete</button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'] . '/archive')) ?>" class="inline" data-confirm="<?= $arch ? 'Restore this year?' : 'Archive this year? Historical records are preserved.' ?>"><?= csrf_field() ?><button class="action-link ml-2 text-amber-600"><i class="fa-solid fa-box-archive"></i> <?= $arch ? 'Restore' : 'Archive' ?></button></form>
+                            <form method="POST" action="<?= e(url('/admin/academic/years/' . $y['id'])) ?>" class="inline" data-confirm="Permanently delete this academic year? Only allowed when it has no enrollments, assignments or exams."><?= csrf_field() ?><?= method_field('DELETE') ?><button class="action-link ml-2 text-red-600"><i class="fa-solid fa-trash"></i> Delete</button></form>
                             <?php endif; ?>
                             <?php endif; ?>
                         </td>

@@ -45,12 +45,14 @@
                     <td data-label="Last Login" class="text-slate-500"><?= e((string) ($u['last_login_at'] ?? 'Never')) ?></td>
                     <td data-label="Created" class="text-slate-500"><?= e((string) ($u['created_at'] ?? '')) ?></td>
                     <td data-label="" class="text-right">
+                        <div class="action-group action-end">
                         <?php if (auth()->can('users.manage')): ?>
                         <form method="POST" action="<?= e(url('/admin/users/' . $u['id'] . '/toggle')) ?>" class="inline" data-confirm="<?= $active ? 'Deactivate' : 'Activate' ?> this user?">
                             <?= csrf_field() ?>
-                            <button class="<?= $active ? 'text-red-600' : 'text-green-600' ?> hover:underline"><i class="fa-solid <?= $active ? 'fa-user-slash' : 'fa-user-check' ?>"></i> <?= $active ? 'Deactivate' : 'Activate' ?></button>
+                            <button class="action-link <?= $active ? 'text-red-600' : 'text-green-600' ?>" aria-label="<?= $active ? 'Deactivate' : 'Activate' ?> user"><i class="fa-solid <?= $active ? 'fa-user-slash' : 'fa-user-check' ?>"></i> <?= $active ? 'Deactivate' : 'Activate' ?></button>
                         </form>
                         <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; endif; ?>

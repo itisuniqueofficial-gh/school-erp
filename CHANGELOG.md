@@ -4,6 +4,47 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.15] - 2026-08-15
+
+### Security / Data integrity
+- **Fee payments validated server-side** — `storePayment` now verifies the
+  invoice belongs to the submitted student, rejects payments on cancelled
+  invoices, and rejects amounts exceeding the outstanding balance (never trusts
+  client-supplied invoice/student/amount). New `FeeInvoice::netAmount()` /
+  `outstanding()` are the single source of truth (also used by `recalculate()`).
+- **Marks bounds centralized** — the admin exam marks path lacked the
+  `0 <= obtained <= full_marks` guard the teacher path had; both now use the
+  shared `Exam::isValidMark()` and the admin path reports rejected entries.
+- **Admission numbers are collision-safe** — `Student::generateAdmissionNo()`
+  now derives the next number from the max existing suffix for the year
+  (including soft-deleted rows) instead of `count()+1`, which could regenerate an
+  existing number after a hard delete / cross-year counting. Duplicate/unique
+  violations on student create now show a friendly message, not raw SQL.
+- **IDOR sweep** — verified file-download/media endpoints are safe (avatar/media
+  filenames reduced to a validated 32-char hex id: no traversal, not
+  enumerable; portal downloads enforce student/child ownership; branding is
+  allow-listed). No code change needed; behavior locked with a regression test.
+
+### UI / UX
+- **Canonical action-control system** — added reusable `.action-group` /
+  `.action-end` / `.action-link` / `.action-icon` (+ `.action-danger`) classes
+  with a fixed icon box, replacing ad-hoc inline `ml-2 hover:underline` action
+  markup. Migrated 17 list views (students, teachers, staff, certificates,
+  certificate-requests, hall-tickets, exam report-cards, exams, users, roles,
+  academic classes/sections/subjects/years, teaching-assignments, library,
+  backups) to one consistently-aligned, accessible action pattern. Colour stays
+  on each element's Tailwind utility (cascade-safe). Icon-only controls have
+  `aria-label`s; decorative icons are `aria-hidden`.
+- **Issue Certificate form** — removed the narrow `max-w-2xl` card cap; the form
+  now uses the standard full-width card + responsive field grid.
+
+### Testing
+- New guards: `integration_idor.php`, `integration_fee_payment.php`,
+  `integration_admission.php`, `integration_marks_validation.php`,
+  `integration_layout.php` (full-width shell, no narrow-card wrappers, no
+  fixed-px widths, responsive tables, action-control system present). Full
+  suite: 53 suites, 0 failures.
+
 ## [1.6.14] - 2026-08-15
 
 ### Changed

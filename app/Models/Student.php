@@ -91,11 +91,24 @@ final class Student extends Model
     public static function generateAdmissionNo(): string
     {
         $year = date('Y');
-        $count = 0;
+        $prefix = 'ADM-' . $year . '-';
+        $max = 0;
         try {
-            $count = QueryBuilder::table('students')->count();
+            // Highest existing suffix for this year, INCLUDING soft-deleted rows
+            // (raw table), so a number is never reused/collided after a delete.
+            // count()+1 was unsafe: hard deletes and cross-year global counting
+            // could produce an already-used admission number (unique violation).
+            $rows = QueryBuilder::table('students')
+                ->where('admission_no', 'LIKE', $prefix . '%')
+                ->get();
+            foreach ($rows as $r) {
+                $n = (int) substr((string) ($r['admission_no'] ?? ''), strlen($prefix));
+                if ($n > $max) {
+                    $max = $n;
+                }
+            }
         } catch (\Throwable) {
         }
-        return sprintf('ADM-%s-%04d', $year, $count + 1);
+        return sprintf('%s%04d', $prefix, $max + 1);
     }
 }

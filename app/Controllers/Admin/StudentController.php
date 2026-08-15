@@ -144,6 +144,13 @@ final class StudentController extends Controller
             });
         } catch (\Throwable $e) {
             logger()->error('Student creation failed: ' . $e->getMessage());
+            $msg = $e->getMessage();
+            if (str_contains($msg, '1062') || str_contains($msg, 'Integrity constraint') || str_contains($msg, 'Duplicate entry')) {
+                $friendly = str_contains($msg, 'email')
+                    ? 'That email address is already registered to another account. Use a different email or leave it blank.'
+                    : 'A record with the same unique value (such as admission number or email) already exists. Please review the details and try again.';
+                return $this->back(['general' => [$friendly]], $request->all());
+            }
             return $this->back(['general' => ['Could not save the student. Please try again.']], $request->all());
         }
 

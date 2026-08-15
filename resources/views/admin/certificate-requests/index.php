@@ -42,19 +42,21 @@ $badge = static function (string $s): string {
                     <td><span class="badge <?= $badge((string) $r['status']) ?>"><?= e($labels[$r['status']] ?? ucfirst((string) $r['status'])) ?></span>
                         <?php if (!empty($r['cert_uid'])): ?><div class="mt-0.5 font-mono text-xs text-slate-400"><?= e((string) $r['cert_uid']) ?></div><?php endif; ?>
                     </td>
-                    <td class="text-right whitespace-nowrap">
+                    <td class="text-right">
+                        <div class="action-group action-end">
                         <?php if (in_array($r['status'], ['submitted', 'under_review', 'changes_requested'], true) && auth()->can('certificates.manage')): ?>
                             <form method="POST" action="<?= e(url('/admin/certificate-requests/' . $r['req_uid'] . '/approve')) ?>" class="inline" data-confirm="Approve and generate the certificate from verified data?">
-                                <?= csrf_field() ?><button class="text-green-600 hover:underline"><i class="fa-solid fa-check"></i> Approve</button>
+                                <?= csrf_field() ?><button class="action-link text-green-600" aria-label="Approve request"><i class="fa-solid fa-check"></i> Approve</button>
                             </form>
-                            <form method="POST" action="<?= e(url('/admin/certificate-requests/' . $r['req_uid'] . '/reject')) ?>" class="ml-2 inline" onsubmit="var n=prompt('Reason for rejection (optional):','');if(n===null)return false;this.note.value=n;">
-                                <?= csrf_field() ?><input type="hidden" name="note"><button class="text-red-600 hover:underline"><i class="fa-solid fa-xmark"></i> Reject</button>
+                            <form method="POST" action="<?= e(url('/admin/certificate-requests/' . $r['req_uid'] . '/reject')) ?>" class="inline" onsubmit="var n=prompt('Reason for rejection (optional):','');if(n===null)return false;this.note.value=n;">
+                                <?= csrf_field() ?><input type="hidden" name="note"><button class="action-link text-red-600" aria-label="Reject request"><i class="fa-solid fa-xmark"></i> Reject</button>
                             </form>
                         <?php elseif ($r['status'] === 'generated' && !empty($r['cert_uid'])): ?>
-                            <a href="<?= e(url('/admin/certificates/' . $r['cert_uid'])) ?>" class="text-brand-600 hover:underline"><i class="fa-solid fa-eye"></i> View Certificate</a>
+                            <a href="<?= e(url('/admin/certificates/' . $r['cert_uid'])) ?>" class="action-link text-brand-600" aria-label="View certificate"><i class="fa-solid fa-eye"></i> View Certificate</a>
                         <?php else: ?>
                             <span class="text-slate-300">—</span>
                         <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; endif; ?>

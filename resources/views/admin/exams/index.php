@@ -21,8 +21,10 @@
                         <td class="text-slate-500 text-xs"><?= e((string) ($ex['start_date'] ?? '—')) ?> → <?= e((string) ($ex['end_date'] ?? '—')) ?></td>
                         <td><span class="badge badge-blue"><?= e(ucfirst((string) $ex['status'])) ?></span></td>
                         <td class="text-right">
-                            <a href="<?= e(url('/admin/exams/' . $ex['id'] . '/marks')) ?>" class="text-slate-500 hover:text-brand-600" title="Enter marks"><i class="fa-solid fa-pen-to-square"></i></a>
-                            <a href="<?= e(url('/admin/exams/' . $ex['id'] . '/report-cards')) ?>" class="ml-2 text-slate-500 hover:text-brand-600" title="Report cards"><i class="fa-solid fa-file-lines"></i></a>
+                            <div class="action-group action-end">
+                            <a href="<?= e(url('/admin/exams/' . $ex['id'] . '/marks')) ?>" class="action-icon" title="Enter marks" aria-label="Enter marks"><i class="fa-solid fa-pen-to-square"></i></a>
+                            <a href="<?= e(url('/admin/exams/' . $ex['id'] . '/report-cards')) ?>" class="action-icon" title="Report cards" aria-label="Report cards"><i class="fa-solid fa-file-lines"></i></a>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; endif; ?>

@@ -55,10 +55,12 @@ $badge = static fn (string $s): string => match ($s) {
                     <td><?= e((string) ($t['exam_name'] ?? '—')) ?></td>
                     <td><?= e((string) ($t['class_name'] ?? '—')) ?></td>
                     <td><span class="badge <?= $badge((string) $t['status']) ?>"><?= e(ucfirst((string) $t['status'])) ?></span></td>
-                    <td class="text-right whitespace-nowrap">
-                        <a href="<?= e(url('/admin/hall-tickets/' . $t['ht_uid'])) ?>" class="text-slate-600 hover:underline"><i class="fa-solid fa-eye"></i> View</a>
-                        <a href="<?= e(url('/admin/hall-tickets/' . $t['ht_uid'] . '/download')) ?>" class="ml-2 text-brand-600 hover:underline"><i class="fa-solid fa-file-arrow-down"></i> PDF</a>
-                        <a href="<?= e(url('/verify/hall-ticket/' . $t['ht_uid'])) ?>" target="_blank" rel="noopener" class="ml-2 text-slate-600 hover:underline"><i class="fa-solid fa-qrcode"></i> Verify</a>
+                    <td class="text-right">
+                        <div class="action-group action-end">
+                            <a href="<?= e(url('/admin/hall-tickets/' . $t['ht_uid'])) ?>" class="action-link text-slate-600" aria-label="View hall ticket"><i class="fa-solid fa-eye"></i> View</a>
+                            <a href="<?= e(url('/admin/hall-tickets/' . $t['ht_uid'] . '/download')) ?>" class="action-link text-brand-600" aria-label="Download hall ticket PDF"><i class="fa-solid fa-file-arrow-down"></i> PDF</a>
+                            <a href="<?= e(url('/verify/hall-ticket/' . $t['ht_uid'])) ?>" target="_blank" rel="noopener" class="action-link text-slate-600" aria-label="Verify hall ticket"><i class="fa-solid fa-qrcode"></i> Verify</a>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; endif; ?>

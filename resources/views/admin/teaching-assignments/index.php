@@ -71,7 +71,7 @@
                     <td data-label="" class="text-right">
                         <?php if (auth()->can('teachers.update')): ?>
                         <details class="inline-block text-left align-middle">
-                            <summary class="cursor-pointer text-brand-600 hover:underline"><i class="fa-solid fa-right-left"></i> Change</summary>
+                            <summary class="action-link cursor-pointer text-brand-600"><i class="fa-solid fa-right-left"></i> Change</summary>
                             <form method="POST" action="<?= e(url('/admin/teaching-assignments/' . $a['id'] . '/reassign')) ?>" class="mt-2 space-y-2 rounded-lg border border-slate-200 p-3" data-loading>
                                 <?= csrf_field() ?>
                                 <select name="new_staff_id" class="form-select" required><option value="">New teacher</option><?php foreach ($teachers as $t): if ((int) $t['id'] === (int) $a['staff_id']) continue; ?><option value="<?= (int) $t['id'] ?>"><?= e((string) ($t['first_name'] . ' ' . $t['last_name'])) ?></option><?php endforeach; ?></select>
@@ -80,7 +80,7 @@
                                 <button class="btn btn-primary btn-sm w-full justify-center">Reassign</button>
                             </form>
                         </details>
-                        <form method="POST" action="<?= e(url('/admin/teaching-assignments/' . $a['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="ml-2 text-red-600 hover:text-red-800" aria-label="End or remove assignment" data-confirm="End/remove this assignment?"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form>
+                        <form method="POST" action="<?= e(url('/admin/teaching-assignments/' . $a['id'])) ?>" class="inline"><?= csrf_field() ?><?= method_field('DELETE') ?><button class="action-link ml-2 text-red-600" aria-label="End or remove assignment" data-confirm="End/remove this assignment?"><i class="fa-solid fa-trash" aria-hidden="true"></i> End</button></form>
                         <?php endif; ?>
                     </td>
                 </tr>

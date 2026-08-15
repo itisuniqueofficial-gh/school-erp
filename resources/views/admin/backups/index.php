@@ -25,15 +25,17 @@
                 <td data-label="Size"><?= number_format($b['size'] / 1024, 1) ?> KB</td>
                 <td data-label="Created"><?= e(date('Y-m-d H:i', $b['created'])) ?></td>
                 <td data-label="Actions" class="text-right">
-                    <a href="<?= e(url('/admin/backups/download?file=' . urlencode($b['name']))) ?>" class="text-brand-600 hover:underline text-sm">Download</a>
-                    <form method="POST" action="<?= e(url('/admin/backups/restore')) ?>" class="inline ml-2">
+                    <div class="action-group action-end">
+                    <a href="<?= e(url('/admin/backups/download?file=' . urlencode($b['name']))) ?>" class="action-link text-brand-600" aria-label="Download backup"><i class="fa-solid fa-download"></i> Download</a>
+                    <form method="POST" action="<?= e(url('/admin/backups/restore')) ?>" class="inline">
                         <?= csrf_field() ?><input type="hidden" name="file" value="<?= e($b['name']) ?>">
-                        <button class="text-amber-600 hover:underline text-sm" data-confirm="Restore this backup? Current data will be overwritten.">Restore</button>
+                        <button class="action-link text-amber-600" aria-label="Restore backup" data-confirm="Restore this backup? Current data will be overwritten."><i class="fa-solid fa-rotate-left"></i> Restore</button>
                     </form>
-                    <form method="POST" action="<?= e(url('/admin/backups/delete')) ?>" class="inline ml-2">
+                    <form method="POST" action="<?= e(url('/admin/backups/delete')) ?>" class="inline">
                         <?= csrf_field() ?><input type="hidden" name="file" value="<?= e($b['name']) ?>">
-                        <button class="text-red-600 hover:underline text-sm" data-confirm="Delete this backup file?">Delete</button>
+                        <button class="action-link text-red-600" aria-label="Delete backup" data-confirm="Delete this backup file?"><i class="fa-solid fa-trash"></i> Delete</button>
                     </form>
+                    </div>
                 </td>
             </tr>
         <?php endforeach; endif; ?>

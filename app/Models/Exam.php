@@ -36,4 +36,14 @@ final class Exam extends Model
             ->first();
         return $row !== null ? (int) $row['id'] : null;
     }
+
+    /**
+     * Validate an obtained mark against the schedule maximum.
+     * Single source of truth for marks bounds (0 <= obtained <= fullMarks),
+     * used by both the admin and teacher-portal marks-entry paths.
+     */
+    public static function isValidMark(float $obtained, float $fullMarks): bool
+    {
+        return $obtained >= 0 && $obtained <= $fullMarks;
+    }
 }

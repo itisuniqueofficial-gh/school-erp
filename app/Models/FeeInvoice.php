@@ -48,7 +48,7 @@ final class FeeInvoice extends Model
             ->where('fee_invoice_id', $invoiceId)->where('status', 'success')
             ->selectRaw('COALESCE(SUM(amount),0) AS t')->value('t') ?? 0);
 
-        $net = (float) $invoice['total_amount'] + (float) $invoice['fine_amount'] - (float) $invoice['discount_amount'];
+        $net = self::netAmount($invoice);
         $status = 'unpaid';
         if ($paid >= $net && $net > 0) {
             $status = 'paid';
@@ -59,5 +59,31 @@ final class FeeInvoice extends Model
         QueryBuilder::table('fee_invoices')->where('id', $invoiceId)->update([
             'paid_amount' => $paid, 'status' => $status, 'updated_at' => date('Y-m-d H:i:s'),
         ]);
+    }
+
+    /**
+     * Net payable for an invoice: total + fine - discount. Single source of
+     * truth for invoice value (used by recalculate() and outstanding()).
+     */
+    public static function netAmount(array $invoice): float
+    {
+        return (float) $invoice['total_amount'] + (float) $invoice['fine_amount'] - (float) $invoice['discount_amount'];
+    }
+
+    /**
+     * Server-side outstanding balance (net - successful payments), never below
+     * zero. Returns null if the invoice does not exist. Callers must use this
+     * rather than trusting any client-supplied balance/amount.
+     */
+    public static function outstanding(int $invoiceId): ?float
+    {
+        $invoice = QueryBuilder::table('fee_invoices')->where('id', $invoiceId)->first();
+        if ($invoice === null) {
+            return null;
+        }
+        $paid = (float) (QueryBuilder::table('fee_payments')
+            ->where('fee_invoice_id', $invoiceId)->where('status', 'success')
+            ->selectRaw('COALESCE(SUM(amount),0) AS t')->value('t') ?? 0);
+        return max(0.0, self::netAmount($invoice) - $paid);
     }
 }
