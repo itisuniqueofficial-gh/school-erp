@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.12] - 2026-08-15
+
+### Added
+- **SweetAlert2 confirmations** (CDN): the global `data-confirm` handler now uses
+  a SweetAlert2 modal for destructive actions (delete/logout/bulk), with a
+  graceful fallback to the native `confirm()` if the CDN is unavailable, and
+  duplicate-submit prevention.
+- **Reusable Excel export (SheetJS)**: any button with `data-export-xlsx` +
+  `data-export-target` exports that table to `.xlsx`. SheetJS is lazy-loaded on
+  first use (no cost until clicked); the export skips `data-noexport` columns
+  (checkbox/actions) and client-hidden rows, and reports CDN/load errors instead
+  of failing silently. Wired to the Students list; reusable on any table.
+
+Tailwind remains the only CSS framework (no Bootstrap introduced); Chart.js
+(dashboard, real data) and Font Awesome (single icon system) were already in place.
+
 ## [1.6.11] - 2026-08-15
 
 ### Added

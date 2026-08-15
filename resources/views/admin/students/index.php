@@ -10,6 +10,7 @@
 <?php $this->section('page_actions'); ?>
 <?php if (auth()->can('students.create')): ?>
 <a href="<?= e(url('/admin/students/create')) ?>" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Admit Student</a>
+<button type="button" class="btn btn-secondary" data-export-xlsx data-export-target="#studentsTable" data-export-filename="students" data-export-sheet="Students"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
 <?php endif; ?>
 <?php $this->endSection(); ?>
 
@@ -42,8 +43,8 @@
         <table class="data-table" id="studentsTable">
             <thead>
                 <tr>
-                    <th class="w-8"><input type="checkbox" data-check-all></th>
-                    <th>Admission No</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>Status</th><th class="text-right">Actions</th>
+                    <th class="w-8" data-noexport><input type="checkbox" data-check-all></th>
+                    <th>Admission No</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>Status</th><th class="text-right" data-noexport>Actions</th>
                 </tr>
             </thead>
             <tbody>

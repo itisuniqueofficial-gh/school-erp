@@ -129,10 +129,43 @@
         });
 
         // --- Confirm + method spoofing for delete buttons -----------------
+        // Uses SweetAlert2 when available, with a graceful fallback to the
+        // native confirm() so destructive actions are never left unguarded.
         $(document).on('click', '[data-confirm]', function (e) {
-            const msg = $(this).data('confirm') || 'Are you sure?';
-            if (!window.confirm(msg)) {
-                e.preventDefault();
+            const el = this;
+            if (el.dataset.confirmed === '1') { return; } // already confirmed -> let it through
+            const msg = $(el).data('confirm') || 'Are you sure?';
+            e.preventDefault();
+
+            const proceed = function () {
+                el.dataset.confirmed = '1';
+                const $form = $(el).closest('form');
+                if (el.tagName === 'A' && el.getAttribute('href')) {
+                    window.location.href = el.getAttribute('href');
+                } else if ($form.length) {
+                    const form = $form.get(0);
+                    if (form.requestSubmit && el.tagName === 'BUTTON') { form.requestSubmit(el); }
+                    else { form.submit(); }
+                } else {
+                    el.click();
+                }
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire({
+                    title: 'Please confirm',
+                    text: msg,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, continue',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    reverseButtons: true,
+                    focusCancel: true
+                }).then(function (result) { if (result.isConfirmed) { proceed(); } });
+            } else if (window.confirm(msg)) {
+                proceed();
             }
         });
 
@@ -142,6 +175,51 @@
             const target = $(this).data('table-search');
             $('#' + target + ' tbody tr').each(function () {
                 $(this).toggle($(this).text().toLowerCase().indexOf(q) > -1);
+            });
+        });
+
+        // --- Reusable Excel export (SheetJS, lazy-loaded on first use) ----
+        function notifyError(msg) {
+            if (window.Swal && Swal.fire) { Swal.fire({ icon: 'error', title: 'Export unavailable', text: msg }); }
+            else { window.alert(msg); }
+        }
+        function ensureSheetJS(cb) {
+            if (window.XLSX) { cb(); return; }
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+            s.onload = function () { cb(); };
+            s.onerror = function () { notifyError('Could not load the export library. Check your connection and try again.'); };
+            document.head.appendChild(s);
+        }
+        function exportTableToXlsx(table, filename, sheetName) {
+            var headerCells = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+            var skip = headerCells.map(function (th) { return th.hasAttribute('data-noexport'); });
+            var rows = [];
+            rows.push(headerCells.filter(function (_, i) { return !skip[i]; }).map(function (th) { return th.textContent.trim(); }));
+            Array.prototype.slice.call(table.querySelectorAll('tbody tr')).forEach(function (tr) {
+                if (tr.offsetParent === null && tr.style.display === 'none') { return; } // skip client-side-hidden rows
+                var cells = Array.prototype.slice.call(tr.children);
+                // ignore full-width placeholder rows (e.g. "No records found")
+                if (cells.length <= 1) { return; }
+                rows.push(cells.filter(function (_, i) { return !skip[i]; }).map(function (td) {
+                    return (td.getAttribute('data-export') || td.textContent).trim();
+                }));
+            });
+            var ws = XLSX.utils.aoa_to_sheet(rows);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, (sheetName || 'Sheet1').substring(0, 31));
+            XLSX.writeFile(wb, (filename || 'export') + '.xlsx');
+        }
+        $(document).on('click', '[data-export-xlsx]', function (e) {
+            e.preventDefault();
+            var btn = this;
+            var table = document.querySelector(btn.getAttribute('data-export-target') || '');
+            if (!table) { return; }
+            var filename = btn.getAttribute('data-export-filename') || 'export';
+            var sheet = btn.getAttribute('data-export-sheet') || 'Export';
+            ensureSheetJS(function () {
+                try { exportTableToXlsx(table, filename, sheet); }
+                catch (err) { console.error(err); notifyError('Export failed. Please try again.'); }
             });
         });
 
