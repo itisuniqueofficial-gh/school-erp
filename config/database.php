@@ -23,7 +23,32 @@ return [
                 PDO::ATTR_EMULATE_PREPARES   => false,
                 PDO::ATTR_STRINGIFY_FETCHES  => false,
                 PDO::ATTR_PERSISTENT         => false,
-            ],
+            ]
+            // Optional TLS for managed MySQL (Aiven, PlanetScale, etc.). Only
+            // activates when DB_SSL is truthy, so local/CI is unaffected.
+            //   DB_SSL=true              enable TLS
+            //   DB_SSL_CA=/path/ca.pem   CA bundle for server-cert verification
+            //   DB_SSL_VERIFY=false      skip server-cert verification (public proxies)
+            + (static function (): array {
+                $ssl = strtolower((string) Env::get('DB_SSL', ''));
+                if (!in_array($ssl, ['1', 'true', 'on', 'yes', 'require', 'required'], true)) {
+                    return [];
+                }
+                $opts = [];
+                $ca = (string) Env::get('DB_SSL_CA', '');
+                if ($ca !== '' && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+                    $opts[PDO::MYSQL_ATTR_SSL_CA] = $ca;
+                }
+                $verify = strtolower((string) Env::get('DB_SSL_VERIFY', 'true'));
+                if (in_array($verify, ['0', 'false', 'off', 'no'], true) && defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+                    $opts[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                }
+                // Ensure TLS is actually requested even when no CA/verify flag is given.
+                if ($opts === [] && defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+                    $opts[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+                }
+                return $opts;
+            })(),
         ],
 
         // PostgreSQL portability: connect the SAME env vars to a Postgres server

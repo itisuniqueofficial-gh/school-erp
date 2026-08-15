@@ -69,11 +69,14 @@ final class StartupGuard
                 'The application connected to the database, but the required tables are missing.',
                 'Run "php bin/console migrate" (additive, non-destructive) to create the schema, then reload.',
             ],
-            default => [
-                'Database unavailable',
-                'The application could not reach its database. It has stopped to avoid serving incomplete data.',
-                'Check the database service and the DB_* settings in .env, then reload. Existing data is not affected.',
-            ],
+            default => (static function (): array {
+                $p = \Core\Database\DatabasePreflight::probe();
+                return [
+                    'Database unavailable',
+                    $p['message'],
+                    'Check the database service and the DB_* configuration, then reload. Existing data is not affected.',
+                ];
+            })(),
         };
 
         if (!headers_sent()) {

@@ -108,10 +108,11 @@ final class Connection
     {
         try {
             $this->pdo()->query('SELECT 1');
-            return ['ok' => true, 'error' => null];
+            return ['ok' => true, 'error' => null, 'state' => DatabasePreflight::OK, 'message' => 'Database connection successful.'];
         } catch (\Throwable $e) {
             $prev = $e->getPrevious();
-            return ['ok' => false, 'error' => ($prev ?? $e)->getMessage()];
+            [$state, $message] = DatabasePreflight::classify($e);
+            return ['ok' => false, 'error' => ($prev ?? $e)->getMessage(), 'state' => $state, 'message' => $message];
         }
     }
 

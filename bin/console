@@ -238,6 +238,41 @@ try {
             $out('This audit is read-only. Review each item at the linked admin page; nothing was changed.', 'cyan');
             exit($critical > 0 ? 1 : 0);
 
+        case 'db:preflight':
+            // Read-only connectivity diagnostic. NEVER prints the password.
+            $line = static function (string $label, string $status, string $color) use ($out): void {
+                $out(sprintf('  %-14s %s', $label . ':', $status), $color);
+            };
+            $out('Database preflight', 'cyan');
+            $host = (string) config('database.connections.mysql.host');
+            $dbName = (string) config('database.connections.mysql.database');
+            $user = (string) config('database.connections.mysql.username');
+            $hasPass = ((string) config('database.connections.mysql.password')) !== '';
+            $line('Environment', PHP_VERSION_ID >= 80300 ? 'OK (PHP ' . PHP_VERSION . ')' : 'CHECK PHP VERSION', PHP_VERSION_ID >= 80300 ? 'green' : 'yellow');
+            $cfgOk = $host !== '' && $dbName !== '' && $user !== '';
+            $line('Configuration', $cfgOk ? 'OK' : 'INCOMPLETE (set DB_HOST / DB_DATABASE / DB_USERNAME)', $cfgOk ? 'green' : 'yellow');
+            $out(sprintf('    host=%s port=%s database=%s user=%s password=%s',
+                $host !== '' ? $host : '(unset)',
+                (string) config('database.connections.mysql.port'),
+                $dbName !== '' ? $dbName : '(unset)',
+                $user !== '' ? $user : '(unset)',
+                $hasPass ? '(set)' : '(empty)'), 'cyan');
+            $p = \Core\Database\DatabasePreflight::probe();
+            $line('MySQL server', $p['ok'] ? 'OK' : \Core\Database\DatabasePreflight::label($p['state']), $p['ok'] ? 'green' : 'red');
+            if (!$p['ok']) {
+                $out('    ' . $p['message'], 'red');
+            }
+            if ($p['ok']) {
+                $hasSchema = false;
+                try { \Core\Database\Connection::instance()->pdo()->query('SELECT 1 FROM users LIMIT 1'); $hasSchema = true; } catch (\Throwable) {}
+                $line('Schema', $hasSchema ? 'OK' : 'MIGRATIONS REQUIRED', $hasSchema ? 'green' : 'yellow');
+            } else {
+                $line('Schema', 'UNKNOWN', 'yellow');
+            }
+            $ready = $p['ok'] && $cfgOk;
+            $out('Overall: ' . ($ready ? 'READY' : 'NOT READY'), $ready ? 'green' : 'red');
+            exit($ready ? 0 : 1);
+
         case 'backup':
             $out('Running database backup...', 'cyan');
             $svc = new \App\Services\BackupService();

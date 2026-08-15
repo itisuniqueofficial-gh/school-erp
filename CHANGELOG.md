@@ -4,6 +4,34 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.16] - 2026-08-15
+
+### Added
+- **`DatabasePreflight`** — a centralized, leak-safe classifier that maps database
+  connection failures to specific states (`unreachable`, `auth_failed`,
+  `database_missing`, `access_denied`, `unknown`) with generic, credential-free
+  user messages. Raw driver detail (which can contain host/user) is written to
+  the server log with a reference id only — never shown to users.
+- **`php bin/console db:preflight`** — read-only connectivity diagnostic
+  (Environment / Configuration / MySQL server / Schema / Overall). Reports the
+  classified state, exits non-zero on failure, and never prints the password
+  (shows `password=(set)`/`(empty)`).
+- **Optional TLS for managed MySQL** — `config/database.php` supports `DB_SSL`
+  (+ `DB_SSL_CA`, `DB_SSL_VERIFY`) for providers that require TLS (Aiven,
+  PlanetScale). Off by default, so local/CI is unaffected.
+
+### Changed
+- `Connection::ping()` now returns a classified `state` + safe `message`
+  (keeping the raw `error` for internal logging only).
+- The `StartupGuard` "database unavailable" page now shows the specific,
+  credential-free reason (e.g. wrong credentials vs. missing database vs.
+  unreachable server) instead of a single generic message.
+
+### Testing
+- New `integration_dbpreflight.php`: verifies state classification for each
+  driver error, that safe messages never leak credentials/host/SQLSTATE, the
+  live probe, and `ping()` enrichment. Full suite: 54 suites, 0 failures.
+
 ## [1.6.15] - 2026-08-15
 
 ### Security / Data integrity
