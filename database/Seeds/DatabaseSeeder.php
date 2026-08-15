@@ -27,6 +27,7 @@ final class DatabaseSeeder
             $this->seedFeeCategories();
             $this->seedLeaveTypes();
             $this->seedSettings();
+            $this->seedDocumentRequirements();
             $this->seedUsers();
             $this->seedAcademicSystem();
         });
@@ -41,6 +42,24 @@ final class DatabaseSeeder
     private function now(): string
     {
         return date('Y-m-d H:i:s');
+    }
+
+    /** Seed the default Student Personal File checklist (idempotent by code). */
+    private function seedDocumentRequirements(): void
+    {
+        $order = 0;
+        foreach (\App\Services\PersonalFileService::defaultRequirements() as $req) {
+            $order += 10;
+            if (QueryBuilder::table('document_requirements')->where('code', $req['code'])->first()) {
+                continue;
+            }
+            QueryBuilder::table('document_requirements')->insert([
+                'code' => $req['code'], 'name' => $req['name'], 'category' => $req['category'],
+                'is_required' => $req['is_required'], 'signature_required' => $req['signature_required'],
+                'physical_required' => $req['physical_required'], 'sort_order' => $order, 'active' => 1,
+                'created_at' => $this->now(), 'updated_at' => $this->now(),
+            ]);
+        }
     }
 
     private function seedRoles(): void

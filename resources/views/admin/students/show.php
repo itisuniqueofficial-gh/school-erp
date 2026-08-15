@@ -122,6 +122,80 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
         </dl>
     </div>
 
+    <!-- Personal File checklist -->
+    <?php
+    $pfSum = $personalFileSummary ?? ['percent' => 0, 'applicable' => 0, 'verified' => 0, 'pending' => 0, 'rejected' => 0, 'missing' => 0, 'not_applicable' => 0, 'complete' => false];
+    $pfBadge = [
+        'verified' => 'badge-green', 'pending' => 'badge-slate', 'rejected' => 'badge-red',
+        'missing' => 'badge-amber', 'not_applicable' => 'badge-slate',
+    ];
+    $pfLabel = [
+        'verified' => 'Verified', 'pending' => 'Under verification', 'rejected' => 'Rejected',
+        'missing' => 'Missing', 'not_applicable' => 'Not applicable',
+    ];
+    ?>
+    <div class="card p-6 lg:col-span-3">
+        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="font-semibold text-slate-800"><i class="fa-solid fa-folder-open mr-1 text-brand-600"></i> Personal File</h2>
+            <div class="text-sm text-slate-500">
+                <?= (int) $pfSum['verified'] ?>/<?= (int) $pfSum['applicable'] ?> required verified
+                &middot; <?= (int) $pfSum['pending'] ?> pending &middot; <?= (int) $pfSum['missing'] ?> missing
+                <?php if ((int) $pfSum['rejected'] > 0): ?>&middot; <span class="text-red-600"><?= (int) $pfSum['rejected'] ?> rejected</span><?php endif; ?>
+            </div>
+        </div>
+        <?php if (!$pfSum['complete']): ?>
+            <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Personal File incomplete — <?= (int) $pfSum['applicable'] - (int) $pfSum['verified'] ?> required document(s) pending.
+            </div>
+        <?php endif; ?>
+        <div class="mb-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-brand-500" style="width: <?= (int) $pfSum['percent'] ?>%"></div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead><tr><th>Document</th><th>Status</th><th class="text-right">Action</th></tr></thead>
+                <tbody>
+                <?php foreach (($personalFile ?? []) as $item): $st = (string) $item['status']; $doc = $item['document']; ?>
+                    <tr>
+                        <td class="font-medium text-slate-800">
+                            <?= e((string) $item['name']) ?>
+                            <?php if (!$item['is_required']): ?><span class="ml-1 text-xs text-slate-400">(optional)</span><?php endif; ?>
+                            <?php if ($st === 'not_applicable' && !empty($item['na_reason'])): ?><div class="text-xs text-slate-400">N/A: <?= e((string) $item['na_reason']) ?></div><?php endif; ?>
+                        </td>
+                        <td><span class="badge <?= $pfBadge[$st] ?? 'badge-slate' ?>"><?= e($pfLabel[$st] ?? ucfirst($st)) ?></span></td>
+                        <td class="text-right">
+                            <?php if ($doc !== null): ?>
+                                <a href="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'] . '/download')) ?>" target="_blank" class="text-brand-600 hover:underline" aria-label="View"><i class="fa-solid fa-eye"></i></a>
+                                <?php if (!empty($canVerify) && $st !== 'verified'): ?>
+                                <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'] . '/review')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="decision" value="approve"><button class="ml-2 text-green-600 hover:underline" aria-label="Verify"><i class="fa-solid fa-check"></i></button></form>
+                                <?php endif; ?>
+                                <?php if (!empty($canVerify) && $st !== 'rejected'): ?>
+                                <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/' . $doc['id'] . '/review')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="decision" value="reject"><button class="ml-2 text-amber-600 hover:underline" aria-label="Reject"><i class="fa-solid fa-xmark"></i></button></form>
+                                <?php endif; ?>
+                            <?php elseif (!empty($canDocs) && $st !== 'not_applicable'): ?>
+                                <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents')) ?>" enctype="multipart/form-data" class="inline-flex items-center gap-1" data-loading>
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="type" value="<?= e((string) $item['code']) ?>">
+                                    <input type="hidden" name="title" value="<?= e((string) $item['name']) ?>">
+                                    <input type="file" name="document" class="form-input text-xs" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                                    <button class="btn btn-secondary btn-sm"><i class="fa-solid fa-upload"></i></button>
+                                </form>
+                            <?php endif; ?>
+                            <?php if (!empty($canDocs)): ?>
+                                <?php if ($st === 'not_applicable'): ?>
+                                <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/na/clear')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="code" value="<?= e((string) $item['code']) ?>"><button class="ml-2 text-xs text-slate-500 hover:underline">Restore</button></form>
+                                <?php elseif (!$item['is_required']): ?>
+                                <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/documents/na')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="code" value="<?= e((string) $item['code']) ?>"><input type="hidden" name="reason" value="Not applicable"><button class="ml-2 text-xs text-slate-500 hover:underline" data-confirm="Mark this document as not applicable for this student?">N/A</button></form>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Documents -->
     <div class="card p-6 lg:col-span-3">
         <h2 class="mb-4 font-semibold text-slate-800">Documents</h2>

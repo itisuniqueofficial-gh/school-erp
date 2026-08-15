@@ -18,7 +18,7 @@
     <div class="flex min-w-0 flex-1 flex-col">
         <?php $this->include('partials.navbar', ['user' => $user]); ?>
 
-        <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8 2xl:px-12">
             <!-- Breadcrumb / page header -->
             <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>

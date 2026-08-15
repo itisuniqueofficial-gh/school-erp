@@ -127,6 +127,8 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->get('/students/{id}/documents/{docId}/download', StudentController::class . '@downloadDocument')->middleware('can:students.view');
             $router->post('/students/{id}/documents/{docId}/review', StudentController::class . '@reviewDocument')->middleware('can:students.verify');
             $router->delete('/students/{id}/documents/{docId}', StudentController::class . '@deleteDocument')->middleware('can:students.documents');
+            $router->post('/students/{id}/documents/na', StudentController::class . '@markDocumentNa')->middleware('can:students.documents');
+            $router->post('/students/{id}/documents/na/clear', StudentController::class . '@clearDocumentNa')->middleware('can:students.documents');
             $router->get('/students/{id}/reveal-aadhaar', StudentController::class . '@revealAadhaar')->middleware('can:students.reveal_id');
 
             // Teachers

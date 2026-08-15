@@ -49,7 +49,16 @@ final class DocumentService
             return ['ok' => false, 'message' => 'No valid file was uploaded.', 'id' => null];
         }
         if (!array_key_exists($type, self::TYPES)) {
-            return ['ok' => false, 'message' => 'Invalid document type.', 'id' => null];
+            // Also accept configured Personal File requirement codes so the
+            // checklist items can receive uploads (not just the built-in types).
+            $validCodes = [];
+            try {
+                $validCodes = (new PersonalFileService())->requirementCodes();
+            } catch (\Throwable) {
+            }
+            if (!in_array($type, $validCodes, true)) {
+                return ['ok' => false, 'message' => 'Invalid document type.', 'id' => null];
+            }
         }
         $mime = $file->mimeType();
         if (!isset(self::ALLOWED_MIME[$mime])) {

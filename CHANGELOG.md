@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.11] - 2026-08-15
+
+### Added
+- **Student Personal File / document-checklist module.** A configurable
+  `document_requirements` table (migration 030, seeded with the 15 standard
+  admission-file documents) drives a per-student checklist on the profile:
+  completion progress, per-item status (verified / under-verification /
+  rejected / missing / not-applicable), inline secure upload, verify/reject,
+  and a Not-Applicable toggle (with reason) for optional docs so they are never
+  reported as missing. Built on the existing secure `student_documents` store,
+  `DocumentService`, RBAC and audit logging — no public document exposure.
+  `PersonalFileService` centralises checklist/summary/NA logic.
+
+### Changed
+- **Fluid, full-width responsive layout.** Removed the `main { max-width:1800px }`
+  cap (and an unused `.page-container` fixed-width rule) that left large empty
+  left/right margins on 1920px/4K/ultrawide screens. Main content is now fluid
+  with scaling inner padding (`2xl:px-12`), applied globally via the shared
+  layout so every page benefits. Semantically-narrow views (receipt, ID lookup)
+  keep their intentional max-width.
+
 ## [1.6.10] - 2026-07-30
 
 ### Fixed

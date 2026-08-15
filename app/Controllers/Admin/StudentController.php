@@ -17,6 +17,7 @@ use App\Services\DocumentService;
 use App\Services\EnrollmentService;
 use App\Services\IdSequenceService;
 use App\Services\NotificationService;
+use App\Services\PersonalFileService;
 use Core\Database\Connection;
 use Core\Database\QueryBuilder;
 use Core\Http\Request;
@@ -227,6 +228,8 @@ final class StudentController extends Controller
             'guardians' => Guardian::forStudent((int) $id),
             'documents' => $documents,
             'documentTypes' => DocumentService::TYPES,
+            'personalFile' => (new PersonalFileService())->checklist((int) $id),
+            'personalFileSummary' => (new PersonalFileService())->summary((int) $id),
             'aadhaarMasked' => !empty($student['aadhaar_last4']) ? 'XXXX-XXXX-' . $student['aadhaar_last4'] : '—',
             'hasAadhaar' => !empty($student['aadhaar_enc']),
             'canReveal' => auth()->can('students.reveal_id'),
@@ -508,6 +511,28 @@ final class StudentController extends Controller
     {
         (new DocumentService())->delete((int) $docId);
         return $this->redirect('/admin/students/' . $id, ['success' => 'Document deleted.']);
+    }
+
+    /** Mark a Personal File requirement as Not Applicable for this student. */
+    public function markDocumentNa(Request $request, string $id): Response
+    {
+        $code = trim((string) $request->input('code', ''));
+        $reason = trim((string) $request->input('reason', '')) ?: 'Marked not applicable';
+        $ok = (new PersonalFileService())->markNotApplicable((int) $id, $code, $reason, auth()->id());
+        if (!$ok) {
+            return $this->redirect('/admin/students/' . $id, ['error' => 'Unknown document requirement.']);
+        }
+        AuditLogger::log('document.not_applicable', 'student', (int) $id, "Marked '{$code}' not applicable: {$reason}");
+        return $this->redirect('/admin/students/' . $id, ['success' => 'Document marked not applicable.']);
+    }
+
+    /** Clear a Not-Applicable mark, restoring the requirement to the checklist. */
+    public function clearDocumentNa(Request $request, string $id): Response
+    {
+        $code = trim((string) $request->input('code', ''));
+        (new PersonalFileService())->clearNotApplicable((int) $id, $code);
+        AuditLogger::log('document.na_cleared', 'student', (int) $id, "Cleared not-applicable for '{$code}'");
+        return $this->redirect('/admin/students/' . $id, ['success' => 'Requirement restored to the checklist.']);
     }
 
     /**

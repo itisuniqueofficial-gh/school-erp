@@ -164,10 +164,11 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 .field-invalid { border-color: var(--color-danger) !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important; }
 .field-error-msg { color: var(--color-danger); font-size: var(--fs-caption); margin-top: .25rem; }
 
-/* Ultra-wide: cap content width so 4K/ultrawide don't stretch text lines. */
-@media (min-width: 1920px) {
-    main { max-width: 1800px; margin-inline: auto; }
-}
+/* Large / ultrawide screens: the main content stays FLUID and uses the
+   available width (padding is applied on the layout's <main> via Tailwind:
+   px-4 sm:px-6 lg:px-8 2xl:px-12). We intentionally do NOT cap main with a
+   max-width + auto margins, which previously left large empty margins on
+   1920px/4K/ultrawide displays. */
 
 
 /* ==========================================================================
@@ -197,14 +198,6 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
    ========================================================================== */
 html, body { max-width: 100%; overflow-x: hidden; }
 *, *::before, *::after { min-width: 0; }   /* let flex/grid children shrink */
-
-/* Consistent page container used by content areas. */
-.page-container {
-    width: 100%;
-    max-width: 1600px;
-    margin-inline: auto;
-    padding-inline: clamp(1rem, 2vw, 2rem);
-}
 
 /* Any horizontal scroll region (tables/charts) must not push the page wider. */
 .overflow-x-auto { max-width: 100%; }
