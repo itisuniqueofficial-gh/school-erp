@@ -42,10 +42,14 @@ Writable paths: `storage/logs`, `storage/cache`, `storage/sessions`,
    currency, and the super administrator name/email/password (min 8 chars).
 6. **Step 4 – Finish**: the wizard writes `.env` (with a generated `APP_KEY`),
    imports the schema, seeds baseline data, creates your admin account and locks
-   itself (`storage/installed.lock`).
-7. **Delete `public/install.php`** afterwards for extra safety.
+   itself (`storage/installed.lock`). Browser installations do **not** create
+   demo teacher/student/parent accounts.
+7. **Delete `public/install.php`** afterwards for extra safety. Even if it remains,
+   it refuses to touch a database that already contains users.
 
-The installer shows clear success/failure messages at every step.
+The installer shows clear success/failure messages at every step. Every form is
+CSRF-protected, `.env` changes are backed up and written atomically, and raw SQL
+errors are never shown in the browser.
 
 ---
 
@@ -61,8 +65,12 @@ echo "installed" > storage/installed.lock
 ```
 
 Individual commands: `php bin/console migrate`, `php bin/console seed`,
-`php bin/console health` (verify), `php bin/console upgrade` (safe re-deploy).
+`php bin/console health` (verify), `php bin/console upgrade` (safe re-deploy),
+`php bin/console install:status` (fresh vs existing database).
 You may also import `database/schema.sql` directly, then run `seed`.
+
+The CLI `seed` / `install` commands include demo accounts for local testing;
+reset the super-admin password before exposing such an environment.
 
 ---
 
@@ -73,6 +81,7 @@ You may also import `database/schema.sql` directly, then run `seed`.
 | `APP_ENV` | `production` in production |
 | `APP_DEBUG` | `false` in production (never expose stack traces) |
 | `APP_URL` | Public URL, e.g. `https://school.example.com`. **Leave blank to auto-detect** the scheme/host/subdirectory from each request (proxy-aware) |
+| `APP_BASE_PATH` | URL subdirectory prefix when the app is mounted below the domain root, e.g. `/erp` for `http://localhost/erp`. Usually auto-detected; set it explicitly for XAMPP `htdocs/erp` or Alias setups where Apache rewrites hide the prefix |
 | `APP_KEY` | Generated automatically by the wizard / `key:generate` |
 | `APP_MAINTENANCE` | `true` to enable maintenance mode |
 | `DB_*` | Database connection |
@@ -81,10 +90,37 @@ You may also import `database/schema.sql` directly, then run `seed`.
 
 ## Creating the first administrator
 
-The wizard creates it. On CLI installs the seeder creates
-`superadmin@school.test` / `Password123!` — **change this immediately** via
-*My Profile → Change Password*. Users can sign in with their **12-digit User ID**,
-email, or username.
+The wizard creates it and does not install demo users. On CLI installs the
+seeder creates `superadmin@school.test` / `Password123!` — **change this
+immediately** via *My Profile → Change Password*. Users can sign in with their
+**12-digit User ID**, email, or username.
+
+## Reinstalling, existing data & lost administrator access
+
+The **live database is the source of truth**, not `storage/installed.lock`.
+Deleting the lock does not make the public installer overwrite an installation:
+if the configured database already has users, `public/install.php` refuses to
+continue. It also refuses if the submitted database contains users.
+
+- **Upgrade an existing install:** `php bin/console upgrade` (backup + additive
+  migrations only). It never drops, truncates or reseeds data.
+- **Check state:** `php bin/console install:status`.
+- **Lost the super-admin password:** run on the server (never via the web):
+
+  ```bash
+  php bin/console admin:recover
+  php bin/console admin:recover --email=admin@example.com
+  php bin/console admin:recover --email=admin@example.com --create --name="Owner"
+  ```
+
+  The command prompts for a new password (or generates one), asks for explicit
+  confirmation, resets **only** that account, reactivates it, ensures the
+  `super_admin` role, revokes its remember-me tokens and writes an audit entry.
+  All other users, students, fees, uploads and settings are preserved.
+- **Intentionally start over:** take a verified backup, create/choose a
+  **different empty database**, then run the installer against that database.
+  Dropping the live database is a separate, destructive operation and is never
+  performed by the web installer.
 
 ## Deploying to Docker / Koyeb / any host
 
@@ -101,7 +137,10 @@ The project ships a production `Dockerfile`, `koyeb.yaml`, `docker/entrypoint.sh
 | Blank page / 500 on first load | Ensure `storage/` is writable and `.env` exists |
 | "Database connection failed" | Verify `DB_*` values; confirm MySQL is reachable |
 | Routes return 404 on Apache | Enable `mod_rewrite`; set `AllowOverride All` |
-| Installer keeps reappearing | Ensure `storage/installed.lock` was created & is readable |
+| Installer keeps reappearing | Ensure `storage/installed.lock` is writable, or check `php bin/console install:status`. If the DB has users the app self-heals the lock |
+| Installer says "Existing installation detected" | This is intentional. Use `php bin/console admin:recover` for a lost admin; never reinstall over live data |
+| Installer says "Already installed" but the DB is empty | A stale `storage/installed.lock` remains. Confirm with `php bin/console install:status`, then remove the lock only if the DB has no users |
+| Database user cannot create a database | Create it in phpMyAdmin/cPanel first, then rerun the wizard with that database name |
 | Uploads fail | Check `storage/uploads` permissions and `UPLOAD_MAX_SIZE` |
 | Emails not sent | Configure `MAIL_*`; default driver only logs messages |
 

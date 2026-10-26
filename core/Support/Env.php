@@ -89,20 +89,28 @@ final class Env
      */
     private static function parseValue(string $value): mixed
     {
+        $doubleQuoted = false;
+
         // Remove surrounding quotes.
         if (strlen($value) > 1) {
             $first = $value[0];
             $last = $value[strlen($value) - 1];
             if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
                 $value = substr($value, 1, -1);
+                $doubleQuoted = $first === '"';
             }
         }
 
-        // Interpolate ${VAR} references.
-        $value = preg_replace_callback('/\$\{([A-Z0-9_]+)\}/', static function (array $matches): string {
+        // Interpolate ${VAR} references. Escaped \${...} is left literal and
+        // unescaped below, allowing values (e.g. passwords) to contain "${".
+        $value = preg_replace_callback('/(?<!\\\\)\$\{([A-Z0-9_]+)\}/', static function (array $matches): string {
             $ref = self::$variables[$matches[1]] ?? getenv($matches[1]);
             return is_string($ref) ? $ref : '';
         }, $value) ?? $value;
+
+        if ($doubleQuoted) {
+            $value = strtr($value, ['\\\\' => '\\', '\\"' => '"', '\\$' => '$']);
+        }
 
         // Cast common literals.
         return match (strtolower($value)) {

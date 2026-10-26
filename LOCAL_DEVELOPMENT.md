@@ -71,7 +71,16 @@ Then create the install lock so the app serves normally (skips the web installer
 echo "installed" > storage/installed.lock
 ```
 > Alternatively, leave the lock absent and open `http://localhost:8000/install.php`
-> to run the **browser installation wizard** instead of steps 7–8.
+> to run the **browser installation wizard** instead of steps 7–8. The wizard
+> refuses to overwrite a database that already contains users.
+
+### Lost the administrator password?
+```bash
+php bin/console admin:recover
+php bin/console admin:recover --email=admin@example.com
+```
+This resets only the selected super administrator (and revokes its remember-me
+tokens). It never deletes students, fees, staff, uploads or other users.
 
 ## 9. File storage permissions
 ```bash
@@ -84,6 +93,39 @@ chmod -R 775 storage
 php -S localhost:8000 -t public
 ```
 Open **http://localhost:8000**.
+
+### XAMPP / Apache (Linux or Windows)
+The app can run from `htdocs/erp` or any folder, either served at a domain root
+or from a subdirectory such as `http://localhost/erp`.
+
+**Option A — subdirectory (`http://localhost/erp`)**
+1. Put/symlink the project at `htdocs/erp` (e.g. `ln -s ~/Desktop/erp /opt/lampp/htdocs/erp`).
+2. In `.env` set the URL prefix:
+   ```env
+   APP_BASE_PATH=/erp
+   ```
+3. Start Apache and open `http://localhost/erp/`.
+   Keep the project-root `.htaccess` in place — it forwards requests into `public/`.
+
+**Option B — virtual host at a domain root (recommended for clean URLs)**
+Point the vhost `DocumentRoot` directly at the `public/` folder and leave
+`APP_BASE_PATH` blank:
+```apache
+<VirtualHost *:80>
+    ServerName erp.local
+    DocumentRoot "/path/to/erp/public"
+    <Directory "/path/to/erp/public">
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+**Database & phpMyAdmin:** point XAMPP's `phpMyAdmin` at the same MySQL/MariaDB
+server the app uses (default `127.0.0.1:3306`). If another MySQL service already
+owns port 3306, start **only Apache** from the XAMPP panel (not MySQL) to avoid a
+port conflict. Set `APP_URL` only when you want to force one canonical host —
+leaving it blank keeps both localhost and LAN/proxy hosts working.
 
 ## 11. Default development login
 | Role         | Email                    | Password     |
@@ -109,7 +151,7 @@ php bin/console cleanup:sessions   # remove expired sessions
 |---------|-----|
 | 500 on load | Ensure `storage/` is writable and `.env` exists (`APP_DEBUG=true` shows details) |
 | DB connection failed | Verify `DB_*`, confirm MySQL is running and reachable on the port |
-| Redirected to `/install.php` | Create `storage/installed.lock` (or finish the wizard) |
+| Redirected to `/install.php` | Finish the wizard, or run `php bin/console install:status`; a populated DB is detected automatically |
 | Routes 404 under Apache | Enable `mod_rewrite`, `AllowOverride All`; doc root = `public/` |
 | Uploads fail | Check `storage/uploads` permissions and `UPLOAD_MAX_SIZE` |
 

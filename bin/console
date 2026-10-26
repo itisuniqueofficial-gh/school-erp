@@ -37,6 +37,45 @@ $out = static function (string $msg, string $color = ''): void {
     echo $prefix . $msg . ($prefix ? $reset : '') . PHP_EOL;
 };
 
+/** Read --name=value / --name from the raw argv array. */
+$option = static function (string $name) use ($argv): ?string {
+    foreach ($argv as $arg) {
+        if ($arg === '--' . $name) {
+            return '';
+        }
+        if (str_starts_with($arg, '--' . $name . '=')) {
+            return substr($arg, strlen($name) + 3);
+        }
+    }
+    return null;
+};
+
+$flag = static function (string $name) use ($argv): bool {
+    return in_array('--' . $name, $argv, true);
+};
+
+/** Read a secret from the terminal without echoing it when possible. */
+$readHidden = static function (string $prompt): string {
+    $isTty = function_exists('posix_isatty') && defined('STDIN') && @posix_isatty(STDIN);
+    if (!$isTty) {
+        fwrite(STDOUT, $prompt);
+        return trim((string) fgets(STDIN));
+    }
+
+    $saved = @shell_exec('stty -g 2>/dev/null');
+    if (is_string($saved) && trim($saved) !== '') {
+        @shell_exec('stty -echo 2>/dev/null');
+        fwrite(STDOUT, $prompt);
+        $value = trim((string) fgets(STDIN));
+        fwrite(STDOUT, PHP_EOL);
+        @shell_exec('stty ' . escapeshellarg(trim($saved)) . ' 2>/dev/null');
+        return $value;
+    }
+
+    fwrite(STDOUT, $prompt);
+    return trim((string) fgets(STDIN));
+};
+
 try {
     switch ($command) {
         case 'migrate':
@@ -425,6 +464,86 @@ try {
             $out('Installation complete. Default login: superadmin@school.test / Password123!', 'green');
             break;
 
+        case 'admin:recover':
+            // Authorized local recovery only. No web endpoint exists, so
+            // deleting the installer lock can never expose an admin takeover.
+            $recovery = new \App\Services\AdminRecoveryService();
+            $email = trim((string) ($option('email') ?? ''));
+
+            if ($email === '') {
+                $out('Super administrator recovery', 'cyan');
+                $admins = $recovery->superAdmins();
+                if ($admins === []) {
+                    $out('No super administrator accounts were found.', 'yellow');
+                } else {
+                    $out('Current super administrators:', 'cyan');
+                    foreach ($admins as $admin) {
+                        $state = ($admin['deleted_at'] ?? null) !== null ? 'deleted' : ((int) ($admin['is_active'] ?? 0) === 1 ? 'active' : 'inactive');
+                        $out(sprintf('  #%d  %s  <%s>  username=%s  [%s]',
+                            (int) $admin['id'],
+                            (string) $admin['name'],
+                            (string) $admin['email'],
+                            (string) ($admin['username'] ?? '—'),
+                            $state
+                        ));
+                    }
+                }
+                $out('');
+                $out('Usage: php bin/console admin:recover --email=admin@example.com [options]', 'yellow');
+                $out('  --password=...   New password (prompted securely when omitted)');
+                $out('  --name="..."     Display name (used when creating)');
+                $out('  --username=...   Preferred username (used when creating)');
+                $out('  --create         Create the account if the email does not exist');
+                $out('  --force          Skip the interactive RECOVER confirmation');
+                $out('Existing users and all school data are preserved. Only the selected admin is reset.');
+                break;
+            }
+
+            if (!$flag('force') && !$flag('yes')) {
+                fwrite(STDOUT, 'Type RECOVER to reset the administrator password: ');
+                $answer = trim((string) fgets(STDIN));
+                if (strtoupper($answer) !== 'RECOVER') {
+                    $out('Aborted. No changes were made.', 'yellow');
+                    exit(1);
+                }
+            }
+
+            $password = (string) ($option('password') ?? '');
+            $generated = false;
+            if ($password === '') {
+                $password = $readHidden('New administrator password (leave blank to generate): ');
+                if ($password === '') {
+                    $password = bin2hex(random_bytes(9));
+                    $generated = true;
+                }
+            }
+
+            try {
+                $result = $recovery->resetOrCreate(
+                    $email,
+                    $password,
+                    $option('name'),
+                    $flag('create'),
+                    $option('username'),
+                    'cli'
+                );
+            } catch (\InvalidArgumentException | \DomainException $e) {
+                $out('Recovery failed: ' . $e->getMessage(), 'red');
+                exit(1);
+            }
+
+            $out($result['created'] ? 'Super administrator created and activated.' : 'Super administrator password reset.', 'green');
+            $out('  User ID : ' . $result['id']);
+            $out('  Name    : ' . $result['name']);
+            $out('  Email   : ' . $result['email']);
+            $out('  Username: ' . $result['username']);
+            if ($generated) {
+                $out('  One-time password: ' . $password, 'yellow');
+                $out('  Store this password now; it will not be shown again.', 'yellow');
+            }
+            $out('Remember-me tokens for this account were revoked. Existing browser sessions expire normally.', 'cyan');
+            break;
+
         case 'help':
         default:
             $out('School ERP Console', 'cyan');
@@ -438,6 +557,7 @@ try {
             $out('  upgrade            Safe production upgrade: backup + pending migrations only');
             $out('  install            Migrate + seed in one step');
             $out('  install:status     Show fresh/existing install state (deploy-safe)');
+            $out('  admin:recover      Reset/create one super admin (preserves all other data)');
             $out('  key:generate       Generate & write APP_KEY into .env');
             $out('  backup             Dump the database to storage/backups (auto-verified)');
             $out('  backup:verify <f>  Verify a backup file is valid & restorable');
