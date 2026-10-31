@@ -139,39 +139,36 @@ final class Env
         if ($scheme === 'postgres' || $scheme === 'postgresql') {
             $scheme = 'pgsql';
         }
-        if (!isset(self::$variables['DB_CONNECTION'])) {
-            self::$variables['DB_CONNECTION'] = $scheme;
-            $_ENV['DB_CONNECTION'] = $scheme;
-            putenv('DB_CONNECTION=' . $scheme);
-        }
-        if (!isset(self::$variables['DB_DRIVER'])) {
-            self::$variables['DB_DRIVER'] = $scheme;
-            $_ENV['DB_DRIVER'] = $scheme;
-            putenv('DB_DRIVER=' . $scheme);
-        }
-        if (isset($parts['host']) && !isset(self::$variables['DB_HOST'])) {
+        // Prefer DATABASE_URL values
+        self::$variables['DB_CONNECTION'] = $scheme;
+        $_ENV['DB_CONNECTION'] = $scheme;
+        putenv('DB_CONNECTION=' . $scheme);
+        self::$variables['DB_DRIVER'] = $scheme;
+        $_ENV['DB_DRIVER'] = $scheme;
+        putenv('DB_DRIVER=' . $scheme);
+        if (isset($parts['host'])) {
             self::$variables['DB_HOST'] = $parts['host'];
             $_ENV['DB_HOST'] = $parts['host'];
             putenv('DB_HOST=' . $parts['host']);
         }
-        if (isset($parts['port']) && !isset(self::$variables['DB_PORT'])) {
+        if (isset($parts['port'])) {
             self::$variables['DB_PORT'] = (string)$parts['port'];
             $_ENV['DB_PORT'] = (string)$parts['port'];
             putenv('DB_PORT=' . $parts['port']);
         }
-        if (isset($parts['user']) && !isset(self::$variables['DB_USERNAME'])) {
+        if (isset($parts['user'])) {
             self::$variables['DB_USERNAME'] = $parts['user'];
             $_ENV['DB_USERNAME'] = $parts['user'];
             putenv('DB_USERNAME=' . $parts['user']);
         }
-        if (isset($parts['pass']) && !isset(self::$variables['DB_PASSWORD'])) {
+        if (isset($parts['pass'])) {
             self::$variables['DB_PASSWORD'] = $parts['pass'];
             $_ENV['DB_PASSWORD'] = $parts['pass'];
             putenv('DB_PASSWORD=' . $parts['pass']);
         }
         if (isset($parts['path'])) {
             $db = ltrim($parts['path'], '/');
-            if ($db !== '' && !isset(self::$variables['DB_DATABASE'])) {
+            if ($db !== '') {
                 self::$variables['DB_DATABASE'] = $db;
                 $_ENV['DB_DATABASE'] = $db;
                 putenv('DB_DATABASE=' . $db);
