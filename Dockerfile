@@ -24,8 +24,7 @@ RUN a2enmod rewrite
 WORKDIR /var/www/html
 COPY . /var/www/html
 RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
-COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
-RUN chmod +x /usr/local/bin/entrypoint.sh 2>/dev/null || chmod +x docker/entrypoint.sh 2>/dev/null || true
+RUN chmod +x docker/entrypoint.sh 2>/dev/null || true
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 EXPOSE 10000
