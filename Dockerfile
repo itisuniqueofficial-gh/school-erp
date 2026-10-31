@@ -1,53 +1,59 @@
-# ==========================================================================
-# School ERP — production image for Koyeb (and any Docker host).
-# PHP 8.3 + Apache, document root at /public, front-controller rewrite enabled.
-# The built-in PSR-4 autoloader is used, so Composer is NOT required at runtime.
-# ==========================================================================
-FROM php:8.3-apache
+FROM php:8.2-apache
 
-# --- PHP extensions required by the app -----------------------------------
-RUN apt-get update && apt-get install -y libpq-dev && docker-php-ext-install pdo_mysql pdo_pgsql pgsql opcache \ && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-enable opcache
+ENV DEBIAN_FRONTEND=noninteractive
 
-# --- Apache modules (rewrite / headers / expires / deflate) ----------------
-RUN a2enmod rewrite headers expires deflate
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    unzip \
+    zip \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libicu-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# --- Production PHP settings ----------------------------------------------
-RUN { \
-      echo 'display_errors=Off'; \
-      echo 'log_errors=On'; \
-      echo 'expose_php=Off'; \
-      echo 'upload_max_filesize=${UPLOAD_LIMIT:-10M}'; \
-      echo 'post_max_size=12M'; \
-      echo 'memory_limit=256M'; \
-      echo 'opcache.enable=1'; \
-      echo 'opcache.validate_timestamps=0'; \
-      echo 'opcache.max_accelerated_files=20000'; \
-    } > /usr/local/etc/php/conf.d/zz-erp.ini
+# Configure and install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    pdo \
+    pdo_mysql \
+    pdo_pgsql \
+    pgsql \
+    mysqli \
+    mbstring \
+    zip \
+    gd \
+    intl \
+    exif \
+    opcache
 
-# Document root -> /public
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
-    && printf '<Directory ${APACHE_DOCUMENT_ROOT}>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/z-erp-docroot.conf \
-    && a2enconf z-erp-docroot
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
-# --- Application code ------------------------------------------------------
+# Set working directory
 WORKDIR /var/www/html
+
+# Copy application files
 COPY . /var/www/html
 
-# Storage must be writable; entrypoint re-ensures this at runtime too.
-RUN mkdir -p storage/logs storage/cache storage/sessions \
-        storage/uploads/avatars storage/uploads/documents storage/backups \
-    && chown -R www-data:www-data storage \
-    && chmod -R 775 storage
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 
+# Copy custom Apache config
+COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
+
+# Expose port (Render uses PORT env var)
+EXPOSE 10000
+
+# Entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Koyeb injects $PORT (default 8000); Apache is reconfigured to it at startup.
-EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/health" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
