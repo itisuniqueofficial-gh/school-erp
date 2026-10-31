@@ -127,7 +127,7 @@ final class Env
      */
     public static function parseDatabaseUrl(): void
     {
-        $url = getenv('DATABASE_URL') ?: (isset(self::$data['DATABASE_URL']) ? self::$data['DATABASE_URL'] : null);
+        $url = getenv('DATABASE_URL') ?: (isset(self::$variables['DATABASE_URL']) ? self::$variables['DATABASE_URL'] : null);
         if (!$url || $url === '') {
             return;
         }
@@ -139,40 +139,40 @@ final class Env
         if ($scheme === 'postgres' || $scheme === 'postgresql') {
             $scheme = 'pgsql';
         }
-        if (!isset(self::$data['DB_CONNECTION'])) {
-            self::$data['DB_CONNECTION'] = $scheme;
+        if (!isset(self::$variables['DB_CONNECTION'])) {
+            self::$variables['DB_CONNECTION'] = $scheme;
             $_ENV['DB_CONNECTION'] = $scheme;
             putenv('DB_CONNECTION=' . $scheme);
         }
-        if (!isset(self::$data['DB_DRIVER'])) {
-            self::$data['DB_DRIVER'] = $scheme;
+        if (!isset(self::$variables['DB_DRIVER'])) {
+            self::$variables['DB_DRIVER'] = $scheme;
             $_ENV['DB_DRIVER'] = $scheme;
             putenv('DB_DRIVER=' . $scheme);
         }
-        if (isset($parts['host']) && !isset(self::$data['DB_HOST'])) {
-            self::$data['DB_HOST'] = $parts['host'];
+        if (isset($parts['host']) && !isset(self::$variables['DB_HOST'])) {
+            self::$variables['DB_HOST'] = $parts['host'];
             $_ENV['DB_HOST'] = $parts['host'];
             putenv('DB_HOST=' . $parts['host']);
         }
-        if (isset($parts['port']) && !isset(self::$data['DB_PORT'])) {
-            self::$data['DB_PORT'] = (string)$parts['port'];
+        if (isset($parts['port']) && !isset(self::$variables['DB_PORT'])) {
+            self::$variables['DB_PORT'] = (string)$parts['port'];
             $_ENV['DB_PORT'] = (string)$parts['port'];
             putenv('DB_PORT=' . $parts['port']);
         }
-        if (isset($parts['user']) && !isset(self::$data['DB_USERNAME'])) {
-            self::$data['DB_USERNAME'] = $parts['user'];
+        if (isset($parts['user']) && !isset(self::$variables['DB_USERNAME'])) {
+            self::$variables['DB_USERNAME'] = $parts['user'];
             $_ENV['DB_USERNAME'] = $parts['user'];
             putenv('DB_USERNAME=' . $parts['user']);
         }
-        if (isset($parts['pass']) && !isset(self::$data['DB_PASSWORD'])) {
-            self::$data['DB_PASSWORD'] = $parts['pass'];
+        if (isset($parts['pass']) && !isset(self::$variables['DB_PASSWORD'])) {
+            self::$variables['DB_PASSWORD'] = $parts['pass'];
             $_ENV['DB_PASSWORD'] = $parts['pass'];
             putenv('DB_PASSWORD=' . $parts['pass']);
         }
         if (isset($parts['path'])) {
             $db = ltrim($parts['path'], '/');
-            if ($db !== '' && !isset(self::$data['DB_DATABASE'])) {
-                self::$data['DB_DATABASE'] = $db;
+            if ($db !== '' && !isset(self::$variables['DB_DATABASE'])) {
+                self::$variables['DB_DATABASE'] = $db;
                 $_ENV['DB_DATABASE'] = $db;
                 putenv('DB_DATABASE=' . $db);
             }
@@ -180,8 +180,8 @@ final class Env
         if (isset($parts['query'])) {
             parse_str($parts['query'], $q);
             if ((isset($q['sslmode']) && in_array($q['sslmode'], ['require','verify-ca','verify-full'], true)) || isset($q['ssl-mode'])) {
-                if (!isset(self::$data['DB_SSL'])) {
-                    self::$data['DB_SSL'] = 'true';
+                if (!isset(self::$variables['DB_SSL'])) {
+                    self::$variables['DB_SSL'] = 'true';
                     $_ENV['DB_SSL'] = 'true';
                     putenv('DB_SSL=true');
                 }
