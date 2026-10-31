@@ -38,6 +38,7 @@ if (is_file($root . '/vendor/autoload.php')) {
 
 // --- Environment & Configuration -------------------------------------------
 Env::load($root . '/.env');
+Env::parseDatabaseUrl();
 
 // --- Test-database isolation ----------------------------------------------
 // When APP_TESTING=1 is exported (test harness / CI), transparently switch to a
