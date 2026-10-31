@@ -145,6 +145,46 @@ if (!function_exists('base_url')) {
     }
 }
 
+if (!function_exists('detect_base_path')) {
+    /**
+     * Resolve the URL path prefix the app is mounted under ('' at a domain root).
+     *
+     * Handles plain subdirectories (/erp), nested ones (/apps/erp) and front
+     * controllers living in /public. When $verifyRequest is true the prefix is
+     * only returned if the incoming REQUEST_URI actually starts with it, which
+     * prevents a stale SCRIPT_NAME from swallowing unrelated routes.
+     *
+     * @param array<string,mixed> $s A $_SERVER-like array.
+     */
+    function detect_base_path(array $s, bool $verifyRequest = true): string
+    {
+        $dir = rtrim(str_replace('\\', '/', dirname((string) ($s['SCRIPT_NAME'] ?? ''))), '/');
+        if ($dir === '.' || $dir === '/') {
+            $dir = '';
+        }
+        $stripped = str_ends_with($dir, '/public') ? substr($dir, 0, -7) : $dir;
+
+        if (!$verifyRequest) {
+            return $stripped;
+        }
+
+        // Prefer the longest prefix that the incoming request actually uses:
+        // /erp/public when the URL contains it, /erp when Apache rewrote into
+        // public/, and '' when served from a domain root.
+        $requestPath = parse_url((string) ($s['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '/';
+        foreach (array_unique([$dir, $stripped, '']) as $candidate) {
+            if ($candidate === '') {
+                return '';
+            }
+            if ($requestPath === $candidate || str_starts_with($requestPath, $candidate . '/')) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+}
+
 if (!function_exists('detect_base_url')) {
     /**
      * Pure base-URL resolver (no globals) — unit-testable.
@@ -171,13 +211,16 @@ if (!function_exists('detect_base_url')) {
         $host = (string) ($s['HTTP_X_FORWARDED_HOST'] ?? $s['HTTP_HOST'] ?? $s['SERVER_NAME'] ?? 'localhost');
         $host = trim(explode(',', $host)[0]);
 
-        // Subdirectory install support (e.g. example.com/erp).
-        $dir = rtrim(str_replace('\\', '/', dirname((string) ($s['SCRIPT_NAME'] ?? ''))), '/');
-        if ($dir === '.' || $dir === '/') {
-            $dir = '';
-        }
-        if (str_ends_with($dir, '/public')) {
-            $dir = substr($dir, 0, -7);
+        // Subdirectory install support (e.g. example.com/erp). APP_BASE_PATH is
+        // an explicit override for hosts where Apache rewrites hide the prefix
+        // (e.g. XAMPP htdocs/erp). Otherwise verify SCRIPT_NAME against
+        // REQUEST_URI so /public is only stripped for rewrite-based installs.
+        $explicit = trim((string) ($s['APP_BASE_PATH'] ?? ''));
+        if ($explicit !== '' && $explicit !== '/') {
+            $dir = '/' . trim($explicit, '/');
+        } else {
+            $hasRequest = isset($s['REQUEST_URI']) && $s['REQUEST_URI'] !== '';
+            $dir = detect_base_path($s, $hasRequest);
         }
 
         return $scheme . '://' . $host . $dir;

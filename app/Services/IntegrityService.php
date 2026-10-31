@@ -137,8 +137,69 @@ final class IntegrityService
 
     private function row(string $key, string $label, int $count, string $severity, string $link): array
     {
-        return ['key' => $key, 'label' => $label, 'count' => $count, 'severity' => $severity, 'link' => $link];
+        $meta = self::META[$key] ?? ['why' => '', 'action' => 'Review'];
+        return [
+            'key' => $key, 'label' => $label, 'count' => $count, 'severity' => $severity, 'link' => $link,
+            'why' => $meta['why'], 'action' => $meta['action'],
+        ];
     }
+
+    /**
+     * Plain-language "why it matters" + a recommended action label per check.
+     * Centralised so detection stays DRY and the UI/CLI stay consistent.
+     *
+     * @var array<string,array{why:string,action:string}>
+     */
+    private const META = [
+        'students_no_enrollment' => [
+            'why' => 'These active students have no enrollment for the current academic year, so they may not appear correctly in attendance, fees, examinations, promotion or academic reports.',
+            'action' => 'Enroll students',
+        ],
+        'subjects_no_teacher' => [
+            'why' => 'These class-subjects have no assigned teacher, so timetable, attendance and mark-entry workflows may not work for them.',
+            'action' => 'Assign teachers',
+        ],
+        'teachers_no_assignment' => [
+            'why' => 'These teachers are not assigned to any class or subject, so they cannot mark attendance or enter marks.',
+            'action' => 'Assign teachers',
+        ],
+        'sections_no_class_teacher' => [
+            'why' => 'These sections have no class teacher, so class-level responsibilities and approvals may be unassigned.',
+            'action' => 'Assign class teachers',
+        ],
+        'marks_exceed_max' => [
+            'why' => 'Some recorded marks are greater than the subject maximum, which corrupts percentages, grades and report cards.',
+            'action' => 'Review marks',
+        ],
+        'students_no_roll' => [
+            'why' => 'Enrolled students without a roll number can sort incorrectly and may break attendance and result ordering.',
+            'action' => 'Assign roll numbers',
+        ],
+        'duplicate_rolls' => [
+            'why' => 'The same roll number is used more than once in a class/section, which makes attendance and results ambiguous.',
+            'action' => 'Resolve duplicates',
+        ],
+        'classes_no_subjects' => [
+            'why' => 'These classes have no subjects allocated, so timetable, attendance and examination workflows cannot run for them.',
+            'action' => 'Allocate subjects',
+        ],
+        'marks_pending_approval' => [
+            'why' => 'These marks batches are submitted but not yet approved or published, so results are not final.',
+            'action' => 'Review marks',
+        ],
+        'teacher_overload' => [
+            'why' => 'These teachers exceed the configured workload limit, which may indicate an assignment imbalance.',
+            'action' => 'Review workload',
+        ],
+        'documents_pending_verification' => [
+            'why' => 'Uploaded student documents are awaiting verification and may leave admission records incomplete.',
+            'action' => 'Verify documents',
+        ],
+        'attendance_unlock_pending' => [
+            'why' => 'Attendance unlock requests are pending review; locked attendance cannot be corrected until they are actioned.',
+            'action' => 'Review requests',
+        ],
+    ];
 
     /**
      * Prioritised "what needs your attention" list for the dashboard assistant:

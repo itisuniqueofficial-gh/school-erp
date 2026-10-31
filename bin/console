@@ -544,32 +544,62 @@ try {
             $out('Remember-me tokens for this account were revoked. Existing browser sessions expire normally.', 'cyan');
             break;
 
+        case 'db:info':
+        case 'db:status':
+            $info = (new \App\Services\DatabasePortabilityService())->getInfo();
+            $out('=== Database Information ===', 'cyan');
+            $out('Driver: ' . $info['driver']);
+            $out('Status: ' . $info['status']);
+            if (!empty($info['version'])) $out('Version: ' . substr((string)$info['version'], 0, 100));
+            if (!empty($info['database'])) $out('Database: ' . $info['database']);
+            $out('Migrations: ' . ($info['migrations_applied'] ?? 0) . ' applied, ' . ($info['migrations_pending'] ?? 0) . ' pending');
+            if (!empty($info['pending_list'])) {
+                $out('Pending: ' . implode(', ', $info['pending_list']), 'yellow');
+            }
+            break;
+
+        case 'db:backup':
+            $out('Creating database backup...', 'cyan');
+            $backup = (new \App\Services\DatabaseBackupService())->create($option('label'));
+            if ($backup) {
+                $out('Backup created: ' . $backup, 'green');
+            } else {
+                $out('Backup failed or not available.', 'red');
+                exit(1);
+            }
+            break;
+
+        case 'db:backups':
+            $list = (new \App\Services\DatabaseBackupService())->list();
+            $out('=== Database Backups ===', 'cyan');
+            if (empty($list)) {
+                $out('No backups found.', 'yellow');
+            } else {
+                foreach ($list as $b) {
+                    $out(sprintf('  %s (%s bytes) - %s', $b['name'], $b['size'], $b['date']));
+                }
+            }
+            break;
+
+        case 'db:drivers':
+            $test = (new \App\Services\DatabasePortabilityService())->testAllDrivers();
+            $out('=== Database Drivers Status ===', 'cyan');
+            foreach ($test as $d => $info) {
+                $ext = !empty($info['pdo_extension']) ? '[EXT OK]' : '[EXT MISSING]';
+                $conf = !empty($info['configured']) ? '[CONFIGURED]' : '[NOT CONFIGURED]';
+                $out(sprintf('  %s: %s %s', $d, $ext, $conf));
+            }
+            break;
+
         case 'help':
         default:
-            $out('School ERP Console', 'cyan');
-            $out('Available commands:');
-            $out('  migrate            Run pending migrations');
-            $out('  migrate:fresh      Drop all tables and re-run migrations');
-            $out('  migrate:status     Show migration status');
-            $out('  seed               Seed baseline data');
-            $out('  health             Run a full system health check');
-            $out('  db:check           Read-only database integrity audit (no changes)');
-            $out('  upgrade            Safe production upgrade: backup + pending migrations only');
-            $out('  install            Migrate + seed in one step');
-            $out('  install:status     Show fresh/existing install state (deploy-safe)');
-            $out('  admin:recover      Reset/create one super admin (preserves all other data)');
-            $out('  key:generate       Generate & write APP_KEY into .env');
-            $out('  backup             Dump the database to storage/backups (auto-verified)');
-            $out('  backup:verify <f>  Verify a backup file is valid & restorable');
-            $out('  restore <f>        Restore DB from a verified backup (guarded; --force to overwrite)');
-            $out('  reminders          Generate birthday/fee/exam/holiday reminders');
-            $out('  cleanup:logs [days] Delete log files older than N days (default 30)');
-            $out('  cleanup:sessions   Delete expired session files');
-            break;
+            $out('Unknown command: ' . $command, 'red');
+            $out('Run php bin/console for usage.');
+            exit(1);
     }
 } catch (\Throwable $e) {
     $out('Error: ' . $e->getMessage(), 'red');
-    if ((bool) Config::get('app.debug')) {
+    if ((bool) \Core\Config\Config::get('app.debug')) {
         $out($e->getFile() . ':' . $e->getLine());
         $out($e->getTraceAsString());
     }

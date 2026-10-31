@@ -73,5 +73,15 @@ foreach ($actionViews as $v) {
 if ($missing) { echo '  views not using action-group: ' . implode(', ', $missing) . "\n"; }
 $check('key list views use the canonical action-group', $missing === []);
 
+// 6. Application shell: fixed-height shell + independent main scroller + internally-scrolling sidebar.
+$check('shell wrapper is a fixed-height app-shell', str_contains($app, 'app-shell') && str_contains($app, '[height:100dvh]') && str_contains($app, 'overflow-hidden'));
+if (preg_match('/<main[^>]*>/', $app, $mm)) {
+    $check('<main> is the independent scroll container', str_contains($mm[0], 'app-main-scroll') && str_contains($mm[0], 'overflow-y-auto'));
+}
+$sidebar = (string) file_get_contents($viewsDir . '/partials/sidebar.php');
+$check('sidebar nav scrolls internally (sidebar-scroll + overflow-y-auto)', str_contains($sidebar, 'sidebar-scroll') && str_contains($sidebar, 'overflow-y-auto'));
+$check('.sidebar-scroll hides scrollbar but stays scrollable', str_contains($css, '.sidebar-scroll') && str_contains($css, 'scrollbar-width: none'));
+$check('print reset neutralizes the fixed shell (no clipping)', (bool) preg_match('/@media print\s*\{[^}]*\.app-shell/s', $css) || str_contains($css, '.app-shell { display: block !important'));
+
 echo "PASS: {$pass}   FAIL: {$fail}\n";
 exit($fail === 0 ? 0 : 1);

@@ -32,7 +32,7 @@ if (!is_file($installLock) && is_file(__DIR__ . '/install.php')) {
     if ($dbInstalled) {
         @touch($installLock); // persist for subsequent requests on this instance
     } else {
-        header('Location: /install.php');
+        header('Location: ' . url('/install.php'));
         exit;
     }
 }

@@ -27,12 +27,15 @@ final class Request
     /** @var array<string, mixed>|null */
     private ?array $json = null;
 
-    public function __construct()
+    /**
+     * @param array<string, mixed>|null $server Override the server bag (useful for tests).
+     */
+    public function __construct(?array $server = null)
     {
         $this->query   = $_GET;
         $this->body    = $_POST;
         $this->files   = $_FILES;
-        $this->server  = $_SERVER;
+        $this->server  = $server ?? $_SERVER;
         $this->cookies = $_COOKIE;
         $this->parseJson();
     }
@@ -70,14 +73,51 @@ final class Request
 
     public function uri(): string
     {
-        $uri = $this->server['REQUEST_URI'] ?? '/';
-        $uri = parse_url($uri, PHP_URL_PATH) ?: '/';
+        $uri = $this->rawUri();
+        $base = $this->basePath();
+
+        if ($base !== '') {
+            if ($uri === $base) {
+                $uri = '/';
+            } elseif (str_starts_with($uri, $base . '/')) {
+                $uri = substr($uri, strlen($base));
+            }
+        }
+
         return '/' . trim($uri, '/');
+    }
+
+    /**
+     * URL path prefix the application is mounted under ('' for a domain root).
+     * Lets the router work when the public folder is served from a subdirectory
+     * such as http://localhost/erp or an Apache Alias.
+     */
+    public function basePath(): string
+    {
+        $explicit = trim((string) ($this->server['APP_BASE_PATH'] ?? ''));
+        if ($explicit !== '') {
+            return $explicit === '/' ? '' : '/' . trim($explicit, '/');
+        }
+
+        $configured = trim((string) ($this->server['APP_URL'] ?? ''));
+        if ($configured !== '') {
+            $path = rtrim((string) (parse_url($configured, PHP_URL_PATH) ?: ''), '/');
+            return $path === '/' ? '' : $path;
+        }
+
+        return detect_base_path($this->server);
     }
 
     public function path(): string
     {
         return $this->uri();
+    }
+
+    private function rawUri(): string
+    {
+        $uri = $this->server['REQUEST_URI'] ?? '/';
+        $uri = parse_url($uri, PHP_URL_PATH) ?: '/';
+        return '/' . trim($uri, '/');
     }
 
     public function isMethod(string $method): bool

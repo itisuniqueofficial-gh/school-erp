@@ -141,7 +141,7 @@ function render(string $title, string $body, int $current = 0): void
     }
 
     echo '<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">' . $body . '</div>'
-        . '<p class="mt-6 text-center text-xs text-slate-400">School ERP v1.6.17 — remove public/install.php after installation.</p>'
+        . '<p class="mt-6 text-center text-xs text-slate-400">School ERP v1.6.18 — remove public/install.php after installation.</p>'
         . '</div></body></html>';
 }
 
@@ -328,8 +328,8 @@ if ($current['installed']) {
 function requirementChecks(string $root): array
 {
     $checks = [];
-    $checks[] = ['PHP >= 8.3', version_compare(PHP_VERSION, '8.3.0', '>='), PHP_VERSION];
-    foreach (['pdo_mysql', 'mbstring', 'openssl', 'fileinfo', 'json'] as $ext) {
+    $checks[] = ['PHP >= 8.2', version_compare(PHP_VERSION, '8.2.0', '>='), PHP_VERSION];
+    foreach (['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'fileinfo', 'json', 'session', 'ctype', 'iconv'] as $ext) {
         $checks[] = ["Extension: {$ext}", extension_loaded($ext), extension_loaded($ext) ? 'loaded' : 'missing'];
     }
     foreach (['storage', 'storage/logs', 'storage/cache', 'storage/sessions', 'storage/uploads', 'storage/backups'] as $dir) {
@@ -539,7 +539,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $lockWarning = '';
-                if (@file_put_contents($lockFile, 'Installed at ' . date('c') . "\nVersion 1.6.16\n", LOCK_EX) === false) {
+                if (@file_put_contents($lockFile, 'Installed at ' . date('c') . "\nVersion 1.6.18\n", LOCK_EX) === false) {
                     $lockWarning = 'The database was installed, but storage/installed.lock could not be written. '
                         . 'The database guard still prevents re-installation; fix storage permissions.';
                 }

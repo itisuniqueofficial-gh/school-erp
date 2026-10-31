@@ -1,6 +1,6 @@
 # School ERP
 
-A production-ready **School Enterprise Resource Planning** system built with **Core PHP 8.3+** (no framework) following an MVC architecture, PSR-4 autoloading, PDO prepared statements, RBAC, and a versioned REST API.
+A production-ready **School Enterprise Resource Planning** system built with **Core PHP 8.2+** (no framework) following an MVC architecture, PSR-4 autoloading, PDO prepared statements, RBAC, and a versioned REST API.
 
 ## Features
 
@@ -13,8 +13,8 @@ A production-ready **School Enterprise Resource Planning** system built with **C
 
 ## Requirements
 
-- PHP **8.3+** with extensions: `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `json`
-- MySQL **8.0+**
+- PHP **8.2+** with extensions: `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `json`, `session`, `ctype`, `iconv`
+- MySQL **8.0+** / MariaDB **10.4+**
 - Apache (with `mod_rewrite`) or Nginx
 - Composer (optional — a built-in PSR-4 autoloader is included for hosts without Composer)
 
@@ -72,7 +72,10 @@ docs/            Architecture, API, installation & deployment docs
 
 ## Deployment
 
-Point your web server's document root at the `public/` directory. See `docs/DEPLOYMENT.md` for Apache/Nginx/cPanel guides, and `docs/API.md` for the REST API reference.
+Point your web server's document root at the `public/` directory, or use the
+project-root `.htaccess` fallback. See `docs/DEPLOYMENT.md` for Apache/Nginx/cPanel
+guides, `docs/XAMPP-UBUNTU.md` / `docs/XAMPP-WINDOWS.md` for the complete XAMPP
+stack, and `docs/API.md` for the REST API reference.
 
 ## License
 

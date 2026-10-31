@@ -18,7 +18,7 @@ $link = static function (string $href, string $icon, string $label) use ($path):
 $roles = $user['roles'] ?? [];
 $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'principal', 'vice_principal', 'receptionist', 'hr', 'accountant', 'librarian', 'transport_manager']);
 ?>
-<div class="flex h-16 items-center gap-2 border-b border-slate-200 px-5">
+<div class="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 px-5">
     <?php $sbLogo = function_exists('brand_logo_url') ? brand_logo_url() : null; ?>
     <?php if ($sbLogo): ?>
         <img src="<?= e($sbLogo) ?>" alt="<?= e($appName ?? config('app.name')) ?> logo" class="h-9 w-9 rounded-lg object-contain" onerror="this.outerHTML='&lt;span class=\'inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white\'&gt;&lt;i class=\'fa-solid fa-graduation-cap\'&gt;&lt;/i&gt;&lt;/span&gt;'">
@@ -30,7 +30,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
     <span class="truncate text-lg font-bold text-slate-900"><?= e($appName ?? config('app.name')) ?></span>
 </div>
 
-<nav class="space-y-6 px-3 py-5" aria-label="Main navigation">
+<nav class="sidebar-scroll min-h-0 flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Main navigation">
     <div class="space-y-1">
         <?php if ($isStaff): ?>
             <?= $link('/admin/dashboard', 'fa-gauge-high', 'Dashboard') ?>

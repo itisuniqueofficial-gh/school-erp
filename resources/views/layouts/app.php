@@ -4,22 +4,22 @@
 <?php $this->section('content'); ?>
 <?php $user = auth()->user() ?? []; ?>
 <a href="#main-content" class="skip-link">Skip to main content</a>
-<div class="min-h-full lg:flex">
+<div class="app-shell flex h-screen [height:100dvh] overflow-hidden">
     <!-- Sidebar backdrop (mobile) -->
     <div data-sidebar-backdrop class="fixed inset-0 z-30 hidden bg-slate-900/40 lg:hidden"></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (fixed height; only its nav scrolls internally) -->
     <aside id="app-sidebar" data-sidebar
-           class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transform overflow-y-auto border-r border-slate-200 bg-white transition-transform duration-200 lg:static lg:translate-x-0"
+           class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full transform flex-col overflow-hidden border-r border-slate-200 bg-white transition-transform duration-200 lg:static lg:h-full lg:translate-x-0"
            aria-label="Sidebar">
         <?php $this->include('partials.sidebar', ['user' => $user]); ?>
     </aside>
 
-    <!-- Main column -->
-    <div class="flex min-w-0 flex-1 flex-col">
+    <!-- Main column (fixed height; content scrolls independently) -->
+    <div class="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
         <?php $this->include('partials.navbar', ['user' => $user]); ?>
 
-        <main id="main-content" tabindex="-1" class="flex-1 px-4 py-6 sm:px-6 lg:px-8 2xl:px-12">
+        <main id="main-content" tabindex="-1" class="app-main-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 2xl:px-12">
             <!-- Breadcrumb / page header -->
             <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -36,7 +36,7 @@
             <?= $this->yield('main') ?>
         </main>
 
-        <footer class="border-t border-slate-200 px-4 py-4 text-center text-xs text-slate-400 sm:px-6 lg:px-8">
+        <footer class="shrink-0 border-t border-slate-200 px-4 py-4 text-center text-xs text-slate-400 sm:px-6 lg:px-8">
             <p><?= e($appName ?? config('app.name')) ?><?php if (!empty($appVersion)): ?> v<?= e($appVersion) ?><?php endif; ?> &middot; <?= e(!empty($appCopyright) ? $appCopyright : '© ' . date('Y')) ?></p>
             <?php if (!empty($appFooterText)): ?><p class="mt-1"><?= e($appFooterText) ?></p><?php endif; ?>
             <p class="mt-1">Made with <i class="fa-solid fa-heart text-rose-500" aria-label="love"></i> by

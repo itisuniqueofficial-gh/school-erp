@@ -52,18 +52,21 @@ $full = (float) ($schedule['full_marks'] ?? 100);
     <input type="hidden" name="subject_id" value="<?= $selected['subject_id'] ?>">
     <div class="overflow-x-auto">
         <table class="data-table">
-            <thead><tr><th>Roll</th><th>Student ID</th><th>Name</th><th>Marks (/<?= e((string) $full) ?>)</th></tr></thead>
+            <thead><tr><th>Roll</th><th>Student ID</th><th>Name</th><th>Marks (/<?= e((string) $full) ?>)</th><th>Absent</th></tr></thead>
             <tbody>
             <?php foreach ($students as $st):
-                $cur = $existing[(int) $st['id']]['marks_obtained'] ?? '';
+                $sid = (int) $st['id'];
+                $cur = $existing[$sid]['marks_obtained'] ?? '';
+                $ab = (int) ($existing[$sid]['is_absent'] ?? 0) === 1;
             ?>
                 <tr>
                     <td><?= e((string) ($st['roll_no'] ?? '—')) ?></td>
                     <td class="font-mono text-xs"><?= e((string) ($st['public_id'] ?? $st['admission_no'])) ?></td>
                     <td class="font-medium text-slate-800"><?= e((string) ($st['first_name'] . ' ' . $st['last_name'])) ?></td>
                     <td>
-                        <input type="number" step="0.01" min="0" max="<?= e((string) $full) ?>" name="marks[<?= (int) $st['id'] ?>]" value="<?= e((string) $cur) ?>" class="form-input w-28" <?= $locked ? 'disabled' : '' ?>>
+                        <input type="number" step="0.01" min="0" max="<?= e((string) $full) ?>" name="marks[<?= $sid ?>]" value="<?= $ab ? '' : e((string) $cur) ?>" class="form-input w-28" data-marks-input <?= ($locked || $ab) ? 'disabled' : '' ?>>
                     </td>
+                    <td><input type="checkbox" name="absent[<?= $sid ?>]" value="1" <?= $ab ? 'checked' : '' ?> data-absent-toggle aria-label="Mark <?= e((string) ($st['first_name'] . ' ' . $st['last_name'])) ?> absent" <?= $locked ? 'disabled' : '' ?>></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

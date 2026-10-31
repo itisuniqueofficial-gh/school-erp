@@ -464,6 +464,7 @@ final class TeacherPortalController extends Controller
         $sectionId = (int) $request->input('section_id', 0);
         $subjectId = (int) $request->input('subject_id', 0);
         $marks = (array) $request->input('marks', []);
+        $absent = (array) $request->input('absent', []);
 
         $back = "/teacher/marks?exam_id={$examId}&class_id={$classId}&section_id={$sectionId}&subject_id={$subjectId}";
 
@@ -484,31 +485,41 @@ final class TeacherPortalController extends Controller
 
         $fullMarks = (float) ($schedule['full_marks'] ?? 100);
         $saved = 0;
-        foreach ($marks as $studentId => $obtained) {
-            if ($obtained === '' || $obtained === null) {
-                continue;
-            }
-            $obtained = (float) $obtained;
-            if (!Exam::isValidMark($obtained, $fullMarks)) {
-                continue; // enforce 0 <= marks <= max
-            }
-            $percent = $fullMarks > 0 ? ($obtained / $fullMarks) * 100 : 0;
-            $gradeId = Exam::gradeForPercentage($percent);
-
+        $upsert = static function (int $studentId, array $payload) use ($schedule): void {
             $existing = QueryBuilder::table('exam_marks')
-                ->where('exam_schedule_id', (int) $schedule['id'])->where('student_id', (int) $studentId)->first();
-            $payload = [
-                'marks_obtained' => $obtained, 'grade_id' => $gradeId,
-                'entered_by' => auth()->id(), 'status' => 'draft', 'updated_at' => date('Y-m-d H:i:s'),
-            ];
+                ->where('exam_schedule_id', (int) $schedule['id'])->where('student_id', $studentId)->first();
             if ($existing) {
                 QueryBuilder::table('exam_marks')->where('id', $existing['id'])->update($payload);
             } else {
                 $payload['exam_schedule_id'] = (int) $schedule['id'];
-                $payload['student_id'] = (int) $studentId;
+                $payload['student_id'] = $studentId;
                 $payload['created_at'] = date('Y-m-d H:i:s');
                 QueryBuilder::table('exam_marks')->insert($payload);
             }
+        };
+        $studentIds = array_unique(array_map('intval', array_merge(array_keys($marks), array_keys($absent))));
+        foreach ($studentIds as $studentId) {
+            if (!empty($absent[$studentId])) {
+                $upsert($studentId, [
+                    'marks_obtained' => 0, 'is_absent' => 1, 'grade_id' => null,
+                    'entered_by' => auth()->id(), 'status' => 'draft', 'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+                $saved++;
+                continue;
+            }
+            $raw = $marks[$studentId] ?? '';
+            if ($raw === '' || $raw === null) {
+                continue;
+            }
+            $obtained = (float) $raw;
+            if (!Exam::isValidMark($obtained, $fullMarks)) {
+                continue; // enforce 0 <= marks <= max
+            }
+            $percent = $fullMarks > 0 ? ($obtained / $fullMarks) * 100 : 0;
+            $upsert($studentId, [
+                'marks_obtained' => $obtained, 'is_absent' => 0, 'grade_id' => Exam::gradeForPercentage($percent),
+                'entered_by' => auth()->id(), 'status' => 'draft', 'updated_at' => date('Y-m-d H:i:s'),
+            ]);
             $saved++;
         }
 

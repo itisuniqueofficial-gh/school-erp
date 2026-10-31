@@ -4,7 +4,7 @@ Works on shared hosting with LiteSpeed/Apache, CloudLinux and PHP Selector.
 No framework-specific server configuration is required.
 
 ## Prerequisites
-- cPanel account with PHP **8.3+** (set via *MultiPHP Manager* / *PHP Selector*)
+- cPanel account with PHP **8.2+** (set via *MultiPHP Manager* / *PHP Selector*)
 - MySQL or MariaDB database access
 
 ## Step-by-step
@@ -17,8 +17,8 @@ No framework-specific server configuration is required.
 6. **Configure document root** — point the domain/subdomain's document root to
    `~/schoolerp/public` (cPanel → *Domains* → *Manage* → Document Root). If you
    cannot change it, the bundled root `.htaccess` forwards requests into `public/`.
-7. **Configure PHP version** — *MultiPHP Manager* → set the domain to PHP 8.3+.
-   Ensure extensions `pdo_mysql, mbstring, openssl, fileinfo, json` are enabled
+7. **Configure PHP version** — *MultiPHP Manager* → set the domain to PHP 8.2+.
+   Ensure extensions `pdo_mysql, mbstring, openssl, fileinfo, json, session, ctype, iconv` are enabled
    (*Select PHP Version* → *Extensions*).
 8. **Configure `.env`** — copy `.env.example` to `.env` (File Manager) — or let
    the installer create it in the next steps.
@@ -51,7 +51,7 @@ No framework-specific server configuration is required.
 
 ## Production checklist
 - [ ] Document root = `public/`
-- [ ] PHP 8.3+ with required extensions
+- [ ] PHP 8.2+ with required extensions
 - [ ] `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` set
 - [ ] `APP_URL` blank (auto-detect) or set to your HTTPS domain
 - [ ] `SESSION_SECURE_COOKIE=true`, SSL active

@@ -4,6 +4,50 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [1.6.18] - 2026-10-27
+
+### Added
+- **Full XAMPP support** — Linux and Windows guides plus `scripts/xampp*.sh`
+  and `scripts/xampp*.ps1` for read-only checks, safe setup, service start/stop,
+  phpMyAdmin/database guidance and subdirectory hosting under `htdocs`.
+- **XAMPP checks** cover PHP 8.2+, required extensions/PDO MySQL, Apache
+  rewrite, storage ownership, port conflicts, database state, pending
+  migrations, HTTP status, assets/login, and public exposure of `.env`,
+  `storage/installed.lock` and `.git/config`.
+- **CI XAMPP job** — PHP 8.2 + MariaDB 10.4 runs migrations, seed, health and
+  the install/portability/sections/compatibility suites.
+
+### Changed
+- Minimum PHP is now **8.2** (verified against XAMPP 8.2.12). Composer and the
+  installer now require `pdo_mysql`, `session`, `ctype` and `iconv`; all are
+  enabled in XAMPP 8.2.x by default.
+- MariaDB **10.4+** is supported and documented (XAMPP 8.2.x bundled version).
+- Subdirectory routing now strips the detected `/erp` prefix for the router
+  while keeping asset/base URLs correct under Apache rewrites.
+- Root `.htaccess` now denies source/tooling/storage directories before the
+  front-controller rewrite, for project-root hosting.
+- Installer requirement labels, version footer and lock version are aligned.
+
+### Fixed
+- Admin/teacher exam marks honour the schedule's full marks and support an
+  explicit "absent" state instead of treating it as a scored zero.
+
+### Testing
+- All 30 migrations, seed and health checks pass on XAMPP PHP 8.2.12 +
+  MariaDB 10.4.32.
+- Full integration suite: 57 suites, 0 failures on that stack.
+
+## [1.6.17] - 2026-10-27
+
+### Security / Data integrity
+- Hardened the browser installer with CSRF protection, database-state
+  detection that refuses existing installations even without a lock file,
+  atomic `.env` backup/write/restore, sanitized errors and log references.
+- Browser installs no longer create demo users. Lost administrator access is
+  recovered only through `admin:recover`, which resets/creates one super admin.
+- Fixed generated `section_key` columns so migrations match the application
+  schema on both MySQL 8 and MariaDB 10.4.
+
 ## [1.6.16] - 2026-08-15
 
 ### Added

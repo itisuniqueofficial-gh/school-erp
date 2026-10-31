@@ -24,10 +24,18 @@ $currency = (string) config('app.currency', '₹');
     </div>
     <ul class="space-y-2">
         <?php foreach ($attention as $a): ?>
-        <li class="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-2.5 text-sm <?= $sevBadge[$a['severity']] ?? 'border-slate-200 bg-slate-50 text-slate-700' ?>">
-            <span><i class="fa-solid <?= ($a['severity'] ?? '') === 'critical' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation' ?>"></i>
-                <b><?= (int) $a['count'] ?></b> &middot; <?= e((string) $a['label']) ?></span>
-            <a href="<?= e(url((string) $a['link'])) ?>" class="inline-flex items-center gap-1 rounded-md bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-white">Fix now <i class="fa-solid fa-arrow-right"></i></a>
+        <li class="rounded-lg border px-4 py-2.5 text-sm <?= $sevBadge[$a['severity']] ?? 'border-slate-200 bg-slate-50 text-slate-700' ?>">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span><i class="fa-solid <?= ($a['severity'] ?? '') === 'critical' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation' ?>" aria-hidden="true"></i>
+                    <b><?= (int) $a['count'] ?></b> &middot; <?= e((string) $a['label']) ?></span>
+                <a href="<?= e(url((string) $a['link'])) ?>" class="inline-flex items-center gap-1 rounded-md bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-white" aria-label="<?= e((string) ($a['action'] ?? 'Fix now')) ?> — <?= (int) $a['count'] ?> <?= e((string) $a['label']) ?>"><?= e((string) ($a['action'] ?? 'Fix now')) ?> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </div>
+            <?php if (!empty($a['why'])): ?>
+            <details class="mt-1.5">
+                <summary class="inline-flex cursor-pointer items-center gap-1 text-xs font-medium opacity-80 hover:opacity-100"><i class="fa-solid fa-circle-question" aria-hidden="true"></i> Why this matters</summary>
+                <p class="mt-1 text-xs leading-relaxed opacity-90"><?= e((string) $a['why']) ?></p>
+            </details>
+            <?php endif; ?>
         </li>
         <?php endforeach; ?>
     </ul>

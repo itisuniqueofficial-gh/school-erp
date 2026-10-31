@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Core PHP 8.3, no framework, MVC + PSR-4, front-controller pattern. A small
+Core PHP 8.2+, no framework, MVC + PSR-4, front-controller pattern. A small
 custom kernel lives in `core/`; application code lives in `app/`.
 
 ```
@@ -105,14 +105,15 @@ so the app is portable across any domain/subdirectory/HTTPS with no config edits
 - Small, single-responsibility methods; services for logic.
 
 ## Database & migrations
-- Add `database/migrations/NNN_description.sql` (plain MySQL DDL). **19** applied
-  migrations today (`001…019`), **77** tables.
+- Add `database/migrations/NNN_description.sql` (plain MySQL DDL). **30** applied
+  migrations today (`001…030`), **86** application tables plus the `migrations` tracker.
 - Migrations must be **additive** (add columns/tables/indexes) — never
   drop/truncate/delete production data. `migrate` runs only pending files.
 - Deploy with `php bin/console upgrade` (auto backup + pending migrations only);
   `migrate:fresh` is guarded against `APP_ENV=production` (requires `--force`).
 - Status via `migrate:status`; health via `php bin/console health` or `GET /health`.
-- Keep `database/schema.sql` in sync for one-shot imports.
+- `database/schema.sql` is an optional starter schema; the installer and
+  migrations are authoritative. Do not import it over an existing database.
 
 ## Creating a new module (recipe)
 1. **Migration**: add the table(s) in `database/migrations`.

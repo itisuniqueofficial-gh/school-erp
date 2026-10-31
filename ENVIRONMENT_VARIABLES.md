@@ -10,7 +10,8 @@ All configuration is read from the process environment (Koyeb env vars) or a loc
 | `APP_NAME` | `School ERP` | Fallback name (branding is also DB-configurable in Admin → ERP Configuration) |
 | `APP_ENV` | `production` | `local` \| `production` |
 | `APP_DEBUG` | `false` | Show detailed errors. **Keep `false` in production.** |
-| `APP_URL` | `http://localhost:8000` | Base URL for links & cookies |
+| `APP_URL` | `http://localhost:8000` | Base URL for links & cookies. Leave blank to auto-detect |
+| `APP_BASE_PATH` | *(empty)* | URL subdirectory prefix, e.g. `/erp` for `http://localhost/erp` (XAMPP `htdocs/erp`, Apache Alias). Leave blank at a domain root |
 | `APP_KEY` | *(none)* | **Secret.** `base64:...` AES-256 key for encryption |
 | `APP_TIMEZONE` | `UTC` | e.g. `Asia/Kolkata` |
 | `APP_LOCALE` | `en` | Default language |

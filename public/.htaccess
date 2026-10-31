@@ -5,9 +5,6 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Redirect trailing slashes (except root).
-    RewriteRule ^(.+)/$ /$1 [L,R=301]
-
     # Serve existing files/directories directly.
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d

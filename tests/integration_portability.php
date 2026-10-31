@@ -44,6 +44,40 @@ check('root install has no subpath', detect_base_url(['HTTP_HOST' => 'example.co
 section('CLI / no request context');
 check('falls back to http://localhost', detect_base_url([]) === 'http://localhost');
 
+// ---------------------------------------------------------------------------
+section('Router path stripping (subdirectory installs)');
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp/login', 'SCRIPT_NAME' => '/erp/index.php']);
+check('/erp/login routes as /login', $req->uri() === '/login');
+check('/erp detected as route base', $req->basePath() === '/erp');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp', 'SCRIPT_NAME' => '/erp/index.php']);
+check('subdir root routes as /', $req->uri() === '/');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp/api/users?page=2', 'SCRIPT_NAME' => '/erp/index.php']);
+check('query string does not affect routing', $req->uri() === '/api/users');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/login', 'SCRIPT_NAME' => '/index.php']);
+check('domain-root install unchanged', $req->uri() === '/login' && $req->basePath() === '');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp-x/login', 'SCRIPT_NAME' => '/erp/index.php']);
+check('similar prefix is not stripped', $req->uri() === '/erp-x/login');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp/public/login', 'SCRIPT_NAME' => '/erp/public/index.php']);
+check('URL containing /public routes as /login', $req->uri() === '/login');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp/login', 'SCRIPT_NAME' => '/erp/public/index.php']);
+check('root .htaccess rewrite (/public on disk) routes as /login', $req->uri() === '/login');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp/login', 'SCRIPT_NAME' => '/index.php', 'APP_BASE_PATH' => '/erp']);
+check('APP_BASE_PATH override routes /erp/login as /login', $req->uri() === '/login');
+check('APP_BASE_PATH override drives base_url', detect_base_url(['HTTP_HOST' => 'localhost', 'APP_BASE_PATH' => '/erp']) === 'http://localhost/erp');
+
+$req = new \Core\Http\Request(['REQUEST_URI' => '/erp/login', 'SCRIPT_NAME' => '/index.php', 'APP_URL' => 'http://localhost/erp']);
+check('APP_URL subpath routes as /login', $req->uri() === '/login');
+
+check('base path falls back to /erp for rewritten /public', detect_base_path(['SCRIPT_NAME' => '/erp/public/index.php', 'REQUEST_URI' => '/erp/login']) === '/erp');
+check('base path keeps /public when it is in the URL', detect_base_path(['SCRIPT_NAME' => '/erp/public/index.php', 'REQUEST_URI' => '/erp/public/login']) === '/erp/public');
+
 echo "\n\033[36m==================== RESULT ====================\033[0m\n";
 echo "PASS: {$pass}   FAIL: {$fail}\n";
 if ($fail > 0) { echo "\nFailures:\n - " . implode("\n - ", $failures) . "\n"; exit(1); }

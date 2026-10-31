@@ -168,6 +168,7 @@ final class ExamController extends Controller
             'subjects'  => Subject::all(),
             'students'  => $students,
             'schedule'  => $schedule,
+            'fullMarks' => $schedule !== null ? (float) ($schedule['full_marks'] ?? 100) : 100,
             'existing'  => $existing,
             'status'    => $schedule ? (new MarksWorkflowService())->currentStatus((int) $schedule['id']) : 'draft',
             'selected'  => ['class_id' => $classId, 'section_id' => $sectionId, 'subject_id' => $subjectId],
@@ -181,6 +182,7 @@ final class ExamController extends Controller
         $sectionId = (int) $request->input('section_id', 0);
         $subjectId = (int) $request->input('subject_id', 0);
         $marks = (array) $request->input('marks', []); // [student_id => marks]
+        $absent = (array) $request->input('absent', []); // [student_id => 1]
 
         if (!$classId || !$subjectId) {
             return $this->back(['marks' => ['Select class and subject.']]);
@@ -196,36 +198,51 @@ final class ExamController extends Controller
         $fullMarks = (float) ($schedule['full_marks'] ?? 100);
 
         $rejected = 0;
-        foreach ($marks as $studentId => $obtained) {
-            if ($obtained === '' || $obtained === null) {
+        $upsert = static function (int $studentId, array $payload) use ($schedule): void {
+            $existing = QueryBuilder::table('exam_marks')
+                ->where('exam_schedule_id', (int) $schedule['id'])->where('student_id', $studentId)->first();
+            if ($existing) {
+                QueryBuilder::table('exam_marks')->where('id', $existing['id'])->update($payload);
+            } else {
+                $payload['exam_schedule_id'] = (int) $schedule['id'];
+                $payload['student_id'] = $studentId;
+                $payload['created_at'] = date('Y-m-d H:i:s');
+                QueryBuilder::table('exam_marks')->insert($payload);
+            }
+        };
+
+        // Iterate the union of submitted marks and absent flags: an absent
+        // student may have no marks value at all.
+        $studentIds = array_unique(array_map('intval', array_merge(array_keys($marks), array_keys($absent))));
+        foreach ($studentIds as $studentId) {
+            if (!empty($absent[$studentId])) {
+                // Recorded as absent ("AB") — NOT a scored zero, and it carries no grade.
+                $upsert($studentId, [
+                    'marks_obtained' => 0,
+                    'is_absent'      => 1,
+                    'grade_id'       => null,
+                    'entered_by'     => auth()->id(),
+                    'updated_at'     => date('Y-m-d H:i:s'),
+                ]);
                 continue;
             }
-            $obtained = (float) $obtained;
+            $raw = $marks[$studentId] ?? '';
+            if ($raw === '' || $raw === null) {
+                continue;
+            }
+            $obtained = (float) $raw;
             if (!Exam::isValidMark($obtained, $fullMarks)) {
                 $rejected++;
                 continue; // enforce 0 <= marks <= full_marks (server-side data integrity)
             }
             $percent = $fullMarks > 0 ? ($obtained / $fullMarks) * 100 : 0;
-            $gradeId = Exam::gradeForPercentage($percent);
-
-            $existing = QueryBuilder::table('exam_marks')
-                ->where('exam_schedule_id', (int) $schedule['id'])->where('student_id', (int) $studentId)->first();
-
-            $payload = [
+            $upsert($studentId, [
                 'marks_obtained' => $obtained,
-                'grade_id'       => $gradeId,
+                'is_absent'      => 0,
+                'grade_id'       => Exam::gradeForPercentage($percent),
                 'entered_by'     => auth()->id(),
                 'updated_at'     => date('Y-m-d H:i:s'),
-            ];
-
-            if ($existing) {
-                QueryBuilder::table('exam_marks')->where('id', $existing['id'])->update($payload);
-            } else {
-                $payload['exam_schedule_id'] = (int) $schedule['id'];
-                $payload['student_id'] = (int) $studentId;
-                $payload['created_at'] = date('Y-m-d H:i:s');
-                QueryBuilder::table('exam_marks')->insert($payload);
-            }
+            ]);
         }
 
         AuditLogger::log('exam.marks_entered', 'exam', $examId, 'Entered marks');

@@ -1,16 +1,16 @@
 # Database Design
 
-The schema targets **MySQL 8+** (InnoDB, `utf8mb4`). It is fully normalized with
+The schema targets **MySQL 8+ / MariaDB 10.4+** (InnoDB, `utf8mb4`). It is fully normalized with
 foreign keys, indexes on all lookup/foreign-key columns, unique constraints on
 natural keys, and soft-delete columns (`deleted_at`) on primary entities.
 
 - Migrations: `database/migrations/*.sql` (run in filename order).
-- Consolidated import: `database/schema.sql`.
+- Optional starter schema: `database/schema.sql` (new empty databases only; migrations are authoritative).
 - Seed data: `database/seeds/DatabaseSeeder.php`.
 - Runner/CLI: `php bin/console migrate` / `seed` / `migrate:status`.
 
-Total tables: **77** (InnoDB) plus the `migrations` tracking table. Applied via
-**19 migration files** (`database/migrations/001…019_*.sql`).
+Total tables: **86** (InnoDB) plus the `migrations` tracking table. Applied via
+**30 migration files** (`database/migrations/001…030_*.sql`).
 
 ### Portability & identity notes
 - **Universal 12-digit `uid`**: `users, students, staff, classes, sections,

@@ -1,13 +1,23 @@
+# Project-root fallback for XAMPP/shared hosting where the document root is the
+# project folder instead of /public. On correctly configured hosts, point the
+# document root directly at /public and this file is ignored.
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # If the document root is the project root (not /public), forward all
-    # requests into the public directory. On correctly configured hosts you
-    # should point the docroot directly at /public and this file is ignored.
+    # Never expose source, configuration, logs, uploads or tooling. Requests for
+    # these paths must not fall through to the front controller.
+    RewriteRule ^(?:app|bin|bootstrap|config|core|database|deploy|docker|docs|lib|mcp|resources|routes|scripts|storage|tests|vendor)(?:/|$) - [F,L,NC]
+
+    # Forward all other requests into the public directory.
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 
-# Prevent direct browsing of application source.
-<FilesMatch "\.(env|md|json|lock|sql|log)$">
+Options -Indexes
+
+# Prevent direct browsing of application source and dotfiles.
+<FilesMatch "\.(env|md|json|lock|sql|log|ini|conf|dist|bak|old|swp)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
     Require all denied
 </FilesMatch>

@@ -5,9 +5,10 @@ for non-technical users) or the **command line**.
 
 ## System requirements
 
-- PHP **8.3+** with extensions: `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `json`
-- MySQL **8.0+** / MariaDB **10.6+**
+- PHP **8.2+** with extensions: `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `json`, `session`, `ctype`, `iconv`
+- MySQL **8.0+** / MariaDB **10.4+**
 - Apache (`mod_rewrite`) / LiteSpeed / Nginx
+- XAMPP with PHP 8.2+: see [XAMPP-UBUNTU.md](XAMPP-UBUNTU.md) or [XAMPP-WINDOWS.md](XAMPP-WINDOWS.md)
 - ~50 MB disk + database space to start
 
 ## Folder permissions
@@ -67,7 +68,7 @@ echo "installed" > storage/installed.lock
 Individual commands: `php bin/console migrate`, `php bin/console seed`,
 `php bin/console health` (verify), `php bin/console upgrade` (safe re-deploy),
 `php bin/console install:status` (fresh vs existing database).
-You may also import `database/schema.sql` directly, then run `seed`.
+`database/schema.sql` is an optional starter schema, not required. Import it only into a new empty database, then run the installer or `migrate` so missing migrations are applied. Never import it over an existing ERP database.
 
 The CLI `seed` / `install` commands include demo accounts for local testing;
 reset the super-admin password before exposing such an environment.
@@ -144,4 +145,5 @@ The project ships a production `Dockerfile`, `koyeb.yaml`, `docker/entrypoint.sh
 | Uploads fail | Check `storage/uploads` permissions and `UPLOAD_MAX_SIZE` |
 | Emails not sent | Configure `MAIL_*`; default driver only logs messages |
 
-See `CPANEL_DEPLOYMENT.md` and `VPS_DEPLOYMENT.md` for host-specific guides.
+See `CPANEL_DEPLOYMENT.md`, `VPS_DEPLOYMENT.md`, `XAMPP-UBUNTU.md` and
+`XAMPP-WINDOWS.md` for host-specific guides.

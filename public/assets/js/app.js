@@ -58,6 +58,7 @@
             $sidebar.removeClass('-translate-x-full');
             $backdrop.removeClass('hidden');
             $('body').addClass('overflow-hidden');
+            $('.app-main-scroll').addClass('is-scroll-locked');
             $sidebarToggle.attr('aria-expanded', 'true');
             // Move focus into the drawer for keyboard/screen-reader users.
             $sidebar.find('a, button').filter(':visible').first().trigger('focus');
@@ -66,6 +67,7 @@
             $sidebar.addClass('-translate-x-full');
             $backdrop.addClass('hidden');
             $('body').removeClass('overflow-hidden');
+            $('.app-main-scroll').removeClass('is-scroll-locked');
             $sidebarToggle.attr('aria-expanded', 'false');
             if (restoreFocus !== false) { $sidebarToggle.trigger('focus'); }
         }
@@ -110,6 +112,14 @@
             input.type = show ? 'text' : 'password';
             $icon.toggleClass('fa-eye', !show).toggleClass('fa-eye-slash', show);
             $(this).attr('aria-pressed', show ? 'true' : 'false');
+        });
+
+        // --- Exam marks: Absent toggle disables/clears the marks input ----
+        // Progressive enhancement only; the server records absent regardless.
+        $(document).on('change', '[data-absent-toggle]', function () {
+            const $mark = $(this).closest('tr').find('[data-marks-input]');
+            if (this.checked) { $mark.val('').prop('disabled', true); }
+            else { $mark.prop('disabled', false); }
         });
 
         // --- Copy-to-clipboard for 12-digit IDs and other tokens ----------

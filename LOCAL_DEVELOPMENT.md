@@ -1,13 +1,13 @@
 # LOCAL_DEVELOPMENT.md — Running School ERP Locally
 
 This guide runs the complete School ERP on your machine for browser testing.
-The stack is **Core PHP 8.3 + MySQL 8**; the frontend (Tailwind, jQuery, GSAP,
+The stack is **Core PHP 8.2+ + MySQL 8 / MariaDB 10.4+**; the frontend (Tailwind, jQuery, GSAP,
 Chart.js, Font Awesome) is loaded via CDN, so **no Node/npm build step is
 required** (there is no `package.json`).
 
 ## 1. Requirements
-- PHP **8.3+** with extensions: `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `json`
-- MySQL **8.0+** / MariaDB **10.6+**
+- PHP **8.2+** with extensions: `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `json`, `session`, `ctype`, `iconv`
+- MySQL **8.0+** / MariaDB **10.4+** (XAMPP 8.2.x ships a supported MariaDB)
 - Composer is **optional** (a built-in PSR-4 autoloader runs the app without it)
 
 ## 2. Install PHP & MySQL (Ubuntu/Debian example)
@@ -15,7 +15,7 @@ required** (there is no `package.json`).
 sudo apt update
 sudo apt install -y php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml mysql-server
 ```
-(macOS: `brew install php mysql`; Windows: use Laragon/XAMPP with PHP 8.3.)
+(macOS: `brew install php mysql`; Windows: use Laragon or XAMPP with PHP 8.2+.)
 
 ## 3. Composer (optional)
 ```bash
@@ -61,7 +61,7 @@ FLUSH PRIVILEGES;
 
 ## 8. Run migrations & seed
 ```bash
-php bin/console migrate      # creates 68 tables + FKs + indexes
+php bin/console migrate      # creates 86 application tables + migrations tracker
 php bin/console seed         # roles, permissions, demo users & academic data
 # or in one step:
 php bin/console install
@@ -95,37 +95,27 @@ php -S localhost:8000 -t public
 Open **http://localhost:8000**.
 
 ### XAMPP / Apache (Linux or Windows)
-The app can run from `htdocs/erp` or any folder, either served at a domain root
-or from a subdirectory such as `http://localhost/erp`.
 
-**Option A — subdirectory (`http://localhost/erp`)**
-1. Put/symlink the project at `htdocs/erp` (e.g. `ln -s ~/Desktop/erp /opt/lampp/htdocs/erp`).
-2. In `.env` set the URL prefix:
-   ```env
-   APP_BASE_PATH=/erp
-   ```
-3. Start Apache and open `http://localhost/erp/`.
-   Keep the project-root `.htaccess` in place — it forwards requests into `public/`.
+The complete XAMPP stack has dedicated guides and scripts:
 
-**Option B — virtual host at a domain root (recommended for clean URLs)**
-Point the vhost `DocumentRoot` directly at the `public/` folder and leave
-`APP_BASE_PATH` blank:
-```apache
-<VirtualHost *:80>
-    ServerName erp.local
-    DocumentRoot "/path/to/erp/public"
-    <Directory "/path/to/erp/public">
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
+- **Ubuntu/Linux:** [docs/XAMPP-UBUNTU.md](docs/XAMPP-UBUNTU.md)
+- **Windows:** [docs/XAMPP-WINDOWS.md](docs/XAMPP-WINDOWS.md)
+
+Quick version (Linux):
+
+```bash
+scripts/xampp-check.sh
+scripts/xampp-setup.sh
+scripts/xampp-start.sh
 ```
 
-**Database & phpMyAdmin:** point XAMPP's `phpMyAdmin` at the same MySQL/MariaDB
-server the app uses (default `127.0.0.1:3306`). If another MySQL service already
-owns port 3306, start **only Apache** from the XAMPP panel (not MySQL) to avoid a
-port conflict. Set `APP_URL` only when you want to force one canonical host —
-leaving it blank keeps both localhost and LAN/proxy hosts working.
+Open `http://localhost/erp/` when the project is linked at `htdocs/erp`. Leave
+`APP_BASE_PATH` blank; the app auto-detects the `/erp` prefix and assets work
+through the project-root `.htaccess`.
+
+If another MySQL already owns port 3306, XAMPP MySQL must use a different port
+(and `.env DB_PORT` must match) or the other service must be stopped. The check
+script reports the conflict and never stops unrelated services.
 
 ## 11. Default development login
 | Role         | Email                    | Password     |
@@ -157,8 +147,9 @@ php bin/console cleanup:sessions   # remove expired sessions
 
 ## 14. Stopping services
 ```bash
-# stop the PHP dev server: Ctrl+C in its terminal (or kill the php -S process)
-sudo systemctl stop mysql        # if you started system MySQL
+# stop the PHP dev server: Ctrl+C in its terminal
+scripts/xampp-stop.sh            # stops only XAMPP Apache/MySQL when used
+sudo systemctl stop mysql        # only if you started system MySQL
 ```
 
 ## 15. Resetting the local database
@@ -166,13 +157,3 @@ sudo systemctl stop mysql        # if you started system MySQL
 php bin/console migrate:fresh    # drops all tables and re-migrates
 php bin/console seed
 ```
-
----
-
-### Notes for this sandbox instance
-The app is currently running with:
-- **PHP** 8.3.14 (`php -S 127.0.0.1:8000 -t public`)
-- **MySQL** 8.4 user-space instance on **port 3307**, database `school_erp`
-- URL: **http://localhost:8000**
-
-On a normal workstation use the default MySQL port `3306` as documented above.

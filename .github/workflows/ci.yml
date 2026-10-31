@@ -20,7 +20,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd, ctype, iconv
           coverage: none
 
       - name: PHP syntax lint (all sources)
@@ -69,7 +69,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd, ctype, iconv
           coverage: none
 
       - name: Prepare environment (.env from template)
@@ -97,3 +97,58 @@ jobs:
             php "$f" || fail=1
           done
           exit $fail
+
+  xampp-compat:
+    name: XAMPP compatibility (PHP 8.2 + MariaDB 10.4)
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: school_erp
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP 8.2 (XAMPP 8.2.x equivalent)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, json, gd, ctype, iconv
+          coverage: none
+
+      - name: Prepare environment (.env from template)
+        run: |
+          cp .env.example .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/'       .env
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/'            .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=school_erp/' .env
+          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/'    .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/'    .env
+          sed -i 's/^APP_ENV=.*/APP_ENV=testing/'         .env
+          php bin/console key:generate
+
+      - name: Migrate, seed and health-check on MariaDB 10.4
+        run: php bin/console migrate && php bin/console seed && php bin/console health
+
+      - name: XAMPP-focused integration suites (fresh DB per suite)
+        run: |
+          set -e
+          for f in \
+            tests/integration_install.php \
+            tests/integration_installer_safety.php \
+            tests/integration_portability.php \
+            tests/integration_sections.php \
+            tests/integration_dbcompat.php \
+            tests/integration_advanced.php
+          do
+            echo "==== $f ===="
+            php bin/console migrate:fresh >/dev/null
+            php bin/console seed >/dev/null
+            php "$f"
+          done

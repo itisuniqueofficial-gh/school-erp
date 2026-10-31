@@ -27,13 +27,14 @@
     <input type="hidden" name="section_id" value="<?= $selected['section_id'] ?>">
     <input type="hidden" name="subject_id" value="<?= $selected['subject_id'] ?>">
     <table class="data-table">
-        <thead><tr><th>Roll</th><th>Name</th><th>Marks (out of 100)</th></tr></thead>
+        <thead><tr><th>Roll</th><th>Name</th><th>Marks (out of <?= e((string) ($fullMarks ?? 100)) ?>)</th><th>Absent</th></tr></thead>
         <tbody>
-        <?php foreach ($students as $st): $m = $existing[(int) $st['id']]['marks_obtained'] ?? ''; ?>
+        <?php foreach ($students as $st): $sid = (int) $st['id']; $m = $existing[$sid]['marks_obtained'] ?? ''; $ab = (int) ($existing[$sid]['is_absent'] ?? 0) === 1; ?>
             <tr>
                 <td><?= e((string) ($st['roll_no'] ?? '—')) ?></td>
                 <td class="font-medium text-slate-800"><?= e((string) ($st['first_name'] . ' ' . $st['last_name'])) ?></td>
-                <td><input type="number" step="0.01" min="0" max="100" name="marks[<?= (int) $st['id'] ?>]" value="<?= e((string) $m) ?>" class="form-input w-32"></td>
+                <td><input type="number" step="0.01" min="0" max="<?= e((string) ($fullMarks ?? 100)) ?>" name="marks[<?= $sid ?>]" value="<?= $ab ? '' : e((string) $m) ?>" class="form-input w-32" data-marks-input <?= $ab ? 'disabled' : '' ?>></td>
+                <td><input type="checkbox" name="absent[<?= $sid ?>]" value="1" <?= $ab ? 'checked' : '' ?> data-absent-toggle aria-label="Mark <?= e((string) ($st['first_name'] . ' ' . $st['last_name'])) ?> absent"></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
