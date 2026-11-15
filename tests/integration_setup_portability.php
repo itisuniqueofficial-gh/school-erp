@@ -36,8 +36,9 @@ function section(string $t): void { echo "\n\033[36m== {$t} ==\033[0m\n"; }
 function throws(callable $fn, ?string $contains = null): bool { try { $fn(); return false; } catch (\Throwable $e) { return $contains === null || stripos($e->getMessage(), $contains) !== false; } }
 
 $dbName = (string) config('database.connections.' . config('database.default') . '.database');
-if (!str_ends_with($dbName, '_test')) {
-    fwrite(STDERR, "Refusing to run against non-test database '{$dbName}'. Use APP_TESTING=1.\n");
+// Disposable databases only: the "_test" database (APP_TESTING=1) or an APP_ENV=testing environment such as CI.
+if (!str_ends_with($dbName, '_test') && (string) config('app.env') !== 'testing') {
+    fwrite(STDERR, "Refusing to run against non-test database '{$dbName}'. Use APP_TESTING=1 (or APP_ENV=testing).\n");
     exit(2);
 }
 $conn = Connection::instance();
