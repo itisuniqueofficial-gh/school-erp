@@ -79,6 +79,28 @@ final class BackupManager
         return ['id' => $id, 'filename' => $file, 'path' => $r['path'], 'bytes' => $r['bytes'], 'tables' => $r['tables'], 'rows' => $r['rows'], 'sha256' => $r['sha256'], 'encrypted' => $r['encrypted']];
     }
 
+    /**
+     * Register a backup file made before the register table existed (an upgrade's pre-migration backup is
+     * taken while migration 034 is still pending). Re-verifies the file first. No-op if already registered.
+     */
+    public function registerExisting(string $filename, string $kind, ?int $userId = null): bool
+    {
+        $path = $this->resolve($filename);
+        if ((int) $this->conn->scalar('SELECT COUNT(*) FROM `database_backups` WHERE `filename` = ?', [basename($path)]) > 0) {
+            return true;
+        }
+        $pass = (string) (\Core\Support\Env::get('BACKUP_PASSPHRASE', '') ?? '');
+        $v = (new PortableDumpService($this->conn))->verify($path, $pass !== '' ? $pass : null);
+        $now = date('Y-m-d H:i:s');
+        $this->conn->statement(
+            'INSERT INTO `database_backups` (`filename`,`kind`,`engine`,`size_bytes`,`tables_count`,`rows_count`,`sha256`,`encrypted`,`status`,`verified_at`,`created_by`,`created_at`,`updated_at`)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            [basename($path), $kind, (string) ($v['engine'] ?? $this->conn->engine()), (int) filesize($path), $v['tables'], $v['rows'], hash_file('sha256', $path),
+                str_ends_with($path, '.enc') ? 1 : 0, $v['ok'] ? 'verified' : 'failed', $now, $userId, date('Y-m-d H:i:s', (int) filemtime($path)), $now]
+        );
+        return $v['ok'];
+    }
+
     /** @return array<int,array<string,mixed>> newest first; each row gains `exists` and `age_hours` */
     public function list(int $limit = 50): array
     {

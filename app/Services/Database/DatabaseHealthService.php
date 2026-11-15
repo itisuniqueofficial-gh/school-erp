@@ -126,8 +126,11 @@ final class DatabaseHealthService
     }
 
     /**
-     * Failed-migration events plus the last database-looking lines of the application log, with anything
-     * that resembles a credential removed.
+     * Real database errors for the dashboard: failed migrations, plus ERROR-level (or worse) lines from the
+     * application logs that come from the database layer. WARNING lines are not errors: they record
+     * conflicts the application already handled (for example two people taking the same roll number at
+     * the same moment, where the unique key correctly rejected the second). Identical messages are merged
+     * with a count. Anything resembling a credential is removed.
      *
      * @param iterable<array<string,mixed>> $failed
      * @return string[]
@@ -138,17 +141,36 @@ final class DatabaseHealthService
         foreach ($failed as $f) {
             $out[] = $f['created_at'] . '  migration ' . $f['migration'] . ' failed: ' . $f['message'];
         }
-        foreach (glob(rtrim((string) config('paths.logs'), '/') . '/*.log') ?: [] as $file) {
+        $seen = [];
+        $db = strtolower((string) \Core\Config\Config::get('database.connections.' . \Core\Config\Config::get('database.default') . '.database'));
+        foreach (glob(rtrim((string) config('paths.logs'), '/') . '/erp-*.log') ?: [] as $file) {
             if (!is_file($file) || filesize($file) > 5_000_000) {
                 continue;
             }
-            $lines = array_slice(file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -400);
-            foreach ($lines as $l) {
-                if (preg_match('/SQLSTATE|PDOException|Database (unavailable|connection)|Migration .* failed/i', $l) === 1) {
-                    $out[] = basename($file) . ': ' . \App\Services\Setup\SetupService::redact(mb_substr($l, 0, 300));
+            foreach (array_slice(file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -400) as $l) {
+                if (preg_match('/^\[([^\]]+)\] (ERROR|CRITICAL|ALERT|EMERGENCY): (.*)$/', $l, $m) !== 1
+                    || preg_match('/SQLSTATE|PDOException|Database (unavailable|connection)|Migration .* failed/i', $m[3]) !== 1) {
+                    continue;
+                }
+                // Errors that name another database (test or scratch databases) are not about this one.
+                // MySQL/MariaDB name the database as "Table 'db.table'" or "(`db`.`table`" (key names like 'students.uq_x' are not databases).
+                if (preg_match_all("/(?:Table '([A-Za-z0-9_$]+)\\.|\\(`([A-Za-z0-9_$]+)`\\.`)/", $m[3], $mm) > 0 && ($dbs = [1 => array_filter(array_merge($mm[1], $mm[2]))]) && $db !== ''
+                    && array_filter($dbs[1], static fn ($d) => strtolower($d) !== $db) !== []) {
+                    continue;
+                }
+                $msg = \App\Services\Setup\SetupService::redact(mb_substr((string) preg_replace('/\s*\{"exception".*$/', '', $m[3]), 0, 240));
+                if (isset($seen[$msg])) {
+                    $seen[$msg]['n']++;
+                    $seen[$msg]['last'] = $m[1];
+                } else {
+                    $seen[$msg] = ['n' => 1, 'last' => $m[1]];
                 }
             }
         }
-        return array_slice(array_reverse($out), 0, 10);
+        uasort($seen, static fn ($a, $b) => strcmp($b['last'], $a['last']));
+        foreach ($seen as $msg => $i) {
+            $out[] = $i['last'] . '  ' . $msg . ($i['n'] > 1 ? '  (×' . $i['n'] . ')' : '');
+        }
+        return array_slice($out, 0, 10);
     }
 }

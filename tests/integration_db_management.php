@@ -356,6 +356,22 @@ check('upgrade/repair without the typed confirmation do nothing', (int) $conn->s
 $_POST = [];
 
 // ---------------------------------------------------------------------------
+section('Dashboard error list: real errors only, test output kept separate');
+check('test runs log to their own folder (never the live app log)', str_ends_with(rtrim((string) config('paths.logs'), '/'), '/logs/testing') && str_ends_with(rtrim((string) config('paths.backups'), '/'), '/backups/testing'));
+$logFile = rtrim((string) config('paths.logs'), '/') . '/erp-' . date('Y-m-d') . '.log';
+$marker = 'probe' . bin2hex(random_bytes(4));
+file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . "] WARNING: Roll number change failed: SQLSTATE[23000]: Duplicate entry {$marker}-w for key 'uq_enroll_rollno'\n", FILE_APPEND);
+for ($i = 0; $i < 3; $i++) {
+    file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . "] ERROR: SQLSTATE[HY000]: General error {$marker}-e mysql://root:hunter2@db/x {\"exception\":\"PDOException\"}\n", FILE_APPEND);
+}
+file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . "] ERROR: SQLSTATE[23000]: 1451 a foreign key constraint fails (`some_other_db`.`report_cards`, {$marker}-o)\n", FILE_APPEND);
+$errs = implode("\n", (new DatabaseHealthService())->report()['recent_errors']);
+check('errors that belong to another database (test/scratch) are not shown', !str_contains($errs, $marker . '-o'));
+check('handled conflicts (WARNING) are not listed as database errors', !str_contains($errs, $marker . '-w'));
+check('real ERROR lines are listed once with a count', substr_count($errs, $marker . '-e') === 1 && str_contains($errs, '(×3)'));
+check('credentials in a logged message are redacted on the dashboard', !str_contains($errs, 'hunter2'));
+
+// ---------------------------------------------------------------------------
 section('Connections');
 $second = Connection::forConfig(DatabaseConfig::fromArray($active));
 check('forConfig() gives an independent connection to the same database', $second !== $conn && $second->engine() === $conn->engine() && (int) $second->scalar('SELECT 1') === 1);

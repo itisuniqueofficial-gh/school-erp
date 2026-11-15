@@ -534,7 +534,7 @@ final class SetupService
 
     private function log(\Throwable $e, string $ref): void
     {
-        $dir = $this->root . '/storage/logs';
+        $dir = rtrim((string) (\Core\Config\Config::get('paths.logs') ?: $this->root . '/storage/logs'), '/');
         if (!is_dir($dir)) {
             @mkdir($dir, 0775, true);
         }

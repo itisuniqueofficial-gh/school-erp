@@ -87,6 +87,14 @@ final class DatabaseUpgradeService
             return $r;
         }
         $steps[] = 'Applied: ' . implode(', ', $r['applied']);
+        if ($r['backup'] !== null && !empty($b) && (int) $b['id'] === 0) {
+            // The backup was taken before the register table existed; record it now so it is listed and pruned.
+            try {
+                (new BackupManager($conn))->registerExisting($r['backup'], 'pre_migration', $opts['user_id'] ?? null);
+                $steps[] = 'Pre-upgrade backup registered.';
+            } catch (\Throwable) {
+            }
+        }
 
         $r['schema'] = (new SchemaManifest($conn))->validate();
         $steps[] = 'Schema check: ' . $r['schema']['message'];

@@ -9,6 +9,10 @@ $root = dirname(__DIR__);
 $storage = trim((string) (\Core\Support\Env::get('STORAGE_PATH', '') ?? ''));
 $storage = $storage !== '' ? rtrim(str_replace('\\', '/', $storage), '/') : $root . '/storage';
 
+// Automated test runs (APP_TESTING=1) write logs and backups to their own folders, so test output never
+// shows up in the live application's logs, Database dashboard or backup list.
+$testing = getenv('APP_TESTING') === '1';
+
 return [
     'root'      => $root,
     'app'       => $root . '/app',
@@ -20,9 +24,9 @@ return [
     'views'     => $root . '/resources/views',
     'storage'   => $storage,
     'uploads'   => $storage . '/uploads',
-    'logs'      => $storage . '/logs',
+    'logs'      => $storage . '/logs' . ($testing ? '/testing' : ''),
     'cache'     => $storage . '/cache',
     'sessions'  => $storage . '/sessions',
-    'backups'   => $storage . '/backups',
+    'backups'   => $storage . '/backups' . ($testing ? '/testing' : ''),
     'routes'    => $root . '/routes',
 ];
