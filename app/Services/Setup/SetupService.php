@@ -29,7 +29,7 @@ use PDO;
  */
 final class SetupService
 {
-    public const VERSION = '1.6.18';
+    public const VERSION = '1.7.0';
     private const SYSTEM_DATABASES = ['information_schema', 'performance_schema', 'mysql', 'sys', 'postgres', 'template0', 'template1'];
 
     public function __construct(private readonly string $root)

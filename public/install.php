@@ -144,7 +144,7 @@ function render(string $title, string $body, int $current = 0): void
     }
 
     echo '<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">' . $body . '</div>'
-        . '<p class="mt-6 text-center text-xs text-slate-400">School ERP v1.6.18 — remove public/install.php after installation.</p>'
+        . '<p class="mt-6 text-center text-xs text-slate-400">School ERP v1.7.0 — remove public/install.php after installation.</p>'
         . '</div></body></html>';
 }
 

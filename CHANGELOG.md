@@ -4,7 +4,14 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
-## [Unreleased]
+## [1.7.0] - 2026-11-15
+
+### Upgrading from 1.6.x
+Run `php bin/console upgrade` (or sign in and open **Admin > Database**) after deploying. It takes a verified
+backup, then applies migrations 031-034. Until they are applied the site shows "Database update required";
+sign-in and Admin > Database stay available. Set `DB_AUTO_MIGRATE=true` to apply them automatically.
+Note: migration 033 makes hard deletes of students, classes, years, exams or invoices that still have history
+fail at the database level (the application already soft-deletes).
 
 ### Added (portable installation and databases)
 - MySQL, MariaDB and PostgreSQL through one `DatabaseConfig` (manual, `.env`, `DATABASE_URL`, socket, SSL, timeout, schema),
