@@ -324,16 +324,23 @@ try {
 
 // ---------------------------------------------------------------------------
 section('Health report and dashboard');
+// Use a distinctive sentinel as the configured password: a short real password (CI uses root/root) also
+// appears legitimately as the username, which would make a substring check meaningless. The live connection
+// is already open, so changing the configured value only affects what the report/dashboard could expose.
+$cfgKey = 'database.connections.' . config('database.default') . '.password';
+$realPw = Core\Config\Config::get($cfgKey);
+$pw = 'Sentinel-Pw-' . bin2hex(random_bytes(6));
+Core\Config\Config::set($cfgKey, $pw);
 $h = (new DatabaseHealthService())->report();
 check('health: reachable, latency, version, tables, size, schema version', $h['reachable'] && $h['latency_ms'] !== null && $h['version'] !== '' && $h['tables'] > 80 && $h['size_bytes'] > 0 && $h['schema_version'] === '034_database_backups.php');
 check('health: pending empty, schema ok, backups listed', $h['pending'] === [] && $h['schema']['ok'] && count($h['backups']) >= 1);
 $json = json_encode($h);
-$pw = (string) \Core\Support\Env::get('DB_PASSWORD', '');
-check('health report never contains the database password', $pw === '' || !str_contains($json, $pw));
+check('health report never contains the database password', !str_contains($json, $pw));
 auth()->onceUsingId((int) QueryBuilder::table('users')->where('email', 'superadmin@school.test')->value('id'));
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $page = (new App\Controllers\Admin\DatabaseController())->index(new Core\Http\Request())->getContent();
-check('dashboard renders engine, schema version, history and backups without credentials', str_contains($page, '034_database_backups.php') && str_contains($page, 'Migration history') && str_contains($page, 'Backups') && ($pw === '' || !str_contains($page, $pw)) && !str_contains($page, 'DB_PASSWORD'));
+check('dashboard renders engine, schema version, history and backups without credentials', str_contains($page, '034_database_backups.php') && str_contains($page, 'Migration history') && str_contains($page, 'Backups') && !str_contains($page, $pw) && !str_contains($page, 'DB_PASSWORD'));
+Core\Config\Config::set($cfgKey, $realPw);
 $routes = (string) file_get_contents($root . '/routes/web.php');
 preg_match_all("#\\\$router->(?:get|post)\\('/database[^']*', [^)]*DatabaseController::class[^;]*;#", $routes, $mm);
 check('every dashboard route requires database.manage', count($mm[0]) === 7 && count(array_filter($mm[0], fn ($l) => str_contains($l, 'can:database.manage'))) === 7);
