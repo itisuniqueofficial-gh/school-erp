@@ -20,7 +20,7 @@ $cur = (string) config('app.currency', '₹');
 <?php elseif ($student !== null): ?>
 <div class="card mb-4 p-5">
     <h2 class="font-semibold text-slate-800"><?= e((string) ($student['first_name'] . ' ' . $student['last_name'])) ?></h2>
-    <p class="text-sm text-slate-500">Admission: <?= e((string) $student['admission_no']) ?></p>
+    <p class="text-sm text-slate-500">Admission: <?= e((string) $student['admission_no']) ?> &middot; PRN: <span class="font-mono"><?= e((string) ($student['prn'] ?? '—')) ?></span></p>
 </div>
 
 <div class="card overflow-hidden">

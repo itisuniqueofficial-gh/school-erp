@@ -169,7 +169,9 @@ final class ReportCardDocumentService
                 'name'          => trim((string) ($student['first_name'] . ' ' . $student['last_name'])),
                 'uid'           => (string) $student['uid'],
                 'admission_no'  => (string) $student['admission_no'],
-                'roll_no'       => (string) ($student['roll_no'] ?? ''),
+                'prn'           => (string) ($student['prn'] ?? ''),
+                // Roll number the student held in the exam's academic year (history-safe).
+                'roll_no'       => (string) ((new \App\Services\EnrollmentService())->rollFor((int) $student['id'], (int) ($exam['academic_year_id'] ?? 0)) ?? ($student['roll_no'] ?? '')),
                 'class'         => (string) ($student['class_name'] ?? ''),
                 'section'       => ((int) ($student['uses_sections'] ?? 0) === 1) ? (string) ($student['section_name'] ?? '') : '',
                 'year'          => (string) ($student['year_name'] ?? ''),

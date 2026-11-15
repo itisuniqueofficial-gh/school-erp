@@ -185,9 +185,7 @@ DB_PASSWORD=replace-with-a-strong-password
 Leave `APP_URL` and `APP_BASE_PATH` blank. The app detects
 `http://localhost/school-erp` and its subdirectory automatically.
 
-`database/schema.sql` is optional. Do not import it over an existing ERP
-database. Import it only into a new empty database, then let the installer or
-migrations apply missing changes.
+No SQL file needs to be imported: the installer creates the schema. Never import an old dump over an existing ERP database.
 
 ## 6. Install
 

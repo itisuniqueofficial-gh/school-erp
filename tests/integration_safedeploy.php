@@ -53,7 +53,7 @@ section('Migration ledger tracks applied migrations (upgrade detects version)');
 $status = (new Migrator())->status();
 check('applied list is non-empty', count($status['applied']) > 0);
 check('no pending migrations after a fresh install', $status['pending'] === []);
-check('every migration file is recorded as applied', count($status['applied']) === count(glob($dir . '/*.sql')));
+check('every migration file is recorded as applied', count($status['applied']) === count(glob($dir . '/*.sql')) + count(glob($dir . '/*.php')));
 
 // ---------------------------------------------------------------------------
 section('Idempotent unique data — no duplicates on re-seed guards');

@@ -36,7 +36,7 @@ final class AvatarService
 
     public function __construct(?string $dir = null)
     {
-        $this->dir = rtrim($dir ?? (dirname(__DIR__, 2) . '/storage/uploads/avatars'), '/');
+        $this->dir = rtrim($dir ?? (rtrim((string) config('paths.uploads'), '/') . '/avatars'), '/');
     }
 
     /**

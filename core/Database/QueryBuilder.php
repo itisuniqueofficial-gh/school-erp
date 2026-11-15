@@ -112,6 +112,10 @@ final class QueryBuilder
 
     public function whereLike(string $column, string $value, string $boolean = 'AND'): self
     {
+        // PostgreSQL has no implicit date/number -> text conversion for LIKE.
+        if (Connection::instance()->isPostgres() && !str_contains($column, '(')) {
+            $column = 'CAST(' . $this->wrap($column) . ' AS TEXT)';
+        }
         $this->wheres[] = [$column, 'LIKE', $value, $boolean];
         $this->bindings[] = $value;
         return $this;
@@ -207,8 +211,11 @@ final class QueryBuilder
 
     public function count(): int
     {
-        $sql = $this->buildSelect('COUNT(*) AS aggregate');
-        $row = Connection::instance()->selectOne($sql, $this->bindings);
+        // ORDER BY is meaningless for a COUNT and PostgreSQL rejects it with an aggregate.
+        $clone = clone $this;
+        $clone->orders = [];
+        $sql = $clone->buildSelect('COUNT(*) AS aggregate');
+        $row = Connection::instance()->selectOne($sql, $clone->bindings);
         return (int) ($row['aggregate'] ?? 0);
     }
 
@@ -227,7 +234,7 @@ final class QueryBuilder
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
         $sql = "INSERT INTO {$this->wrap($this->table)} ({$wrapped}) VALUES ({$placeholders})";
         Connection::instance()->affectingStatement($sql, array_values($data));
-        return (int) Connection::instance()->lastInsertId();
+        return (int) Connection::instance()->lastInsertId($this->table);
     }
 
     /**

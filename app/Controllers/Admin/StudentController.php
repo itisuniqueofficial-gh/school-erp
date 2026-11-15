@@ -9,6 +9,7 @@ use App\Models\ClassModel;
 use App\Models\Guardian;
 use App\Models\Section;
 use App\Models\Student;
+use App\Models\StudentEnrollment;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\AvatarService;
@@ -77,20 +78,34 @@ final class StudentController extends Controller
             'class_id'      => 'nullable|integer',
             'section_id'    => 'nullable|integer',
             'academic_year_id' => 'nullable|integer',
+            'admission_date' => 'nullable|date',
             'guardian_name' => 'nullable|string|max:150',
             'guardian_phone'=> 'nullable|phone',
             'create_login'  => 'nullable|boolean',
         ]);
 
-        $photo = $this->handlePhoto($request);
+        $photoRes = $this->handlePhoto($request);
+        if ($photoRes['status'] === 'error') {
+            return $this->back(['photo' => [$photoRes['message'] ?? 'Photo upload failed.']], $request->all());
+        }
+        // Store the filename (the whole result array used to be written to the column as "Array").
+        $photo = $photoRes['status'] === 'ok' ? $photoRes['filename'] : null;
 
         // Permanent, never-reused public identifier (STU-YYYY-NNNNN).
         $publicId = (new IdSequenceService())->student();
         $uid = (new IdSequenceService())->uidStudent();
         $govIds = $this->govIdData($request);
 
+        // Placement for the automatic roll number.
+        $yearId = (int) ($data['academic_year_id'] ?: (AcademicYear::current()['id'] ?? 0));
+        $classId = (int) ($data['class_id'] ?: 0);
+        $sectionId = (int) ($data['section_id'] ?: 0);
+        $rollNo = null;
+
         try {
-            $studentId = Connection::instance()->transaction(function () use ($data, $request, $photo, $publicId, $uid, $govIds): int {
+            // One transaction: student + PRN + admission number + guardian +
+            // enrollment/roll number. Any failure rolls the whole admission back.
+            $studentId = Connection::instance()->transaction(function () use ($data, $request, $photo, $publicId, $uid, $govIds, $yearId, $classId, $sectionId, &$rollNo): int {
                 $userId = null;
 
                 // Optionally create a login account for the student.
@@ -110,8 +125,7 @@ final class StudentController extends Controller
                     'user_id'          => $userId,
                     'uid'              => $uid,
                     'public_id'        => $publicId,
-                    'admission_no'     => Student::generateAdmissionNo(),
-                    'roll_no'          => $request->input('roll_no'),
+                    // admission_no + PRN are issued inside Student::create().
                     'first_name'       => $data['first_name'],
                     'last_name'        => $data['last_name'],
                     'gender'           => $data['gender'],
@@ -123,7 +137,7 @@ final class StudentController extends Controller
                     'class_id'         => $data['class_id'] ?: null,
                     'section_id'       => $data['section_id'] ?: null,
                     'academic_year_id' => $data['academic_year_id'] ?: null,
-                    'admission_date'   => date('Y-m-d'),
+                    'admission_date'   => $data['admission_date'] ?: date('Y-m-d'),
                     'photo'            => $photo,
                     'status'           => 'active',
                 ], $govIds));
@@ -140,6 +154,14 @@ final class StudentController extends Controller
                     ]);
                 }
 
+                if ($yearId && $classId) {
+                    $enr = (new EnrollmentService())->enroll($studentId, $yearId, $classId, $sectionId ?: null);
+                    if (!$enr['ok']) {
+                        throw new \RuntimeException($enr['message']);
+                    }
+                    $rollNo = $enr['roll_no'];
+                }
+
                 return $studentId;
             });
         } catch (\Throwable $e) {
@@ -151,26 +173,18 @@ final class StudentController extends Controller
                     : 'A record with the same unique value (such as admission number or email) already exists. Please review the details and try again.';
                 return $this->back(['general' => [$friendly]], $request->all());
             }
+            if ($e instanceof \RuntimeException) {
+                return $this->back(['general' => [$e->getMessage()]], $request->all());
+            }
             return $this->back(['general' => ['Could not save the student. Please try again.']], $request->all());
         }
 
-        AuditLogger::log('student.created', 'student', $studentId, 'Admitted student ' . $data['first_name']);
+        $created = Student::find($studentId);
+        AuditLogger::log('student.created', 'student', $studentId,
+            'Admitted student ' . $data['first_name'] . ' (PRN ' . ($created['prn'] ?? '-') . ', admission ' . ($created['admission_no'] ?? '-') . ')');
 
-        // Automatic academic enrollment + roll number (scoped to year/class/section).
-        // Runs in its own transaction (EnrollmentService) — must be outside the
-        // creation transaction because the connection does not nest.
-        $rollMsg = '';
-        $yearId = (int) ($data['academic_year_id'] ?: (AcademicYear::current()['id'] ?? 0));
-        $classId = (int) ($data['class_id'] ?: 0);
-        $sectionId = (int) ($data['section_id'] ?: 0);
-        if ($yearId && $classId) {
-            $enr = (new EnrollmentService())->enroll($studentId, $yearId, $classId, $sectionId ?: null);
-            if ($enr['ok']) {
-                $rollMsg = ' Roll number ' . $enr['roll_no'] . ' assigned.';
-            }
-        }
-
-        return $this->redirect('/admin/students/' . $studentId, ['success' => 'Student admitted successfully.' . $rollMsg]);
+        $rollMsg = $rollNo !== null ? ' Roll number ' . $rollNo . ' assigned.' : '';
+        return $this->redirect('/admin/students/' . $studentId, ['success' => 'Student admitted successfully. PRN ' . ($created['prn'] ?? '-') . '.' . $rollMsg]);
     }
 
     /** Upload or replace a student's profile picture (admin-managed, max 1 MB). */
@@ -242,6 +256,9 @@ final class StudentController extends Controller
             'canReveal' => auth()->can('students.reveal_id'),
             'canVerify' => auth()->can('students.verify'),
             'canDocs'   => auth()->can('students.documents'),
+            'canManageRoll' => auth()->can('students.manage_roll'),
+            'enrollments' => StudentEnrollment::history((int) $id),
+            'rollHistory' => (new EnrollmentService())->history((int) $id),
             'attendance' => (new AttendanceService())->getStudentAttendanceSummary((int) $id, (int) ($student['academic_year_id'] ?? 0) ?: null),
         ]);
     }
@@ -288,13 +305,18 @@ final class StudentController extends Controller
             'dob'        => $data['dob'] ?: null,
             'email'      => $data['email'] ?: null,
             'phone'      => $data['phone'] ?: null,
-            'roll_no'    => $request->input('roll_no'),
             'address'    => $request->input('address'),
             'blood_group'=> $request->input('blood_group'),
-            'class_id'   => $data['class_id'] ?: null,
-            'section_id' => $data['section_id'] ?: null,
             'status'     => $data['status'],
         ];
+
+        // Class/section moves go through EnrollmentService so the enrollment and a
+        // fresh roll number stay in step. Roll number is never taken from this form.
+        $newClass = (int) ($data['class_id'] ?: 0);
+        $newSection = (int) ($data['section_id'] ?: 0);
+        $yearId = (int) ($student['academic_year_id'] ?? 0) ?: (int) (AcademicYear::current()['id'] ?? 0);
+        $placementChanged = $newClass > 0
+            && ($newClass !== (int) ($student['class_id'] ?? 0) || $newSection !== (int) ($student['section_id'] ?? 0));
 
         $photo = $this->handlePhoto($request);
         if ($photo['status'] === 'error') {
@@ -307,7 +329,25 @@ final class StudentController extends Controller
         // Government IDs (only overwrite fields actually provided).
         $update = array_merge($update, $this->govIdData($request));
 
-        Student::updateById((int) $id, $update);
+        try {
+            Connection::instance()->transaction(function () use ($id, $update, $student, $data, $placementChanged, $newClass, $newSection, $yearId): void {
+                Student::updateById((int) $id, $update);
+                $enroll = new EnrollmentService();
+                if ($placementChanged && $yearId > 0) {
+                    $res = $enroll->transfer((int) $id, $yearId, $newClass, $newSection ?: null, 'transfer', 'Class/section changed from student edit form');
+                    if (!$res['ok']) {
+                        throw new \RuntimeException($res['message']);
+                    }
+                } elseif ($placementChanged) {
+                    Student::updateById((int) $id, ['class_id' => $newClass, 'section_id' => $newSection ?: null]);
+                }
+                if ($data['status'] !== ($student['status'] ?? '')) {
+                    $enroll->syncWithStudentStatus((int) $id, (string) $data['status']);
+                }
+            });
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/admin/students/' . $id . '/edit', ['error' => $e->getMessage()]);
+        }
 
         // Replace the old photo only AFTER the DB update succeeds (no orphan, no
         // data loss). "No new photo selected" never clears the existing photo.
@@ -323,6 +363,78 @@ final class StudentController extends Controller
         AuditLogger::log('student.updated', 'student', (int) $id, 'Updated student');
 
         return $this->redirect('/admin/students/' . $id, ['success' => 'Student updated successfully.']);
+    }
+
+    /** Manually change a student's roll number for an academic year (audited, duplicate-checked). */
+    public function changeRoll(Request $request, string $id): Response
+    {
+        if (!auth()->can('students.manage_roll')) {
+            abort(403, 'You do not have permission to change roll numbers.');
+        }
+        $student = Student::find((int) $id);
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+        $yearId = (int) $request->input('academic_year_id', 0) ?: (int) ($student['academic_year_id'] ?? 0);
+        $raw = trim((string) $request->input('roll_no', ''));
+        if ($raw === '' || !ctype_digit($raw)) {
+            return $this->redirect('/admin/students/' . $id, ['error' => 'Enter the new roll number as a whole number.']);
+        }
+        $res = (new EnrollmentService())->changeRoll((int) $id, $yearId, (int) $raw, (string) $request->input('reason', ''));
+        return $this->redirect('/admin/students/' . $id, [$res['ok'] ? 'success' : 'error' => $res['message']]);
+    }
+
+    /** Explicitly renumber the active students of a class/section 1..n (current year only). */
+    public function resequence(Request $request): Response
+    {
+        if (!auth()->can('students.manage_roll')) {
+            abort(403, 'You do not have permission to change roll numbers.');
+        }
+        $yearId = (int) $request->input('academic_year_id', 0) ?: (int) (AcademicYear::current()['id'] ?? 0);
+        $classId = (int) $request->input('class_id', 0);
+        if ($classId === 0) {
+            return $this->redirect('/admin/students', ['error' => 'Choose a class to resequence.']);
+        }
+        $res = (new EnrollmentService())->resequence(
+            $yearId, $classId, (int) $request->input('section_id', 0) ?: null,
+            (string) $request->input('reason', ''), (string) $request->input('order', 'name') === 'roll' ? 'roll' : 'name'
+        );
+        return $this->redirect('/admin/students', [$res['ok'] ? 'success' : 'error' => $res['message']]);
+    }
+
+    /** Printable ID card carrying the permanent PRN and the current roll number. */
+    public function idCard(Request $request, string $id): Response
+    {
+        $student = Student::profile((int) $id);
+        if ($student === null) {
+            abort(404, 'Student not found.');
+        }
+        return $this->view('admin.students.id-card', ['title' => 'ID Card', 'student' => $student]);
+    }
+
+    /** CSV export of students with PRN, admission number and current roll number. */
+    public function export(Request $request): Response
+    {
+        $rows = Student::filtered([
+            'search' => (string) $request->query('search', ''), 'class_id' => (int) $request->query('class_id', 0),
+            'section_id' => (int) $request->query('section_id', 0), 'status' => (string) $request->query('status', ''),
+        ])->get();
+        $fh = fopen('php://temp', 'w+');
+        fputcsv($fh, ['PRN', 'Admission No', 'Roll No', 'First Name', 'Last Name', 'Class', 'Section', 'Status']);
+        foreach ($rows as $r) {
+            // Prefix formula-looking values so spreadsheets do not execute them.
+            $safe = static fn ($v) => preg_match('/^[=+\-@]/', (string) $v) === 1 ? "'" . $v : (string) $v;
+            fputcsv($fh, [(string) ($r['prn'] ?? ''), $safe($r['admission_no']), (string) ($r['roll_no'] ?? ''),
+                $safe($r['first_name']), $safe($r['last_name']), $safe($r['class_name'] ?? ''), $safe($r['section_name'] ?? ''), $r['status']]);
+        }
+        rewind($fh);
+        $csv = (string) stream_get_contents($fh);
+        fclose($fh);
+        AuditLogger::log('student.exported', 'student', null, 'Exported ' . count($rows) . ' students (CSV)');
+        return new Response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="students-' . date('Ymd') . '.csv"',
+        ]);
     }
 
     /** Apply a bulk action to selected students (activate/deactivate/archive/restore). */
@@ -385,7 +497,7 @@ final class StudentController extends Controller
 
         // History-preserving promotion into a new academic year (Student ID kept,
         // new roll number issued, prior enrollment marked 'promoted').
-        if ($toYear && $toSection) {
+        if ($toYear) {
             $svc = new EnrollmentService();
             $count = 0;
             foreach ($ids as $sid) {
@@ -403,11 +515,21 @@ final class StudentController extends Controller
             return $this->redirect('/admin/students', ['success' => "Promoted {$count} student(s) (history preserved)."]);
         }
 
-        // Legacy in-place class move (same academic context).
+        // Same-year class move: keeps the enrollment in step and issues a new roll
+        // number in the destination (old one stays in the roll history).
         $count = 0;
+        $svc = new EnrollmentService();
         foreach ($ids as $sid) {
             $student = Student::find($sid);
             if ($student === null) {
+                continue;
+            }
+            $yearId = (int) ($student['academic_year_id'] ?? 0);
+            if ($yearId > 0) {
+                $res = $svc->transfer($sid, $yearId, $toClass, $toSection ?: null, 'promotion', 'Same-year promotion');
+                if ($res['ok']) {
+                    $count++;
+                }
                 continue;
             }
             QueryBuilder::table('student_promotions')->insert([
@@ -503,12 +625,12 @@ final class StudentController extends Controller
         if ($doc === null || (int) $doc['student_id'] !== (int) $id) {
             abort(404, 'Document not found.');
         }
-        $path = $svc->absolutePath($doc);
-        if ($path === null) {
+        $bytes = $svc->contents($doc);
+        if ($bytes === null) {
             abort(404, 'File is missing.');
         }
         AuditLogger::log('document.downloaded', 'student_document', (int) $docId, 'Served document');
-        return (new Response((string) file_get_contents($path), 200))
+        return (new Response($bytes, 200))
             ->header('Content-Type', (string) ($doc['mime_type'] ?? 'application/octet-stream'))
             ->header('Content-Disposition', 'inline; filename="' . basename((string) $doc['file_path']) . '"')
             ->header('X-Content-Type-Options', 'nosniff');

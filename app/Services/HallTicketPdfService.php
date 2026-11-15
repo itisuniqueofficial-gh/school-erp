@@ -41,6 +41,7 @@ final class HallTicketPdfService
         $top = $pdf->GetY();
         $rows = [
             ['Student Name', $s['name']],
+            ['PRN', ($s['prn'] ?? '') !== '' ? $s['prn'] : '-'],
             ['Roll No', $s['roll_no'] !== '' ? $s['roll_no'] : '-'],
             ['Admission No', $s['admission_no']],
             ['Student ID', $s['uid']],
@@ -143,7 +144,7 @@ final class HallTicketPdfService
             return $avatar;
         }
         foreach ([
-            dirname(__DIR__, 2) . '/storage/uploads/' . ltrim($photo, '/'),
+            rtrim((string) config('paths.uploads'), '/') . '/' . ltrim($photo, '/'),
             dirname(__DIR__, 2) . '/public/' . ltrim($photo, '/'),
         ] as $p) {
             if (is_file($p) && preg_match('/\.(png|jpe?g|gif)$/i', $p) === 1) {

@@ -36,14 +36,14 @@ final class StudentEnrollment extends Model
     public static function roster(int $yearId, int $classId, int $sectionId): array
     {
         return QueryBuilder::table('student_enrollments')
-            ->select(['student_enrollments.*', 'students.first_name', 'students.last_name', 'students.admission_no', 'students.public_id'])
+            ->select(['student_enrollments.*', 'students.first_name', 'students.last_name', 'students.admission_no', 'students.public_id', 'students.prn'])
             ->join('students', 'student_enrollments.student_id', '=', 'students.id')
             ->where('academic_year_id', $yearId)
             ->where('class_id', $classId)
             ->where('section_id', $sectionId)
             ->where('student_enrollments.status', 'active')
             ->whereNull('students.deleted_at')
-            ->orderBy('roll_no')
+            ->orderBy('CAST(`roll_no` AS UNSIGNED)')
             ->get();
     }
 }

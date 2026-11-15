@@ -23,6 +23,7 @@ $cur = (string) config('app.currency', '₹');
         <dl class="mt-6 grid grid-cols-2 gap-4 text-sm">
             <div><dt class="text-slate-400">Student</dt><dd class="font-medium text-slate-800"><?= e((string) (($receipt['first_name'] ?? '') . ' ' . ($receipt['last_name'] ?? ''))) ?></dd></div>
             <div><dt class="text-slate-400">Admission No</dt><dd class="font-medium text-slate-800"><?= e((string) ($receipt['admission_no'] ?? '—')) ?></dd></div>
+            <div><dt class="text-slate-400">PRN</dt><dd class="font-mono font-medium text-slate-800"><?= e((string) ($receipt['prn'] ?? '—')) ?></dd></div>
             <div><dt class="text-slate-400">Invoice</dt><dd class="font-medium text-slate-800"><?= e((string) ($receipt['invoice_no'] ?? '—')) ?></dd></div>
             <div><dt class="text-slate-400">Method</dt><dd class="font-medium text-slate-800"><?= e(ucfirst(str_replace('_', ' ', (string) $receipt['method']))) ?></dd></div>
         </dl>

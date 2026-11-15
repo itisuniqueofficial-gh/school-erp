@@ -73,6 +73,16 @@ final class IntegrityService
                 ->count()),
             'critical', '/admin/students');
 
+        // Every student must hold a PRN, and it must match the append-only registry.
+        $out[] = $this->row('students_no_prn', 'Students without a PRN',
+            $this->count(fn () => QueryBuilder::table('students')->whereNull('prn')->count()),
+            'critical', '/admin/students');
+        $out[] = $this->row('prn_registry_mismatch', 'Students whose PRN differs from the PRN registry',
+            $this->count(fn () => (int) (Connection::instance()->scalar(
+                'SELECT COUNT(*) FROM `students` s JOIN `prn_registry` r ON r.`student_id` = s.`id` WHERE s.`prn` IS NOT NULL AND s.`prn` <> r.`prn`'
+            ) ?? 0)),
+            'critical', '/admin/students');
+
         // Duplicate roll numbers within a (year, class, section) — should be 0
         // thanks to the UNIQUE constraint; surfaced as a safety net.
         $out[] = $this->row('duplicate_rolls', 'Duplicate roll numbers in a class/section',
@@ -170,6 +180,14 @@ final class IntegrityService
         'marks_exceed_max' => [
             'why' => 'Some recorded marks are greater than the subject maximum, which corrupts percentages, grades and report cards.',
             'action' => 'Review marks',
+        ],
+        'students_no_prn' => [
+            'why' => 'Every student must have a permanent PRN; without one, cross-year records cannot be tied to the student reliably.',
+            'action' => 'Run: php bin/console students:backfill-identifiers',
+        ],
+        'prn_registry_mismatch' => [
+            'why' => 'A PRN on the student row differs from the one originally issued. PRNs are immutable, so this indicates tampering or a bad manual edit.',
+            'action' => 'Restore the PRN from prn_registry',
         ],
         'students_no_roll' => [
             'why' => 'Enrolled students without a roll number can sort incorrectly and may break attendance and result ordering.',

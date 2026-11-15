@@ -62,6 +62,8 @@ $check('absent row present in document', $absentRow !== null);
 // Cleanup fixtures.
 QueryBuilder::table('exam_marks')->whereIn('exam_schedule_id', $sched)->delete();
 foreach ($sched as $scId) { QueryBuilder::table('exam_schedules')->where('id', $scId)->delete(); }
+// History-bearing rows must be removed explicitly now: foreign keys are RESTRICT (migration 033).
+QueryBuilder::table('report_card_versions')->where('student_id', $sid)->delete();
 QueryBuilder::table('report_cards')->where('student_id', $sid)->delete();
 QueryBuilder::table('exams')->where('id', $examId)->delete();
 QueryBuilder::table('students')->where('id', $sid)->delete();

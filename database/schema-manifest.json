@@ -1,0 +1,3929 @@
+{
+    "format": 1,
+    "schema_version": "034_database_backups.php",
+    "tables": {
+        "academic_years": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "end_date": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "is_current": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "public_id": {
+                    "null": true
+                },
+                "start_date": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name",
+                "public_id",
+                "uid"
+            ],
+            "foreign_keys": []
+        },
+        "api_tokens": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "expires_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "last_used_at": {
+                    "null": true
+                },
+                "name": {
+                    "null": false
+                },
+                "token": {
+                    "null": false
+                },
+                "user_id": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "token"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "attendance_unlock_requests": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "date": {
+                    "null": false
+                },
+                "expires_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "reason": {
+                    "null": false
+                },
+                "requested_by": {
+                    "null": false
+                },
+                "reviewed_at": {
+                    "null": true
+                },
+                "reviewed_by": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "requested_by",
+                    "ref": "users.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "audit_logs": {
+            "columns": {
+                "action": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "entity_id": {
+                    "null": true
+                },
+                "entity_type": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "ip_address": {
+                    "null": true
+                },
+                "user_agent": {
+                    "null": true
+                },
+                "user_id": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "book_categories": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "book_issues": {
+            "columns": {
+                "book_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "due_date": {
+                    "null": false
+                },
+                "fine_amount": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "issue_date": {
+                    "null": false
+                },
+                "issued_by": {
+                    "null": true
+                },
+                "return_date": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "book_id",
+                    "ref": "books.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "books": {
+            "columns": {
+                "author": {
+                    "null": true
+                },
+                "available_copies": {
+                    "null": false
+                },
+                "book_category_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "edition": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "isbn": {
+                    "null": true
+                },
+                "price": {
+                    "null": false
+                },
+                "publisher": {
+                    "null": true
+                },
+                "rack_no": {
+                    "null": true
+                },
+                "title": {
+                    "null": false
+                },
+                "total_copies": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "book_category_id",
+                    "ref": "book_categories.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "certificate_requests": {
+            "columns": {
+                "cert_uid": {
+                    "null": true
+                },
+                "certificate_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "purpose": {
+                    "null": true
+                },
+                "reason": {
+                    "null": true
+                },
+                "req_uid": {
+                    "null": false
+                },
+                "requested_by": {
+                    "null": true
+                },
+                "review_note": {
+                    "null": true
+                },
+                "reviewed_at": {
+                    "null": true
+                },
+                "reviewed_by": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "req_uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "certificates": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "body": {
+                    "null": true
+                },
+                "branding_snapshot": {
+                    "null": true
+                },
+                "cert_uid": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "data_json": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "issued_by": {
+                    "null": true
+                },
+                "issued_on": {
+                    "null": false
+                },
+                "reference_no": {
+                    "null": true
+                },
+                "revoked_reason": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "title": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "cert_uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "class_subjects": {
+            "columns": {
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "full_marks": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "is_mandatory": {
+                    "null": false
+                },
+                "pass_marks": {
+                    "null": false
+                },
+                "public_id": {
+                    "null": true
+                },
+                "sort_order": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "subject_id": {
+                    "null": false
+                },
+                "subject_type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "class_id,subject_id",
+                "public_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "class_teachers": {
+            "columns": {
+                "academic_year_id": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "section_id": {
+                    "null": true
+                },
+                "section_key": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "academic_year_id,class_id,section_key"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "classes": {
+            "columns": {
+                "code": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "numeric_level": {
+                    "null": false
+                },
+                "public_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "uses_sections": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "name",
+                "public_id",
+                "uid"
+            ],
+            "foreign_keys": []
+        },
+        "communication_logs": {
+            "columns": {
+                "body": {
+                    "null": true
+                },
+                "channel": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "error": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "recipient": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "subject": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "database_backups": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "created_by": {
+                    "null": true
+                },
+                "encrypted": {
+                    "null": false
+                },
+                "engine": {
+                    "null": false
+                },
+                "filename": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "kind": {
+                    "null": false
+                },
+                "rows_count": {
+                    "null": false
+                },
+                "sha256": {
+                    "null": false
+                },
+                "size_bytes": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "tables_count": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "verified_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "filename"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "created_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "departments": {
+            "columns": {
+                "code": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "document_requirements": {
+            "columns": {
+                "active": {
+                    "null": false
+                },
+                "category": {
+                    "null": false
+                },
+                "code": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_required": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "physical_required": {
+                    "null": false
+                },
+                "signature_required": {
+                    "null": false
+                },
+                "sort_order": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "code"
+            ],
+            "foreign_keys": []
+        },
+        "exam_marks": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "entered_by": {
+                    "null": true
+                },
+                "exam_schedule_id": {
+                    "null": false
+                },
+                "grade_id": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_absent": {
+                    "null": false
+                },
+                "marks_obtained": {
+                    "null": false
+                },
+                "remarks": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "exam_schedule_id,student_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "exam_schedule_id",
+                    "ref": "exam_schedules.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "grade_id",
+                    "ref": "grades.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "exam_schedules": {
+            "columns": {
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "end_time": {
+                    "null": true
+                },
+                "exam_date": {
+                    "null": true
+                },
+                "exam_id": {
+                    "null": false
+                },
+                "full_marks": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "pass_marks": {
+                    "null": false
+                },
+                "room_id": {
+                    "null": true
+                },
+                "start_time": {
+                    "null": true
+                },
+                "subject_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "class_id,exam_id,subject_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "exam_id",
+                    "ref": "exams.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "room_id",
+                    "ref": "rooms.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "exam_types": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "weightage": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "exams": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "end_date": {
+                    "null": true
+                },
+                "exam_type_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "start_date": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "exam_type_id",
+                    "ref": "exam_types.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "external_mappings": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "entity_id": {
+                    "null": false
+                },
+                "entity_type": {
+                    "null": false
+                },
+                "external_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "provider": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "entity_id,entity_type,provider",
+                "entity_type,external_id,provider"
+            ],
+            "foreign_keys": []
+        },
+        "fee_categories": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_recurring": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "fee_discounts": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "value": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "fee_invoice_items": {
+            "columns": {
+                "amount": {
+                    "null": false
+                },
+                "description": {
+                    "null": false
+                },
+                "fee_category_id": {
+                    "null": true
+                },
+                "fee_invoice_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "fee_category_id",
+                    "ref": "fee_categories.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "fee_invoice_id",
+                    "ref": "fee_invoices.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "fee_invoices": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "discount_amount": {
+                    "null": false
+                },
+                "due_date": {
+                    "null": true
+                },
+                "fee_structure_id": {
+                    "null": true
+                },
+                "fine_amount": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "invoice_no": {
+                    "null": false
+                },
+                "paid_amount": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "total_amount": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "invoice_no"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "fee_structure_id",
+                    "ref": "fee_structures.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "fee_payments": {
+            "columns": {
+                "amount": {
+                    "null": false
+                },
+                "collected_by": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "fee_invoice_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "method": {
+                    "null": false
+                },
+                "payment_date": {
+                    "null": false
+                },
+                "receipt_no": {
+                    "null": false
+                },
+                "reference": {
+                    "null": true
+                },
+                "remarks": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "transaction_id": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "receipt_no"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "collected_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "fee_invoice_id",
+                    "ref": "fee_invoices.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "fee_structure_items": {
+            "columns": {
+                "amount": {
+                    "null": false
+                },
+                "due_date": {
+                    "null": true
+                },
+                "fee_category_id": {
+                    "null": false
+                },
+                "fee_structure_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "fee_category_id",
+                    "ref": "fee_categories.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "fee_structure_id",
+                    "ref": "fee_structures.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "fee_structures": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "class_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "frequency": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "government_sync_logs": {
+            "columns": {
+                "action": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "message": {
+                    "null": true
+                },
+                "provider": {
+                    "null": false
+                },
+                "request_ref": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "grades": {
+            "columns": {
+                "gpa": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "max_percent": {
+                    "null": false
+                },
+                "min_percent": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "remark": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "guardians": {
+            "columns": {
+                "address": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "email": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "occupation": {
+                    "null": true
+                },
+                "phone": {
+                    "null": true
+                },
+                "public_id": {
+                    "null": true
+                },
+                "relation": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "user_id": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "public_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "hall_tickets": {
+            "columns": {
+                "attempt_type": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "exam_center": {
+                    "null": true
+                },
+                "exam_id": {
+                    "null": false
+                },
+                "ht_uid": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "instructions": {
+                    "null": true
+                },
+                "issued_by": {
+                    "null": true
+                },
+                "issued_on": {
+                    "null": false
+                },
+                "revoked_reason": {
+                    "null": true
+                },
+                "roll_no": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": true
+                },
+                "signature_required": {
+                    "null": false
+                },
+                "stamp_required": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "valid_from": {
+                    "null": true
+                },
+                "valid_to": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "exam_id,student_id,type",
+                "ht_uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "holidays": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "date": {
+                    "null": false
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "hostel_allocations": {
+            "columns": {
+                "allocated_date": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "hostel_room_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "vacated_date": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "hostel_room_id",
+                    "ref": "hostel_rooms.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "hostel_rooms": {
+            "columns": {
+                "bed_count": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "fee": {
+                    "null": false
+                },
+                "hostel_id": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "occupied": {
+                    "null": false
+                },
+                "room_no": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "hostel_id,room_no"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "hostel_id",
+                    "ref": "hostels.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "hostels": {
+            "columns": {
+                "address": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "warden_name": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "id_sequences": {
+            "columns": {
+                "id": {
+                    "null": false
+                },
+                "next_value": {
+                    "null": false
+                },
+                "prefix": {
+                    "null": false
+                },
+                "year": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "prefix,year"
+            ],
+            "foreign_keys": []
+        },
+        "inventory_items": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_asset": {
+                    "null": false
+                },
+                "item_category_id": {
+                    "null": true
+                },
+                "name": {
+                    "null": false
+                },
+                "quantity": {
+                    "null": false
+                },
+                "reorder_level": {
+                    "null": false
+                },
+                "sku": {
+                    "null": true
+                },
+                "unit": {
+                    "null": true
+                },
+                "unit_price": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "item_category_id",
+                    "ref": "item_categories.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "item_categories": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "leave_types": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "days_allowed": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "is_paid": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "leaves": {
+            "columns": {
+                "approved_by": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "days": {
+                    "null": false
+                },
+                "end_date": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "leave_type_id": {
+                    "null": true
+                },
+                "reason": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "start_date": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "approved_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "leave_type_id",
+                    "ref": "leave_types.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "login_attempts": {
+            "columns": {
+                "attempted_at": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "identifier": {
+                    "null": false
+                },
+                "ip_address": {
+                    "null": false
+                },
+                "successful": {
+                    "null": false
+                },
+                "user_agent": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "message_recipients": {
+            "columns": {
+                "id": {
+                    "null": false
+                },
+                "message_id": {
+                    "null": false
+                },
+                "read_at": {
+                    "null": true
+                },
+                "recipient_id": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "message_id,recipient_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "message_id",
+                    "ref": "messages.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "recipient_id",
+                    "ref": "users.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "messages": {
+            "columns": {
+                "body": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "sender_id": {
+                    "null": true
+                },
+                "subject": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "sender_id",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "notices": {
+            "columns": {
+                "audience": {
+                    "null": false
+                },
+                "body": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "created_by": {
+                    "null": true
+                },
+                "expires_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_published": {
+                    "null": false
+                },
+                "published_at": {
+                    "null": true
+                },
+                "title": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "created_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "notifications": {
+            "columns": {
+                "body": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "link": {
+                    "null": true
+                },
+                "read_at": {
+                    "null": true
+                },
+                "title": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "user_id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "password_resets": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "email": {
+                    "null": false
+                },
+                "expires_at": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "token": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "payment_transactions": {
+            "columns": {
+                "amount": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "currency": {
+                    "null": false
+                },
+                "fee_invoice_id": {
+                    "null": true
+                },
+                "gateway": {
+                    "null": false
+                },
+                "gateway_order_id": {
+                    "null": true
+                },
+                "gateway_payment_id": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "meta": {
+                    "null": true
+                },
+                "method": {
+                    "null": true
+                },
+                "mode": {
+                    "null": false
+                },
+                "signature_verified": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": true
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "gateway,gateway_order_id",
+                "gateway,gateway_payment_id",
+                "uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "fee_invoice_id",
+                    "ref": "fee_invoices.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "payrolls": {
+            "columns": {
+                "allowances": {
+                    "null": false
+                },
+                "basic_salary": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "deductions": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "month": {
+                    "null": false
+                },
+                "net_salary": {
+                    "null": false
+                },
+                "paid_at": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "year": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "month,staff_id,year"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "permissions": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "module": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "slug": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "slug"
+            ],
+            "foreign_keys": []
+        },
+        "prn_registry": {
+            "columns": {
+                "admission_date": {
+                    "null": true
+                },
+                "admission_no": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "issued_at": {
+                    "null": false
+                },
+                "issued_by": {
+                    "null": true
+                },
+                "notes": {
+                    "null": true
+                },
+                "prn": {
+                    "null": false
+                },
+                "source": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": true
+                },
+                "student_uid": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "prn",
+                "student_id"
+            ],
+            "foreign_keys": []
+        },
+        "purchase_items": {
+            "columns": {
+                "description": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "inventory_item_id": {
+                    "null": true
+                },
+                "purchase_id": {
+                    "null": false
+                },
+                "quantity": {
+                    "null": false
+                },
+                "unit_price": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "inventory_item_id",
+                    "ref": "inventory_items.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "purchase_id",
+                    "ref": "purchases.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "purchases": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "created_by": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "invoice_no": {
+                    "null": true
+                },
+                "purchase_date": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "total_amount": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "vendor_id": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "vendor_id",
+                    "ref": "vendors.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "remember_tokens": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "expires_at": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "selector": {
+                    "null": false
+                },
+                "token": {
+                    "null": false
+                },
+                "user_id": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "selector"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "report_card_versions": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "exam_id": {
+                    "null": false
+                },
+                "generated_by": {
+                    "null": true
+                },
+                "grade_id": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "obtained_marks": {
+                    "null": false
+                },
+                "percentage": {
+                    "null": false
+                },
+                "rc_uid": {
+                    "null": false
+                },
+                "reason": {
+                    "null": true
+                },
+                "result": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "total_marks": {
+                    "null": false
+                },
+                "version": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "exam_id,student_id,version",
+                "rc_uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "report_cards": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "exam_id": {
+                    "null": false
+                },
+                "generated_by": {
+                    "null": true
+                },
+                "gpa": {
+                    "null": false
+                },
+                "grade_id": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "obtained_marks": {
+                    "null": false
+                },
+                "percentage": {
+                    "null": false
+                },
+                "published_at": {
+                    "null": true
+                },
+                "rank": {
+                    "null": true
+                },
+                "rc_uid": {
+                    "null": true
+                },
+                "reason": {
+                    "null": true
+                },
+                "result": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "total_marks": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "version": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "exam_id,student_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "exam_id",
+                    "ref": "exams.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "grade_id",
+                    "ref": "grades.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "role_permissions": {
+            "columns": {
+                "permission_id": {
+                    "null": false
+                },
+                "role_id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "permission_id",
+                    "ref": "permissions.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "role_id",
+                    "ref": "roles.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "roles": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_system": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "slug": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "slug"
+            ],
+            "foreign_keys": []
+        },
+        "roll_counters": {
+            "columns": {
+                "academic_year_id": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": false
+                },
+                "last_roll": {
+                    "null": false
+                },
+                "section_key": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "rooms": {
+            "columns": {
+                "capacity": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "type": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "scope_settings": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "key": {
+                    "null": false
+                },
+                "scope_id": {
+                    "null": false
+                },
+                "scope_type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "value": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "key,scope_id,scope_type"
+            ],
+            "foreign_keys": []
+        },
+        "sections": {
+            "columns": {
+                "capacity": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": false
+                },
+                "class_teacher_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "public_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "class_id,name",
+                "public_id",
+                "uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "settings": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "group": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "key": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "value": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "key"
+            ],
+            "foreign_keys": []
+        },
+        "staff": {
+            "columns": {
+                "address": {
+                    "null": true
+                },
+                "basic_salary": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "deleted_at": {
+                    "null": true
+                },
+                "department_id": {
+                    "null": true
+                },
+                "designation": {
+                    "null": true
+                },
+                "dob": {
+                    "null": true
+                },
+                "email": {
+                    "null": true
+                },
+                "employee_code": {
+                    "null": false
+                },
+                "experience_years": {
+                    "null": false
+                },
+                "first_name": {
+                    "null": false
+                },
+                "gender": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "joining_date": {
+                    "null": true
+                },
+                "last_name": {
+                    "null": false
+                },
+                "phone": {
+                    "null": true
+                },
+                "photo": {
+                    "null": true
+                },
+                "public_id": {
+                    "null": true
+                },
+                "qualification": {
+                    "null": true
+                },
+                "staff_type": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "user_id": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "employee_code",
+                "public_id",
+                "uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "department_id",
+                    "ref": "departments.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "staff_attendance": {
+            "columns": {
+                "check_in": {
+                    "null": true
+                },
+                "check_out": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "date": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "remarks": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "date,staff_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "student_attendance": {
+            "columns": {
+                "class_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "date": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "marked_by": {
+                    "null": true
+                },
+                "method": {
+                    "null": false
+                },
+                "remarks": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "date,student_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "marked_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "student_document_exclusions": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "excluded_by": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "reason": {
+                    "null": true
+                },
+                "requirement_code": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                }
+            },
+            "unique": [
+                "requirement_code,student_id"
+            ],
+            "foreign_keys": []
+        },
+        "student_documents": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "file_path": {
+                    "null": false
+                },
+                "file_size": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "mime_type": {
+                    "null": true
+                },
+                "storage_disk": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "title": {
+                    "null": false
+                },
+                "type": {
+                    "null": true
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "uploaded_by": {
+                    "null": true
+                },
+                "verification_status": {
+                    "null": false
+                },
+                "verified_at": {
+                    "null": true
+                },
+                "verified_by": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "uploaded_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "student_enrollments": {
+            "columns": {
+                "academic_year_id": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "roll_no": {
+                    "null": false
+                },
+                "section_id": {
+                    "null": true
+                },
+                "section_key": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "academic_year_id,class_id,roll_no,section_key",
+                "academic_year_id,student_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "student_guardians": {
+            "columns": {
+                "guardian_id": {
+                    "null": false
+                },
+                "is_primary": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "guardian_id",
+                    "ref": "guardians.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "student_promotions": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "from_class_id": {
+                    "null": true
+                },
+                "from_section_id": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "promoted_by": {
+                    "null": true
+                },
+                "remarks": {
+                    "null": true
+                },
+                "result": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "to_class_id": {
+                    "null": true
+                },
+                "to_section_id": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "student_roll_history": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "change_type": {
+                    "null": false
+                },
+                "changed_by": {
+                    "null": true
+                },
+                "class_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "new_roll_no": {
+                    "null": true
+                },
+                "old_class_id": {
+                    "null": true
+                },
+                "old_roll_no": {
+                    "null": true
+                },
+                "old_section_id": {
+                    "null": true
+                },
+                "prn": {
+                    "null": true
+                },
+                "reason": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": true
+                },
+                "student_id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "students": {
+            "columns": {
+                "aadhaar_enc": {
+                    "null": true
+                },
+                "aadhaar_last4": {
+                    "null": true
+                },
+                "abc_id": {
+                    "null": true
+                },
+                "abc_status": {
+                    "null": false
+                },
+                "academic_year_id": {
+                    "null": true
+                },
+                "address": {
+                    "null": true
+                },
+                "admission_date": {
+                    "null": true
+                },
+                "admission_no": {
+                    "null": false
+                },
+                "apaar_id": {
+                    "null": true
+                },
+                "apaar_status": {
+                    "null": false
+                },
+                "blood_group": {
+                    "null": true
+                },
+                "board_registration_no": {
+                    "null": true
+                },
+                "category": {
+                    "null": true
+                },
+                "city": {
+                    "null": true
+                },
+                "class_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "deleted_at": {
+                    "null": true
+                },
+                "digilocker_ref": {
+                    "null": true
+                },
+                "digilocker_status": {
+                    "null": false
+                },
+                "dob": {
+                    "null": true
+                },
+                "email": {
+                    "null": true
+                },
+                "emis_number": {
+                    "null": true
+                },
+                "first_name": {
+                    "null": false
+                },
+                "gender": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "last_name": {
+                    "null": false
+                },
+                "medical_notes": {
+                    "null": true
+                },
+                "nationality": {
+                    "null": true
+                },
+                "pen_id": {
+                    "null": true
+                },
+                "phone": {
+                    "null": true
+                },
+                "photo": {
+                    "null": true
+                },
+                "postal_code": {
+                    "null": true
+                },
+                "prn": {
+                    "null": true
+                },
+                "public_id": {
+                    "null": true
+                },
+                "religion": {
+                    "null": true
+                },
+                "roll_no": {
+                    "null": true
+                },
+                "samagra_id": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": true
+                },
+                "state": {
+                    "null": true
+                },
+                "state_student_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "udise_id": {
+                    "null": true
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "user_id": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "admission_no",
+                "prn",
+                "public_id",
+                "uid"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "subject_attendance": {
+            "columns": {
+                "academic_year_id": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "date": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "marked_by": {
+                    "null": true
+                },
+                "period": {
+                    "null": false
+                },
+                "remarks": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": true
+                },
+                "section_key": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "subject_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "academic_year_id,class_id,date,period,section_key,student_id,subject_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "marked_by",
+                    "ref": "users.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "RESTRICT"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "subjects": {
+            "columns": {
+                "code": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "max_marks": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "pass_marks": {
+                    "null": false
+                },
+                "public_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "type": {
+                    "null": false
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "code",
+                "public_id",
+                "uid"
+            ],
+            "foreign_keys": []
+        },
+        "syllabi": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "description": {
+                    "null": true
+                },
+                "file_path": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "subject_id": {
+                    "null": false
+                },
+                "title": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "sync_jobs": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "created_count": {
+                    "null": false
+                },
+                "direction": {
+                    "null": false
+                },
+                "failed_count": {
+                    "null": false
+                },
+                "finished_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "message": {
+                    "null": true
+                },
+                "operation": {
+                    "null": false
+                },
+                "provider": {
+                    "null": false
+                },
+                "run_by": {
+                    "null": true
+                },
+                "skipped_count": {
+                    "null": false
+                },
+                "started_at": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "total": {
+                    "null": false
+                },
+                "updated_count": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "teacher_assignment_history": {
+            "columns": {
+                "assignment_id": {
+                    "null": false
+                },
+                "changed_by": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "end_date": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "reason": {
+                    "null": true
+                },
+                "role": {
+                    "null": false
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "start_date": {
+                    "null": false
+                },
+                "status": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "assignment_id",
+                    "ref": "teacher_assignments.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "RESTRICT"
+                }
+            ]
+        },
+        "teacher_assignments": {
+            "columns": {
+                "academic_year_id": {
+                    "null": false
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "role": {
+                    "null": false
+                },
+                "section_id": {
+                    "null": true
+                },
+                "section_key": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "subject_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "academic_year_id,class_id,section_key,staff_id,subject_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "academic_year_id",
+                    "ref": "academic_years.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "teacher_qualifications": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "degree": {
+                    "null": false
+                },
+                "grade": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "institution": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "year": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "teacher_subjects": {
+            "columns": {
+                "class_id": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "section_id": {
+                    "null": true
+                },
+                "staff_id": {
+                    "null": false
+                },
+                "subject_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "timetable_slots": {
+            "columns": {
+                "end_time": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "is_break": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "sort_order": {
+                    "null": false
+                },
+                "start_time": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "timetables": {
+            "columns": {
+                "academic_year_id": {
+                    "null": true
+                },
+                "class_id": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "day_of_week": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "room_id": {
+                    "null": true
+                },
+                "section_id": {
+                    "null": false
+                },
+                "slot_id": {
+                    "null": false
+                },
+                "staff_id": {
+                    "null": true
+                },
+                "subject_id": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "day_of_week,section_id,slot_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "class_id",
+                    "ref": "classes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "room_id",
+                    "ref": "rooms.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "section_id",
+                    "ref": "sections.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "slot_id",
+                    "ref": "timetable_slots.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "staff_id",
+                    "ref": "staff.id",
+                    "on_delete": "SET NULL"
+                },
+                {
+                    "column": "subject_id",
+                    "ref": "subjects.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "transport_assignments": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "pickup_point": {
+                    "null": true
+                },
+                "route_id": {
+                    "null": false
+                },
+                "student_id": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "vehicle_id": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "student_id"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "route_id",
+                    "ref": "transport_routes.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "student_id",
+                    "ref": "students.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "vehicle_id",
+                    "ref": "vehicles.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "transport_routes": {
+            "columns": {
+                "created_at": {
+                    "null": true
+                },
+                "distance_km": {
+                    "null": true
+                },
+                "end_point": {
+                    "null": true
+                },
+                "fare": {
+                    "null": false
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "start_point": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "name"
+            ],
+            "foreign_keys": []
+        },
+        "update_logs": {
+            "columns": {
+                "applied_by": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": false
+                },
+                "from_version": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "notes": {
+                    "null": true
+                },
+                "to_version": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        },
+        "user_roles": {
+            "columns": {
+                "role_id": {
+                    "null": false
+                },
+                "user_id": {
+                    "null": false
+                }
+            },
+            "unique": [],
+            "foreign_keys": [
+                {
+                    "column": "role_id",
+                    "ref": "roles.id",
+                    "on_delete": "CASCADE"
+                },
+                {
+                    "column": "user_id",
+                    "ref": "users.id",
+                    "on_delete": "CASCADE"
+                }
+            ]
+        },
+        "users": {
+            "columns": {
+                "avatar": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "deleted_at": {
+                    "null": true
+                },
+                "email": {
+                    "null": false
+                },
+                "email_verified_at": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "is_active": {
+                    "null": false
+                },
+                "last_login_at": {
+                    "null": true
+                },
+                "last_login_ip": {
+                    "null": true
+                },
+                "name": {
+                    "null": false
+                },
+                "password": {
+                    "null": false
+                },
+                "phone": {
+                    "null": true
+                },
+                "public_id": {
+                    "null": true
+                },
+                "uid": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                },
+                "username": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "email",
+                "public_id",
+                "uid",
+                "username"
+            ],
+            "foreign_keys": []
+        },
+        "vehicles": {
+            "columns": {
+                "capacity": {
+                    "null": false
+                },
+                "created_at": {
+                    "null": true
+                },
+                "driver_license": {
+                    "null": true
+                },
+                "driver_name": {
+                    "null": true
+                },
+                "driver_phone": {
+                    "null": true
+                },
+                "gps_device_id": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "model": {
+                    "null": true
+                },
+                "registration_no": {
+                    "null": false
+                },
+                "route_id": {
+                    "null": true
+                },
+                "status": {
+                    "null": false
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [
+                "registration_no"
+            ],
+            "foreign_keys": [
+                {
+                    "column": "route_id",
+                    "ref": "transport_routes.id",
+                    "on_delete": "SET NULL"
+                }
+            ]
+        },
+        "vendors": {
+            "columns": {
+                "address": {
+                    "null": true
+                },
+                "contact_person": {
+                    "null": true
+                },
+                "created_at": {
+                    "null": true
+                },
+                "email": {
+                    "null": true
+                },
+                "id": {
+                    "null": false
+                },
+                "name": {
+                    "null": false
+                },
+                "phone": {
+                    "null": true
+                },
+                "updated_at": {
+                    "null": true
+                }
+            },
+            "unique": [],
+            "foreign_keys": []
+        }
+    }
+}

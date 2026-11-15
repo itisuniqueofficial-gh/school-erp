@@ -47,6 +47,7 @@ final class ReportCardPdfService
         $rowsLeft = [
             ['Name', $s['name']],
             ['User ID', $s['uid']],
+            ['PRN', ($s['prn'] ?? '') !== '' ? $s['prn'] : '-'],
             ['Admission No', $s['admission_no']],
             ['Roll No', $s['roll_no'] !== '' ? $s['roll_no'] : '-'],
             ['Class', trim($s['class'] . ($s['section'] !== '' ? ' - ' . $s['section'] : ''))],
@@ -191,7 +192,7 @@ final class ReportCardPdfService
             return $avatar;
         }
         $candidates = [
-            dirname(__DIR__, 2) . '/storage/uploads/' . ltrim($photo, '/'),
+            rtrim((string) config('paths.uploads'), '/') . '/' . ltrim($photo, '/'),
             dirname(__DIR__, 2) . '/public/' . ltrim($photo, '/'),
             dirname(__DIR__, 2) . '/' . ltrim($photo, '/'),
         ];

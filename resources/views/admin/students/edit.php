@@ -37,8 +37,9 @@ $v = static fn (string $k, $d = '') => e((string) (old($k) !== '' ? old($k) : ($
                 <input id="dob" name="dob" type="date" class="form-input" value="<?= $v('dob') ?>">
             </div>
             <div>
-                <label class="form-label" for="roll_no">Roll no</label>
-                <input id="roll_no" name="roll_no" class="form-input" value="<?= $v('roll_no') ?>">
+                <label class="form-label" for="prn">PRN (permanent)</label>
+                <input id="prn" class="form-input font-mono" value="<?= $v('prn') ?>" readonly disabled>
+                <p class="mt-1 text-xs text-slate-400">Roll no <?= $v('roll_no') ?>. Changing class/section issues a new roll number; use the student profile to set one manually.</p>
             </div>
             <div>
                 <label class="form-label" for="blood_group">Blood group</label>

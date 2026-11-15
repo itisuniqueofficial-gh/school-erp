@@ -89,7 +89,7 @@ final class FeeController extends Controller
 
         if ($search !== '') {
             $student = QueryBuilder::table('students')
-                ->whereRaw('(`admission_no` = ? OR `first_name` LIKE ? OR `last_name` LIKE ?)', [$search, "%{$search}%", "%{$search}%"])
+                ->whereRaw('(`admission_no` = ? OR `prn` = ? OR `first_name` LIKE ? OR `last_name` LIKE ?)', [$search, $search, "%{$search}%", "%{$search}%"])
                 ->whereNull('deleted_at')->first();
             if ($student !== null) {
                 $invoices = FeeInvoice::forStudent((int) $student['id']);

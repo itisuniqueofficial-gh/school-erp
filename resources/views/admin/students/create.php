@@ -75,8 +75,9 @@
                 </select>
             </div>
             <div>
-                <label class="form-label" for="roll_no">Roll no</label>
-                <input id="roll_no" name="roll_no" class="form-input" value="<?= e((string) old('roll_no')) ?>">
+                <label class="form-label" for="admission_date">Admission date</label>
+                <input id="admission_date" name="admission_date" type="date" class="form-input" value="<?= e((string) (old('admission_date') ?: date('Y-m-d'))) ?>">
+                <p class="mt-1 text-xs text-slate-400">PRN (<?= e(date('Ymd')) ?>…) and the class roll number are assigned automatically on save.</p>
             </div>
             <div>
                 <label class="form-label" for="email">Email</label>

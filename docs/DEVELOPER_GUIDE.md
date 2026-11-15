@@ -20,7 +20,7 @@ app/
   Policies/     Record-level authorization
 core/           Framework kernel (Http, Routing, Database, View, Auth, Security, Validation, Support, Config)
 config/         app, database, session, security, mail, auth, paths
-database/       migrations (*.sql), seeds, Migrator, schema.sql
+database/       migrations (*.sql / *.php), rollbacks, schema-manifest.json, seeds, Migrator
 resources/views layouts, partials, module views (native PHP templates)
 routes/         web.php, api.php
 public/         index.php (front controller), install.php, assets/
@@ -112,8 +112,7 @@ so the app is portable across any domain/subdirectory/HTTPS with no config edits
 - Deploy with `php bin/console upgrade` (auto backup + pending migrations only);
   `migrate:fresh` is guarded against `APP_ENV=production` (requires `--force`).
 - Status via `migrate:status`; health via `php bin/console health` or `GET /health`.
-- `database/schema.sql` is an optional starter schema; the installer and
-  migrations are authoritative. Do not import it over an existing database.
+- Schema changes are migrations; see docs/DATABASE_LIFECYCLE.md.
 
 ## Creating a new module (recipe)
 1. **Migration**: add the table(s) in `database/migrations`.

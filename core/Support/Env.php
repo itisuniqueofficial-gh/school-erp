@@ -127,61 +127,24 @@ final class Env
      */
     public static function parseDatabaseUrl(): void
     {
-        $url = getenv('DATABASE_URL') ?: (isset(self::$variables['DATABASE_URL']) ? self::$variables['DATABASE_URL'] : null);
-        if (!$url || $url === '') {
+        $url = getenv('DATABASE_URL') ?: (self::$variables['DATABASE_URL'] ?? null);
+        if (!is_string($url) || trim($url) === '') {
             return;
         }
-        $parts = @parse_url($url);
-        if (!$parts) {
-            return;
+        try {
+            $values = \Core\Database\DatabaseConfig::fromUrl($url)->toEnv();
+        } catch (\Throwable) {
+            return; // invalid URL: ignored here; the installer / health check report it without echoing it
         }
-        $scheme = $parts['scheme'] ?? 'mysql';
-        if ($scheme === 'postgres' || $scheme === 'postgresql') {
-            $scheme = 'pgsql';
-        }
-        // Prefer DATABASE_URL values
-        self::$variables['DB_CONNECTION'] = $scheme;
-        $_ENV['DB_CONNECTION'] = $scheme;
-        putenv('DB_CONNECTION=' . $scheme);
-        self::$variables['DB_DRIVER'] = $scheme;
-        $_ENV['DB_DRIVER'] = $scheme;
-        putenv('DB_DRIVER=' . $scheme);
-        if (isset($parts['host'])) {
-            self::$variables['DB_HOST'] = $parts['host'];
-            $_ENV['DB_HOST'] = $parts['host'];
-            putenv('DB_HOST=' . $parts['host']);
-        }
-        if (isset($parts['port'])) {
-            self::$variables['DB_PORT'] = (string)$parts['port'];
-            $_ENV['DB_PORT'] = (string)$parts['port'];
-            putenv('DB_PORT=' . $parts['port']);
-        }
-        if (isset($parts['user'])) {
-            self::$variables['DB_USERNAME'] = $parts['user'];
-            $_ENV['DB_USERNAME'] = $parts['user'];
-            putenv('DB_USERNAME=' . $parts['user']);
-        }
-        if (isset($parts['pass'])) {
-            self::$variables['DB_PASSWORD'] = $parts['pass'];
-            $_ENV['DB_PASSWORD'] = $parts['pass'];
-            putenv('DB_PASSWORD=' . $parts['pass']);
-        }
-        if (isset($parts['path'])) {
-            $db = ltrim($parts['path'], '/');
-            if ($db !== '') {
-                self::$variables['DB_DATABASE'] = $db;
-                $_ENV['DB_DATABASE'] = $db;
-                putenv('DB_DATABASE=' . $db);
-            }
-        }
-        if (isset($parts['query'])) {
-            parse_str($parts['query'], $q);
-            if ((isset($q['sslmode']) && in_array($q['sslmode'], ['require','verify-ca','verify-full'], true)) || isset($q['ssl-mode'])) {
-                if (!isset(self::$variables['DB_SSL'])) {
-                    self::$variables['DB_SSL'] = 'true';
-                    $_ENV['DB_SSL'] = 'true';
-                    putenv('DB_SSL=true');
-                }
+        $values['DB_DRIVER'] = $values['DB_CONNECTION'];
+        // The URL is consumed here. Leaving it set would let DatabaseConfig::fromEnv() re-read it and
+        // bypass later adjustments of DB_DATABASE (notably the APP_TESTING "<db>_test" isolation).
+        $values['DATABASE_URL'] = '';
+        foreach ($values as $k => $v) {
+            self::$variables[$k] = $v;
+            $_ENV[$k] = $v;
+            if ($k !== 'DATABASE_URL') {
+                putenv($k . '=' . $v);   // leave the original DATABASE_URL in the process environment for child processes
             }
         }
     }

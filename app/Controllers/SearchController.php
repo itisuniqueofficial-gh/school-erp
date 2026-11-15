@@ -27,9 +27,9 @@ final class SearchController extends Controller
 
         try {
             $out['students'] = QueryBuilder::table('students')
-                ->select(['id', 'public_id', 'admission_no', 'first_name', 'last_name', 'roll_no'])
+                ->select(['id', 'public_id', 'admission_no', 'first_name', 'last_name', 'roll_no', 'prn'])
                 ->whereNull('deleted_at')
-                ->whereRaw('(`first_name` LIKE ? OR `last_name` LIKE ? OR `admission_no` LIKE ? OR `public_id` LIKE ? OR `roll_no` LIKE ?)', [$like, $like, $like, $like, $like])
+                ->whereRaw('(`first_name` LIKE ? OR `last_name` LIKE ? OR `admission_no` LIKE ? OR `public_id` LIKE ? OR `roll_no` LIKE ? OR `prn` LIKE ?)', [$like, $like, $like, $like, $like, $like])
                 ->limit(8)->get();
 
             $out['teachers'] = QueryBuilder::table('staff')

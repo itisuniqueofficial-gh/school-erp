@@ -54,14 +54,14 @@ final class HallTicketService
         }
 
         $q = QueryBuilder::table('students')
-            ->select(['students.id', 'students.first_name', 'students.last_name', 'students.admission_no', 'students.roll_no', 'students.uid'])
+            ->select(['students.id', 'students.first_name', 'students.last_name', 'students.admission_no', 'students.roll_no', 'students.uid', 'students.prn'])
             ->where('students.class_id', $classId)
             ->whereNull('students.deleted_at')
             ->where('students.status', 'active');
         if ($sectionId !== null && $sectionId > 0) {
             $q->where('students.section_id', $sectionId);
         }
-        $students = $q->orderBy('students.roll_no')->get();
+        $students = $q->orderBy('CAST(`students`.`roll_no` AS UNSIGNED)')->get();
 
         // For back-paper/supplementary/retest/repeater: only students who FAILED.
         $failedIds = null;
@@ -88,6 +88,7 @@ final class HallTicketService
                 'id'           => $sid,
                 'name'         => trim((string) ($s['first_name'] . ' ' . $s['last_name'])),
                 'admission_no' => (string) $s['admission_no'],
+                'prn'          => (string) ($s['prn'] ?? ''),
                 'roll_no'      => (string) ($s['roll_no'] ?? ''),
                 'uid'          => (string) $s['uid'],
                 'status'       => $issued[$sid] ?? 'eligible',
@@ -241,7 +242,7 @@ final class HallTicketService
         $ht = QueryBuilder::table('hall_tickets')
             ->select([
                 'hall_tickets.*',
-                'students.first_name', 'students.last_name', 'students.admission_no', 'students.uid AS student_uid',
+                'students.first_name', 'students.last_name', 'students.admission_no', 'students.uid AS student_uid', 'students.prn AS student_prn',
                 'students.photo', 'students.section_id AS s_section',
                 'classes.name AS class_name', 'sections.name AS section_name', 'classes.uses_sections',
                 'exams.name AS exam_name', 'exams.academic_year_id',
@@ -271,6 +272,7 @@ final class HallTicketService
                 'name'         => trim((string) ($ht['first_name'] . ' ' . $ht['last_name'])),
                 'admission_no' => (string) $ht['admission_no'],
                 'uid'          => (string) $ht['student_uid'],
+                'prn'          => (string) ($ht['student_prn'] ?? ''),
                 'roll_no'      => (string) ($ht['roll_no'] ?? ''),
                 'class'        => (string) ($ht['class_name'] ?? ''),
                 'section'      => ((int) ($ht['uses_sections'] ?? 0) === 1) ? (string) ($ht['section_name'] ?? '') : '',

@@ -10,6 +10,7 @@
 <?php $this->section('page_actions'); ?>
 <?php if (auth()->can('students.create')): ?>
 <a href="<?= e(url('/admin/students/create')) ?>" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Admit Student</a>
+<a href="<?= e(url('/admin/students/export')) ?>?<?= e(http_build_query(array_filter((array) ($filters ?? [])))) ?>" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
 <button type="button" class="btn btn-secondary" data-export-xlsx data-export-target="#studentsTable" data-export-filename="students" data-export-sheet="Students"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
 <?php endif; ?>
 <?php $this->endSection(); ?>
@@ -44,16 +45,18 @@
             <thead>
                 <tr>
                     <th class="w-8" data-noexport><input type="checkbox" data-check-all></th>
-                    <th>Admission No</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>Status</th><th class="text-right" data-noexport>Actions</th>
+                    <th>PRN</th><th>Admission No</th><th>Roll</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>Status</th><th class="text-right" data-noexport>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($students)): ?>
-                    <tr><td colspan="8" class="py-10 text-center text-slate-400">No students found.</td></tr>
+                    <tr><td colspan="10" class="py-10 text-center text-slate-400">No students found.</td></tr>
                 <?php else: foreach ($students as $s): ?>
                 <tr>
                     <td><input type="checkbox" name="student_ids[]" value="<?= (int) $s['id'] ?>" class="row-check"></td>
+                    <td class="font-mono text-xs"><?= e((string) ($s['prn'] ?? '—')) ?></td>
                     <td class="font-mono text-xs"><?= e((string) $s['admission_no']) ?></td>
+                    <td><?= e((string) ($s['roll_no'] ?? '—')) ?></td>
                     <td class="font-medium text-slate-800"><?= e((string) ($s['first_name'] . ' ' . $s['last_name'])) ?></td>
                     <td><?= e((string) ($s['class_name'] ?? '—')) ?></td>
                     <td><?= e((string) ($s['section_name'] ?? '—')) ?></td>

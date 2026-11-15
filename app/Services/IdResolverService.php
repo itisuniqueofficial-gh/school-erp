@@ -59,7 +59,7 @@ final class IdResolverService
 
         // ---- Unprefixed: try each entity's unique columns -----------------
         $r = QueryBuilder::table('students')
-            ->whereRaw('(UPPER(`admission_no`) = ? OR `uid` = ? OR UPPER(`public_id`) = ?)', [$U, $norm, $U])->first();
+            ->whereRaw('(UPPER(`admission_no`) = ? OR `uid` = ? OR UPPER(`public_id`) = ? OR `prn` = ?)', [$U, $norm, $U, $norm])->first();
         if ($r) {
             return $this->student($r);
         }

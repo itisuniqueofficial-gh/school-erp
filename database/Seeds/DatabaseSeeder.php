@@ -35,6 +35,9 @@ final class DatabaseSeeder
             $this->seedUsers($withDemoUsers);
             $this->seedAcademicSystem();
         });
+
+        // Demo rows above are inserted directly; give them a PRN + roll number.
+        (new \App\Services\StudentIdentifierService())->backfill();
     }
 
     /** @var array<string,int> role slug => id */
@@ -100,7 +103,7 @@ final class DatabaseSeeder
     private function seedPermissions(): void
     {
         $modules = [
-            'students'      => ['view', 'create', 'update', 'delete', 'documents', 'verify', 'reveal_id'],
+            'students'      => ['view', 'create', 'update', 'delete', 'documents', 'verify', 'reveal_id', 'manage_roll'],
             'teachers'      => ['view', 'create', 'update', 'delete'],
             'staff'         => ['view', 'create', 'update', 'delete'],
             'users'         => ['view', 'manage'],

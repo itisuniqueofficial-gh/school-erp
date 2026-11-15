@@ -55,6 +55,39 @@ final class StartupGuard
     }
 
     /**
+     * Migration files this release ships that the database has not applied yet. Cheap on the hot path:
+     * one COUNT query compared with the number of files; the full status is computed only on a mismatch.
+     *
+     * @return string[]
+     */
+    public static function pendingMigrations(): array
+    {
+        try {
+            $dir = rtrim((string) \Core\Config\Config::get('database.migrations_path'), '/');
+            $files = count(glob($dir . '/*.sql') ?: []) + count(glob($dir . '/*.php') ?: []);
+            if ((int) Connection::instance()->scalar('SELECT COUNT(*) FROM `migrations`') === $files) {
+                return [];
+            }
+            return (new \Database\Migrator())->status()['pending'];
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /** DB_AUTO_MIGRATE=true applies pending migrations (after a verified backup) on the first request after a deploy. */
+    public static function autoUpgradeEnabled(): bool
+    {
+        return filter_var((string) (\Core\Support\Env::get('DB_AUTO_MIGRATE', 'false') ?? 'false'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /** While updates are pending, administrators must still be able to sign in and open the Database page. */
+    public static function allowedWhilePending(string $uri): bool
+    {
+        $path = (string) parse_url($uri, PHP_URL_PATH);
+        return preg_match('#/(admin/database|login|logout|assets|media)(/|$)#', $path) === 1;
+    }
+
+    /**
      * Emit a standalone HTTP 503 critical-error page and stop. Never leaks
      * credentials or stack traces to the visitor; logs a reference id privately.
      */
@@ -64,6 +97,16 @@ final class StartupGuard
         @error_log(sprintf('[startup-guard] ref=%s reason=%s', $ref, $reason));
 
         [$title, $what, $how] = match ($reason) {
+            'pending' => [
+                'Database update required',
+                'This version of the application needs database updates that have not been applied yet.',
+                'An administrator can sign in and open Admin > Database to apply them (a verified backup is taken first), or run "php bin/console upgrade". Existing data is not affected.',
+            ],
+            'upgrade_failed' => [
+                'Automatic database update failed',
+                'The automatic update could not be completed. Nothing was removed.',
+                'Run "php bin/console upgrade" on the server to see the details, or open Admin > Database after signing in. See storage/logs/install.log.',
+            ],
             'unmigrated' => [
                 'Database not initialised',
                 'The application connected to the database, but the required tables are missing.',

@@ -71,18 +71,15 @@ final class InstallService
 
     private function tableExists(string $table): bool
     {
-        $row = Connection::instance()->selectOne(
-            'SELECT COUNT(*) AS c FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?',
-            [$table]
-        );
+        $conn = Connection::instance();
+        $row = $conn->selectOne($conn->dialect()->tableExistsSql(), [$table]);
         return (int) ($row['c'] ?? 0) > 0;
     }
 
     private function tableCount(): int
     {
-        $row = Connection::instance()->selectOne(
-            'SELECT COUNT(*) AS c FROM information_schema.tables WHERE table_schema = DATABASE()'
-        );
+        $conn = Connection::instance();
+        $row = $conn->selectOne($conn->dialect()->tableCountSql());
         return (int) ($row['c'] ?? 0);
     }
 

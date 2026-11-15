@@ -148,12 +148,12 @@ final class ExamController extends Controller
         if ($classId && $subjectId) {
             $schedule = $this->ensureSchedule($examId, $classId, $subjectId);
             $studentQuery = QueryBuilder::table('students')
-                ->select(['id', 'admission_no', 'roll_no', 'first_name', 'last_name'])
+                ->select(['id', 'prn', 'admission_no', 'roll_no', 'first_name', 'last_name'])
                 ->where('class_id', $classId)->whereNull('deleted_at')->where('status', 'active');
             if ($sectionId) {
                 $studentQuery->where('section_id', $sectionId);
             }
-            $students = $studentQuery->orderBy('roll_no')->get();
+            $students = $studentQuery->orderBy('CAST(`roll_no` AS UNSIGNED)')->get();
 
             foreach (QueryBuilder::table('exam_marks')->where('exam_schedule_id', (int) $schedule['id'])->get() as $m) {
                 $existing[(int) $m['student_id']] = $m;

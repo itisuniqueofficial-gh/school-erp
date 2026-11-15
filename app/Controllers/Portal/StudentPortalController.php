@@ -232,12 +232,12 @@ final class StudentPortalController extends Controller
         if ($doc === null || (int) $doc['student_id'] !== (int) $student['id']) {
             abort(404, 'Document not found.');
         }
-        $path = $svc->absolutePath($doc);
-        if ($path === null) {
+        $bytes = $svc->contents($doc);
+        if ($bytes === null) {
             abort(404, 'File is missing.');
         }
         \App\Services\AuditLogger::log('document.downloaded', 'student_document', (int) $docId, 'Student downloaded own document');
-        return (new Response((string) file_get_contents($path), 200))
+        return (new Response($bytes, 200))
             ->header('Content-Type', (string) ($doc['mime_type'] ?? 'application/octet-stream'))
             ->header('Content-Disposition', 'inline; filename="' . basename((string) $doc['file_path']) . '"')
             ->header('X-Content-Type-Options', 'nosniff');

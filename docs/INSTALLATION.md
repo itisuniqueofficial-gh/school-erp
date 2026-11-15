@@ -44,7 +44,7 @@ CREATE DATABASE school_erp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 php bin/console migrate      # creates 86 application tables (30 migrations)
 php bin/console seed         # roles, permissions, demo users, academic data
 ```
-`database/schema.sql` is optional and only for a new empty database; then run the installer or migrations so missing changes are applied. Do not import it over an existing ERP database.
+No SQL import is needed: the installer or `php bin/console migrate` creates and updates the schema.
 
 ### 5. File permissions
 ```bash

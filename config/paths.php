@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 
+// STORAGE_PATH moves uploads, logs, cache, sessions and backups out of the project
+// (for example to /home/user/erp-storage, outside the web root on cPanel / VPS).
+$storage = trim((string) (\Core\Support\Env::get('STORAGE_PATH', '') ?? ''));
+$storage = $storage !== '' ? rtrim(str_replace('\\', '/', $storage), '/') : $root . '/storage';
+
 return [
     'root'      => $root,
     'app'       => $root . '/app',
@@ -13,11 +18,11 @@ return [
     'public'    => $root . '/public',
     'resources' => $root . '/resources',
     'views'     => $root . '/resources/views',
-    'storage'   => $root . '/storage',
-    'uploads'   => $root . '/storage/uploads',
-    'logs'      => $root . '/storage/logs',
-    'cache'     => $root . '/storage/cache',
-    'sessions'  => $root . '/storage/sessions',
-    'backups'   => $root . '/storage/backups',
+    'storage'   => $storage,
+    'uploads'   => $storage . '/uploads',
+    'logs'      => $storage . '/logs',
+    'cache'     => $storage . '/cache',
+    'sessions'  => $storage . '/sessions',
+    'backups'   => $storage . '/backups',
     'routes'    => $root . '/routes',
 ];

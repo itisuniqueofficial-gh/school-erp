@@ -73,7 +73,7 @@ final class ReportService
             ->selectRaw('`classes`.`name` AS class_name, COUNT(`students`.`id`) AS count')
             ->leftJoin('classes', 'students.class_id', '=', 'classes.id')
             ->whereNull('students.deleted_at')
-            ->groupBy('students.class_id')
+            ->groupBy('students.class_id', 'classes.name')
             ->get();
         return ['title' => 'Students by class', 'columns' => ['class_name', 'count'], 'rows' => $rows];
     }

@@ -30,34 +30,18 @@ final class IdSequenceService
         $conn = Connection::instance();
 
         return $conn->transaction(function () use ($conn, $prefix, $year): int {
-            $driver = $conn->pdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+            // Ensure the row exists. ON CONFLICT / ON DUPLICATE KEY means a concurrent
+            // insert is not an error (and does not abort a PostgreSQL transaction).
+            $conn->statement(
+                $conn->dialect()->upsertNoop('id_sequences', ['prefix', 'year', 'next_value'], ['prefix', 'year']),
+                [$prefix, $year, 1]
+            );
 
-            // Ensure the row exists.
-            $exists = QueryBuilder::table('id_sequences')
-                ->where('prefix', $prefix)->where('year', $year)->first();
-
-            if ($exists === null) {
-                try {
-                    QueryBuilder::table('id_sequences')->insert([
-                        'prefix' => $prefix, 'year' => $year, 'next_value' => 1,
-                    ]);
-                } catch (\Throwable) {
-                    // Another request inserted it first; continue to locked read.
-                }
-            }
-
-            // Lock the row (MySQL) then read + increment.
-            if ($driver === 'mysql') {
-                $row = $conn->selectOne(
-                    'SELECT `id`, `next_value` FROM `id_sequences` WHERE `prefix` = ? AND `year` = ? FOR UPDATE',
-                    [$prefix, $year]
-                );
-            } else {
-                $row = $conn->selectOne(
-                    'SELECT `id`, `next_value` FROM `id_sequences` WHERE `prefix` = ? AND `year` = ?',
-                    [$prefix, $year]
-                );
-            }
+            // Lock the row, then read + increment.
+            $row = $conn->selectOne(
+                'SELECT `id`, `next_value` FROM `id_sequences` WHERE `prefix` = ? AND `year` = ? FOR UPDATE',
+                [$prefix, $year]
+            );
 
             $value = (int) ($row['next_value'] ?? 1);
             QueryBuilder::table('id_sequences')
@@ -65,6 +49,22 @@ final class IdSequenceService
                 ->update(['next_value' => $value + 1]);
 
             return $value;
+        });
+    }
+
+    /**
+     * Make sure the next value for a prefix+year is at least $min (never lowers
+     * it). Used to continue after numbers that were created outside the
+     * sequence (legacy/imported rows).
+     */
+    public function ensureAtLeast(string $prefix, int $year, int $min): void
+    {
+        $conn = Connection::instance();
+        $conn->transaction(function () use ($conn, $prefix, $year, $min): void {
+            $conn->statement(
+                $conn->dialect()->upsertGreatest('id_sequences', ['prefix', 'year', 'next_value'], ['prefix', 'year'], 'next_value'),
+                [$prefix, $year, max(1, $min)]
+            );
         });
     }
 

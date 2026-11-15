@@ -110,6 +110,7 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
 
             // Students
             $router->get('/students', StudentController::class . '@index')->middleware('can:students.view');
+            $router->get('/students/export', StudentController::class . '@export')->middleware('can:students.view');
             $router->get('/students/create', StudentController::class . '@create')->middleware('can:students.create');
             $router->post('/students', StudentController::class . '@store')->middleware('can:students.create');
             $router->get('/students/{id}', StudentController::class . '@show')->middleware('can:students.view');
@@ -120,6 +121,9 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->delete('/students/{id}', StudentController::class . '@destroy')->middleware('can:students.delete');
             $router->post('/students/promote', StudentController::class . '@promote')->middleware('can:students.update');
             $router->post('/students/bulk', StudentController::class . '@bulk')->middleware('can:students.update');
+            $router->post('/students/resequence', StudentController::class . '@resequence')->middleware('can:students.manage_roll');
+            $router->post('/students/{id}/roll', StudentController::class . '@changeRoll')->middleware('can:students.manage_roll');
+            $router->get('/students/{id}/id-card', StudentController::class . '@idCard')->middleware('can:students.view');
             $router->get('/promotions', \App\Controllers\Admin\PromotionController::class . '@index')->middleware('can:students.update');
             $router->post('/promotions/apply', \App\Controllers\Admin\PromotionController::class . '@apply')->middleware('can:students.update');
             // Student documents + sensitive government IDs
@@ -290,6 +294,15 @@ $router->group(['middleware' => ['security', 'maintenance', 'csrf']], function (
             $router->post('/settings/integrations/{provider}', \App\Controllers\Admin\IntegrationController::class . '@save')->middleware('can:settings.manage');
             $router->get('/audit', \App\Controllers\Admin\AuditController::class . '@index')->middleware('can:settings.view');
             $router->post('/settings/backup', SettingController::class . '@backup')->middleware('can:settings.manage');
+
+            // Database administration (fixed safe operations only; no SQL console)
+            $router->get('/database', \App\Controllers\Admin\DatabaseController::class . '@index')->middleware('can:database.manage');
+            $router->post('/database/test', \App\Controllers\Admin\DatabaseController::class . '@test')->middleware(['can:database.manage', 'throttle:20,60']);
+            $router->post('/database/upgrade', \App\Controllers\Admin\DatabaseController::class . '@upgrade')->middleware(['can:database.manage', 'throttle:5,60']);
+            $router->post('/database/backup', \App\Controllers\Admin\DatabaseController::class . '@backup')->middleware(['can:database.manage', 'throttle:10,60']);
+            $router->post('/database/backup/verify', \App\Controllers\Admin\DatabaseController::class . '@verifyBackup')->middleware(['can:database.manage', 'throttle:20,60']);
+            $router->post('/database/schema/validate', \App\Controllers\Admin\DatabaseController::class . '@validateSchema')->middleware(['can:database.manage', 'throttle:20,60']);
+            $router->post('/database/schema/repair', \App\Controllers\Admin\DatabaseController::class . '@repairSchema')->middleware(['can:database.manage', 'throttle:3,60']);
 
             // Backup manager
             $router->get('/backups', \App\Controllers\Admin\BackupController::class . '@index')->middleware('can:settings.manage');

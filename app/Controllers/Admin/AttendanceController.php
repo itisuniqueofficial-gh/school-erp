@@ -32,12 +32,12 @@ final class AttendanceController extends Controller
         $existing = [];
         if ($classId && $sectionId) {
             $students = QueryBuilder::table('students')
-                ->select(['id', 'admission_no', 'roll_no', 'first_name', 'last_name'])
+                ->select(['id', 'prn', 'admission_no', 'roll_no', 'first_name', 'last_name'])
                 ->where('class_id', $classId)
                 ->where('section_id', $sectionId)
                 ->whereNull('deleted_at')
                 ->where('status', 'active')
-                ->orderBy('roll_no')->orderBy('first_name')
+                ->orderBy('CAST(`roll_no` AS UNSIGNED)')->orderBy('first_name')
                 ->get();
             $existing = StudentAttendance::forClassSectionDate($classId, $sectionId, $date);
         }
@@ -105,9 +105,9 @@ final class AttendanceController extends Controller
 
         if ($classId && $sectionId) {
             $students = QueryBuilder::table('students')
-                ->select(['id', 'roll_no', 'first_name', 'last_name'])
+                ->select(['id', 'prn', 'roll_no', 'first_name', 'last_name'])
                 ->where('class_id', $classId)->where('section_id', $sectionId)
-                ->whereNull('deleted_at')->orderBy('roll_no')->get();
+                ->whereNull('deleted_at')->orderBy('CAST(`roll_no` AS UNSIGNED)')->get();
 
             foreach (StudentAttendance::monthly($classId, $sectionId, $month) as $row) {
                 $day = (int) date('j', strtotime((string) $row['date']));

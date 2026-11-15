@@ -288,3 +288,79 @@ canvas { max-width: 100%; }
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: 1rem;
 }
+
+/* ==========================================================================
+   Student profile: Identity & Roll Numbers (.idr-*)
+   Scoped component. Reuses .card, .form-*, .btn, .badge and .data-table.
+   ========================================================================== */
+.idr { padding: 0; overflow: hidden; }
+.idr-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; }
+.idr-title { font-size: 1.0625rem; font-weight: 600; color: #0f172a; margin: 0; }
+.idr-desc { margin: .25rem 0 0; font-size: .875rem; color: #64748b; }
+.idr-block { padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; }
+.idr-block:last-child { border-bottom: 0; }
+.idr-subtitle { font-size: .9375rem; font-weight: 600; color: #1e293b; margin: 0 0 .75rem; }
+.idr-hint { margin: -.25rem 0 1rem; font-size: .8125rem; color: #64748b; max-width: 60rem; }
+.idr-hint strong { color: #1e293b; }
+.idr-label { display: block; font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #64748b; }
+
+/* Permanent identity */
+.idr-identity { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .5rem; padding: 1rem 1.25rem; }
+.idr-prn-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-top: .375rem; }
+.idr-prn { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.5rem; font-weight: 600;
+    letter-spacing: .06em; color: #0f172a; line-height: 1.2; overflow-wrap: anywhere; }
+.idr-prn--empty { font-family: inherit; font-size: 1rem; font-weight: 500; letter-spacing: 0; color: #94a3b8; margin: .375rem 0 0; }
+.idr-copy { padding: .375rem .75rem; font-size: .8125rem; gap: .375rem; min-height: 2rem; }
+.idr-copy.is-copied { color: #166534; border-color: #86efac; background: #f0fdf4; }
+.idr-copy-status { font-size: .8125rem; color: #166534; }
+.idr-note { margin: 0; max-width: 26rem; font-size: .8125rem; color: #64748b; display: flex; gap: .5rem; align-items: flex-start; }
+.idr-note i { margin-top: .2rem; color: #94a3b8; }
+
+/* Tables */
+.idr-table-wrap { border: 1px solid #e2e8f0; border-radius: .5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.idr-table { min-width: 0; }
+.idr-table th { background: #f8fafc; white-space: nowrap; padding: .625rem 1rem; }
+.idr-table td { padding: .75rem 1rem; vertical-align: middle; color: #334155; }
+.idr-table tbody tr:last-child td { border-bottom: 0; }
+.idr-table .idr-num { text-align: right; font-variant-numeric: tabular-nums; }
+.idr-table .idr-nowrap { white-space: nowrap; }
+.idr-table .idr-reason { min-width: 12rem; overflow-wrap: anywhere; }
+.idr-row-current td { background: #f8fafc; }
+.idr-tag { display: inline-block; margin-left: .375rem; padding: .05rem .4rem; font-size: .6875rem; font-weight: 600; border-radius: .25rem;
+    color: var(--brand-dark, #1d4ed8); background: #eff6ff; border: 1px solid #bfdbfe; vertical-align: middle; }
+.idr-empty { text-align: center; padding: 1.75rem 1rem; border: 1px dashed #cbd5e1; border-radius: .5rem; color: #64748b; }
+.idr-empty > i { font-size: 1.5rem; color: #94a3b8; }
+.idr-empty p { margin: .375rem 0 0; font-size: .875rem; }
+.idr-empty .idr-hint { margin: .25rem 0 0; }
+
+/* Change-roll form: 3 columns on desktop, stacked on mobile */
+.idr-form { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
+.idr-field { min-width: 0; }
+.idr-control { height: 2.5rem; padding-top: 0; padding-bottom: 0; }
+.idr-field-help { margin: .25rem 0 0; font-size: .75rem; color: #64748b; }
+.idr-field .field-error-msg { min-height: 0; line-height: 1.2; margin-top: .25rem; }
+.idr-field .field-error-msg + .idr-field-help { display: none; }
+.idr-submit { height: 2.5rem; min-width: 7.5rem; justify-content: center; white-space: nowrap; }
+.idr-label-spacer { visibility: hidden; }
+
+@media (max-width: 767px) {
+    .idr-header, .idr-block { padding: 1rem; }
+    .idr-prn { font-size: 1.25rem; }
+    .idr-identity { flex-direction: column; align-items: stretch; padding: 1rem; }
+    .idr-note { max-width: none; }
+    .idr-form { grid-template-columns: minmax(0, 1fr); gap: .875rem; }
+    .idr-label-spacer { display: none; }
+    .idr-control, .idr-submit { height: 2.75rem; }
+    .idr-submit { width: 100%; }
+    .idr-copy { min-height: 2.5rem; }
+}
+/* Stacked "card" rows on phones (table-cards pattern already defined above). */
+@media (max-width: 640px) {
+    .idr-table-wrap { border: 0; overflow: visible; }
+    .idr-table .idr-num { text-align: left; }
+    .idr-table td { text-align: right; }
+    .idr-row-current { border-color: #bfdbfe; }
+}
+.idr-copy:focus-visible, .idr-submit:focus-visible { outline: 2px solid var(--brand, #2563eb); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .idr * { transition: none !important; } }

@@ -68,7 +68,7 @@ echo "installed" > storage/installed.lock
 Individual commands: `php bin/console migrate`, `php bin/console seed`,
 `php bin/console health` (verify), `php bin/console upgrade` (safe re-deploy),
 `php bin/console install:status` (fresh vs existing database).
-`database/schema.sql` is an optional starter schema, not required. Import it only into a new empty database, then run the installer or `migrate` so missing migrations are applied. Never import it over an existing ERP database.
+No SQL file needs to be imported: the installer and `php bin/console migrate` create the whole schema. See docs/DATABASE_LIFECYCLE.md.
 
 The CLI `seed` / `install` commands include demo accounts for local testing;
 reset the super-admin password before exposing such an environment.

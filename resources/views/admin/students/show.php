@@ -10,6 +10,7 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
 <?php $this->section('breadcrumb'); ?><a href="<?= e(url('/admin/students')) ?>" class="hover:text-brand-600">Students</a> / Profile<?php $this->endSection(); ?>
 
 <?php $this->section('page_actions'); ?>
+<a href="<?= e(url('/admin/students/' . $student['id'] . '/id-card')) ?>" class="btn btn-secondary" target="_blank" rel="noopener"><i class="fa-solid fa-id-card"></i> ID Card</a>
 <?php if (auth()->can('students.update')): ?>
 <a href="<?= e(url('/admin/students/' . $student['id'] . '/edit')) ?>" class="btn btn-secondary"><i class="fa-solid fa-pen"></i> Edit</a>
 <?php endif; ?>
@@ -72,6 +73,7 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
             <?php
             $fields = [
                 'Class' => $student['class_name'] ?? '—', 'Section' => $student['section_name'] ?? '—',
+                'PRN' => $student['prn'] ?? '—', 'Admission No' => $student['admission_no'] ?? '—',
                 'Roll No' => $student['roll_no'] ?? '—', 'Gender' => ucfirst((string) $student['gender']),
                 'Date of Birth' => $student['dob'] ?? '—', 'Blood Group' => $student['blood_group'] ?? '—',
                 'Email' => $student['email'] ?? '—', 'Phone' => $student['phone'] ?? '—',
@@ -86,6 +88,143 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
             <?php endforeach; ?>
         </dl>
     </div>
+
+    <!-- Identity & roll numbers -->
+    <?php
+    $idrBadge = static fn (string $st): string => match ($st) {
+        'active' => 'badge-green', 'promoted' => 'badge-blue', 'transferred', 'left' => 'badge-amber', default => 'badge-slate',
+    };
+    $idrSection = static fn (array $r): string => trim((string) ($r['section_name'] ?? '')) !== '' ? (string) $r['section_name'] : '—';
+    $idrCurrentYear = (int) ($student['academic_year_id'] ?? 0);
+    $idrCurrent = null;
+    foreach (($enrollments ?? []) as $en) {
+        if ((int) $en['academic_year_id'] === $idrCurrentYear) { $idrCurrent = $en; break; }
+    }
+    ?>
+    <section class="card idr lg:col-span-3" aria-labelledby="idr-title">
+        <header class="idr-header">
+            <h2 id="idr-title" class="idr-title">Identity &amp; Roll Numbers</h2>
+            <p class="idr-desc">Permanent student identity and academic-year-specific roll number information.</p>
+        </header>
+
+        <!-- A. Permanent identity -->
+        <div class="idr-block">
+            <div class="idr-identity">
+                <div class="idr-identity-main">
+                    <span class="idr-label" id="idr-prn-label">Permanent Roll Number (PRN)</span>
+                    <?php if (!empty($student['prn'])): ?>
+                    <div class="idr-prn-row">
+                        <output class="idr-prn" id="idr-prn" aria-labelledby="idr-prn-label"><?= e((string) $student['prn']) ?></output>
+                        <button type="button" class="btn btn-secondary idr-copy" data-copy="<?= e((string) $student['prn']) ?>" data-idr-copy aria-label="Copy PRN <?= e((string) $student['prn']) ?>">
+                            <i class="fa-regular fa-copy" aria-hidden="true"></i><span>Copy</span>
+                        </button>
+                        <span class="idr-copy-status" role="status" aria-live="polite"></span>
+                    </div>
+                    <?php else: ?>
+                    <p class="idr-prn idr-prn--empty">Not issued</p>
+                    <?php endif; ?>
+                </div>
+                <p class="idr-note"><i class="fa-solid fa-lock" aria-hidden="true"></i>
+                    The PRN is permanent. It never changes with promotion, section transfer or roll-number changes, and is never reused.</p>
+            </div>
+        </div>
+
+        <!-- B. Academic roll number history -->
+        <div class="idr-block">
+            <h3 class="idr-subtitle">Academic Roll Number History</h3>
+            <?php if (empty($enrollments)): ?>
+            <div class="idr-empty">
+                <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                <p>No enrollment history yet.</p>
+                <p class="idr-hint">A roll number is assigned automatically when the student is enrolled in a class.</p>
+            </div>
+            <?php else: ?>
+            <div class="idr-table-wrap">
+                <table class="data-table table-cards idr-table">
+                    <caption class="sr-only">Academic enrollment and roll number history</caption>
+                    <thead><tr>
+                        <th scope="col">Academic Year</th><th scope="col">Class</th><th scope="col">Section</th>
+                        <th scope="col" class="idr-num">Roll Number</th><th scope="col">Status</th>
+                    </tr></thead>
+                    <tbody>
+                    <?php foreach ($enrollments as $en): $isCur = (int) $en['academic_year_id'] === $idrCurrentYear; ?>
+                        <tr<?= $isCur ? ' class="idr-row-current"' : '' ?>>
+                            <td data-label="Academic Year"><?= e((string) ($en['year_name'] ?? '—')) ?><?php if ($isCur): ?> <span class="idr-tag">Current</span><?php endif; ?></td>
+                            <td data-label="Class"><?= e((string) ($en['class_name'] ?? '—')) ?></td>
+                            <td data-label="Section"><?= e($idrSection($en)) ?></td>
+                            <td data-label="Roll Number" class="idr-num"><strong><?= e((string) $en['roll_no']) ?></strong></td>
+                            <td data-label="Status"><span class="badge <?= $idrBadge((string) $en['status']) ?>"><?= e(ucfirst((string) $en['status'])) ?></span></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- C. Change roll number -->
+        <?php if (!empty($canManageRoll) && $idrCurrent !== null): ?>
+        <div class="idr-block">
+            <h3 class="idr-subtitle" id="idr-change-title">Change Current Academic Year Roll Number</h3>
+            <p class="idr-hint">Current roll number <strong><?= e((string) $idrCurrent['roll_no']) ?></strong>
+                (<?= e(trim((string) ($idrCurrent['class_name'] ?? '') . ' ' . ($idrSection($idrCurrent) !== '—' ? $idrSection($idrCurrent) : ''))) ?>, <?= e((string) ($idrCurrent['year_name'] ?? '')) ?>).
+                The new number must be unused in this class and section. Every change is recorded in the audit history.</p>
+            <form method="POST" action="<?= e(url('/admin/students/' . $student['id'] . '/roll')) ?>" class="idr-form"
+                  aria-labelledby="idr-change-title" data-idr-form data-no-validate data-idr-current="<?= e((string) $idrCurrent['roll_no']) ?>" data-loading>
+                <?= csrf_field() ?>
+                <input type="hidden" name="academic_year_id" value="<?= (int) $idrCurrentYear ?>">
+                <div class="idr-field idr-field--roll">
+                    <label class="form-label required" for="idr-new-roll">New Roll Number</label>
+                    <input id="idr-new-roll" name="roll_no" type="text" inputmode="numeric" pattern="[0-9]{1,5}" maxlength="5"
+                           class="form-input idr-control" placeholder="e.g. 12" required autocomplete="off" aria-describedby="idr-roll-help">
+                    <p class="idr-field-help" id="idr-roll-help">1 to 99999</p>
+                </div>
+                <div class="idr-field idr-field--reason">
+                    <label class="form-label required" for="idr-reason">Reason for Change</label>
+                    <input id="idr-reason" name="reason" type="text" maxlength="255" class="form-input idr-control"
+                           placeholder="e.g. Corrected after merit list" required autocomplete="off" aria-describedby="idr-reason-help">
+                    <p class="idr-field-help" id="idr-reason-help">Required. Saved with the audit record.</p>
+                </div>
+                <div class="idr-field idr-field--action">
+                    <span class="form-label idr-label-spacer" aria-hidden="true">&nbsp;</span>
+                    <button type="submit" class="btn btn-primary idr-submit" data-confirm="Change the roll number?">
+                        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Change
+                    </button>
+                </div>
+            </form>
+        </div>
+        <?php endif; ?>
+
+        <!-- D. Audit history -->
+        <?php if (!empty($rollHistory)): ?>
+        <div class="idr-block">
+            <h3 class="idr-subtitle">Roll Number Change History</h3>
+            <div class="idr-table-wrap">
+                <table class="data-table table-cards idr-table">
+                    <caption class="sr-only">Audit history of roll number changes</caption>
+                    <thead><tr>
+                        <th scope="col">When</th><th scope="col">Year</th><th scope="col">Class</th><th scope="col">Change</th>
+                        <th scope="col" class="idr-num">Old</th><th scope="col" class="idr-num">New</th><th scope="col">By</th><th scope="col">Reason</th>
+                    </tr></thead>
+                    <tbody>
+                    <?php foreach ($rollHistory as $h): ?>
+                        <tr>
+                            <td data-label="When" class="idr-nowrap"><?= e((string) $h['created_at']) ?></td>
+                            <td data-label="Year"><?= e((string) ($h['year_name'] ?? '—')) ?></td>
+                            <td data-label="Class"><?= e(trim((string) ($h['class_name'] ?? '') . ' ' . (string) ($h['section_name'] ?? '')) ?: '—') ?></td>
+                            <td data-label="Change"><?= e(ucfirst((string) $h['change_type'])) ?></td>
+                            <td data-label="Old" class="idr-num"><?= e((string) ($h['old_roll_no'] ?? '—')) ?></td>
+                            <td data-label="New" class="idr-num"><?= e((string) ($h['new_roll_no'] ?? '—')) ?></td>
+                            <td data-label="By"><?= e((string) ($h['changed_by_name'] ?? 'System')) ?></td>
+                            <td data-label="Reason" class="idr-reason"><?= e((string) ($h['reason'] ?? '—')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
+    </section>
 
     <!-- Guardians -->
     <div class="card p-6 lg:col-span-2">
@@ -250,6 +389,7 @@ $name = $student['first_name'] . ' ' . $student['last_name'];
 <?php $this->endSection(); ?>
 
 <?php $this->section('page_scripts'); ?>
+<script src="<?= e(asset('assets/js/student-identity.js')) ?>"></script>
 <script>
 $(function(){
   $('#reveal-aadhaar').on('click', function(){

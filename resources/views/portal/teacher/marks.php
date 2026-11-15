@@ -52,7 +52,7 @@ $full = (float) ($schedule['full_marks'] ?? 100);
     <input type="hidden" name="subject_id" value="<?= $selected['subject_id'] ?>">
     <div class="overflow-x-auto">
         <table class="data-table">
-            <thead><tr><th>Roll</th><th>Student ID</th><th>Name</th><th>Marks (/<?= e((string) $full) ?>)</th><th>Absent</th></tr></thead>
+            <thead><tr><th>Roll</th><th>PRN</th><th>Student ID</th><th>Name</th><th>Marks (/<?= e((string) $full) ?>)</th><th>Absent</th></tr></thead>
             <tbody>
             <?php foreach ($students as $st):
                 $sid = (int) $st['id'];
@@ -61,6 +61,7 @@ $full = (float) ($schedule['full_marks'] ?? 100);
             ?>
                 <tr>
                     <td><?= e((string) ($st['roll_no'] ?? '—')) ?></td>
+                    <td class=\"font-mono text-xs\"><?= e((string) ($st['prn'] ?? '—')) ?></td>
                     <td class="font-mono text-xs"><?= e((string) ($st['public_id'] ?? $st['admission_no'])) ?></td>
                     <td class="font-medium text-slate-800"><?= e((string) ($st['first_name'] . ' ' . $st['last_name'])) ?></td>
                     <td>

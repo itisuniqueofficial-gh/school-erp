@@ -186,11 +186,9 @@ matches the XAMPP MySQL port consistently.
 
 ### Do I need to import schema.sql?
 
-No. The browser installer and `bin/console migrate` create and upgrade tables
-additively. `database/schema.sql` is an optional starter schema for hosts that
-require a manual import. Import it only into a **new empty** database, then run
-the installer/migrations so any missing changes are applied. Do not import it
-over an existing ERP database.
+No. The browser installer and `bin/console install` / `migrate` / `upgrade` create and
+update every table, index and relationship automatically (see docs/DATABASE_LIFECYCLE.md).
+The old hand-maintained `database/schema.sql` was removed because it was out of date.
 
 ## 6. Install the application
 

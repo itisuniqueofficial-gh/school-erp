@@ -6,8 +6,10 @@ declare(strict_types=1);
  * ===========================================================================
  * School ERP — Browser-based Installation Wizard
  * ---------------------------------------------------------------------------
- * Self-contained (does not depend on a configured app). Guides a non-technical
- * user through requirement checks, database setup, admin creation and seeding.
+ * Guides a non-technical user through requirement checks, database setup (MySQL,
+ * MariaDB or PostgreSQL; manual fields or a connection URL), admin creation and
+ * seeding. It contains NO installation logic of its own: everything is done by
+ * App\Services\Setup\SetupService, the same backend as `php bin/console install`.
  *
  * Safety rules:
  *  - The live database — not storage/installed.lock — is the source of truth.
@@ -24,9 +26,9 @@ declare(strict_types=1);
  * ===========================================================================
  */
 
-final class InstallerException extends RuntimeException
-{
-}
+use App\Services\Setup\SetupException;
+use App\Services\Setup\SetupService;
+use Core\Database\DatabaseConfig;
 
 $root = dirname(__DIR__);
 $lockFile = $root . '/storage/installed.lock';
@@ -58,6 +60,7 @@ if (is_file($root . '/vendor/autoload.php')) {
     $autoloader->register();
 }
 
+$setup = new SetupService($root);
 $step = (int) ($_GET['step'] ?? 1);
 if (!in_array($step, [1, 2, 3, 4], true)) {
     $step = 1;
@@ -127,7 +130,7 @@ function render(string $title, string $body, int $current = 0): void
         . '<span class="text-xl font-bold text-slate-900">School ERP Installer</span></div>';
 
     if ($current > 0) {
-        echo '<ol class="mb-8 flex items-center gap-2 text-xs font-medium">';
+        echo '<ol class="mb-8 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">';
         foreach ($steps as $i => $label) {
             $n = $i + 1;
             $cls = $n < $current ? 'bg-green-600 text-white' : ($n === $current ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500');
@@ -153,93 +156,6 @@ function installer_refuse(string $title, string $body): void
         . '<a href="' . h(installer_url('/login')) . '" class="btn mt-6"><i class="fa-solid fa-right-to-bracket"></i> Go to login</a>');
 }
 
-/**
- * @param array<string, string> $d
- * @return string[]
- */
-function installer_validate_db(array $d): array
-{
-    $errors = [];
-    $host = (string) ($d['host'] ?? '');
-    $port = (int) ($d['port'] ?? 0);
-    $name = (string) ($d['name'] ?? '');
-    $user = (string) ($d['user'] ?? '');
-    $pass = (string) ($d['pass'] ?? '');
-
-    if ($host === '' || strlen($host) > 255 || str_contains($host, ';') || str_contains($host, "\0")) {
-        $errors[] = 'Enter a valid database host (for example 127.0.0.1 or localhost).';
-    }
-    if ($port < 1 || $port > 65535) {
-        $errors[] = 'Database port must be between 1 and 65535.';
-    }
-    if (preg_match('/^[A-Za-z0-9_]{1,64}$/', $name) !== 1) {
-        $errors[] = 'Database name may contain only letters, numbers and underscores (maximum 64 characters).';
-    } elseif (in_array(strtolower($name), ['information_schema', 'performance_schema', 'mysql', 'sys'], true)) {
-        $errors[] = 'Choose a dedicated application database, not a MySQL system database.';
-    }
-    if ($user === '' || strlen($user) > 255) {
-        $errors[] = 'Enter the database username.';
-    }
-    if (str_contains($pass, "\n") || str_contains($pass, "\r")) {
-        $errors[] = 'The database password cannot contain line breaks.';
-    }
-
-    return $errors;
-}
-
-/**
- * @param array<string, string> $d
- */
-function installer_pdo(array $d, ?string $database = null): PDO
-{
-    $dsn = sprintf(
-        'mysql:host=%s;port=%d;%scharset=utf8mb4',
-        (string) $d['host'],
-        (int) $d['port'],
-        $database !== null ? 'dbname=' . $database . ';' : ''
-    );
-
-    return new PDO($dsn, (string) $d['user'], (string) $d['pass'], [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_TIMEOUT            => 5,
-    ]);
-}
-
-/**
- * @return array{tables:int,users:int,has_users_table:bool,installed:bool}
- */
-function installer_db_state(PDO $pdo): array
-{
-    $tables = (int) $pdo->query(
-        'SELECT COUNT(*) AS c FROM information_schema.tables WHERE table_schema = DATABASE()'
-    )->fetchColumn();
-
-    $hasUsers = (int) $pdo->query(
-        "SELECT COUNT(*) AS c FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'users'"
-    )->fetchColumn() > 0;
-
-    $users = 0;
-    if ($hasUsers) {
-        $users = (int) $pdo->query('SELECT COUNT(*) AS c FROM `users`')->fetchColumn();
-    }
-
-    return [
-        'tables'           => $tables,
-        'users'            => $users,
-        'has_users_table'  => $hasUsers,
-        'installed'        => $users > 0,
-    ];
-}
-
-function installer_database_exists(PDO $pdo, string $name): bool
-{
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = ?');
-    $stmt->execute([$name]);
-    return (int) $stmt->fetchColumn() > 0;
-}
-
 function installer_log(\Throwable $e, string $ref): void
 {
     global $root;
@@ -249,60 +165,18 @@ function installer_log(\Throwable $e, string $ref): void
     }
     @file_put_contents(
         $dir . '/install.log',
-        '[' . date('Y-m-d H:i:s') . "] [installer ref={$ref}] " . get_class($e) . ': ' . $e->getMessage()
+        '[' . date('Y-m-d H:i:s') . "] [installer ref={$ref}] " . get_class($e) . ': ' . SetupService::redact($e->getMessage())
         . ' in ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL,
         FILE_APPEND
     );
 }
 
-/**
- * Inspect the currently configured database without loading the framework.
- *
- * @return array{configured:bool,reachable:bool,installed:bool,users:int,tables:int,message:string}
- */
-function installer_current_state(string $envPath): array
-{
-    $env = \Core\Support\EnvFile::read($envPath);
-    $name = trim((string) ($env['DB_DATABASE'] ?? ''));
-    if ($name === '') {
-        return ['configured' => false, 'reachable' => false, 'installed' => false, 'users' => 0, 'tables' => 0, 'message' => 'No database is configured yet.'];
-    }
-
-    $d = [
-        'host' => (string) ($env['DB_HOST'] ?? '127.0.0.1'),
-        'port' => (int) ($env['DB_PORT'] ?? 3306),
-        'name' => $name,
-        'user' => (string) ($env['DB_USERNAME'] ?? ''),
-        'pass' => (string) ($env['DB_PASSWORD'] ?? ''),
-    ];
-
-    if (installer_validate_db($d) !== []) {
-        return ['configured' => true, 'reachable' => false, 'installed' => false, 'users' => 0, 'tables' => 0, 'message' => 'The existing database configuration is incomplete.'];
-    }
-
-    try {
-        $pdo = installer_pdo($d, $d['name']);
-        $state = installer_db_state($pdo);
-        return [
-            'configured' => true,
-            'reachable'  => true,
-            'installed'  => $state['installed'],
-            'users'      => $state['users'],
-            'tables'     => $state['tables'],
-            'message'    => $state['installed'] ? 'The configured database contains user accounts.' : 'The configured database has no users yet.',
-        ];
-    } catch (\Throwable $e) {
-        [, $message] = \Core\Database\DatabasePreflight::classify($e);
-        return ['configured' => true, 'reachable' => false, 'installed' => false, 'users' => 0, 'tables' => 0, 'message' => $message];
-    }
-}
-
 /* ==========================================================================
    Guard: an existing database always wins over a missing lock file
    ========================================================================== */
-$current = installer_current_state($envPath);
+$current = $setup->currentState();
 
-if (is_file($lockFile)) {
+if ($setup->isLocked()) {
     installer_refuse(
         'Already installed',
         'A previous installation marker exists. To protect your school data, this web installer will not reinstall, ' .
@@ -324,22 +198,6 @@ if ($current['installed']) {
     exit;
 }
 
-/* ---- Requirement checks -------------------------------------------------- */
-function requirementChecks(string $root): array
-{
-    $checks = [];
-    $checks[] = ['PHP >= 8.2', version_compare(PHP_VERSION, '8.2.0', '>='), PHP_VERSION];
-    foreach (['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'fileinfo', 'json', 'session', 'ctype', 'iconv'] as $ext) {
-        $checks[] = ["Extension: {$ext}", extension_loaded($ext), extension_loaded($ext) ? 'loaded' : 'missing'];
-    }
-    foreach (['storage', 'storage/logs', 'storage/cache', 'storage/sessions', 'storage/uploads', 'storage/backups'] as $dir) {
-        $path = $root . '/' . $dir;
-        $writable = is_dir($path) && is_writable($path);
-        $checks[] = ["Writable: {$dir}", $writable, $writable ? 'ok' : 'not writable'];
-    }
-    return $checks;
-}
-
 /* ==========================================================================
    POST handlers
    ========================================================================== */
@@ -350,63 +208,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Your session expired or the form was not submitted from this installer. Reload the page and try again.';
         $step = $action === 'install' ? 3 : 2;
     } elseif ($action === 'testdb') {
-        $d = [
-            'host' => trim((string) ($_POST['db_host'] ?? '127.0.0.1')),
-            'port' => (int) ($_POST['db_port'] ?? 3306),
-            'name' => trim((string) ($_POST['db_name'] ?? '')),
-            'user' => trim((string) ($_POST['db_user'] ?? '')),
-            'pass' => (string) ($_POST['db_pass'] ?? ''),
-        ];
-        $_SESSION['db'] = $d;
         $step = 2;
-
-        $validation = installer_validate_db($d);
-        if ($validation !== []) {
-            $errors = $validation;
-        } else {
-            try {
-                $server = installer_pdo($d);
+        $form = [
+            'method' => (($_POST['method'] ?? 'manual') === 'url') ? 'url' : 'manual',
+            'engine' => (string) ($_POST['db_engine'] ?? 'mysql'),
+            'host' => trim((string) ($_POST['db_host'] ?? '127.0.0.1')), 'port' => trim((string) ($_POST['db_port'] ?? '')),
+            'name' => trim((string) ($_POST['db_name'] ?? '')), 'user' => trim((string) ($_POST['db_user'] ?? '')),
+            'socket' => trim((string) ($_POST['db_socket'] ?? '')), 'ssl' => (string) ($_POST['db_ssl'] ?? 'disable'),
+            'schema' => trim((string) ($_POST['db_schema'] ?? '')), 'create' => isset($_POST['create_db']),
+        ];
+        $_SESSION['db_form'] = $form;   // never contains the password or the URL
+        try {
+            $cfg = $form['method'] === 'url'
+                ? DatabaseConfig::fromUrl((string) ($_POST['db_url'] ?? ''))
+                : DatabaseConfig::fromArray([
+                    'engine' => $form['engine'], 'host' => $form['host'], 'port' => $form['port'], 'database' => $form['name'],
+                    'username' => $form['user'], 'password' => (string) ($_POST['db_pass'] ?? ''), 'socket' => $form['socket'],
+                    'ssl_mode' => $form['ssl'], 'schema' => $form['schema'],
+                ]);
+            if ($cfg->database === '') {
+                throw new InvalidArgumentException('Enter the database name.');
+            }
+            $i = $setup->inspectConnection($cfg);
+            if (!$i['ok']) {
+                $errors[] = 'Database connection failed. ' . $i['message'];
+            } else {
                 $created = false;
-
-                if (!installer_database_exists($server, $d['name'])) {
-                    try {
-                        $server->exec(
-                            'CREATE DATABASE IF NOT EXISTS `' . $d['name'] . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-                        );
+                if (!$i['database_exists']) {
+                    if (!$form['create']) {
+                        $errors[] = 'Connected, but the database "' . $cfg->database . '" does not exist. Tick "Create the database" or create it in your hosting panel first. No changes were made.';
+                    } else {
+                        $setup->createDatabase($cfg);
                         $created = true;
-                    } catch (\Throwable $e) {
-                        installer_log($e, 'db-' . substr(bin2hex(random_bytes(4)), 0, 8));
-                        $errors[] = 'The database "' . $d['name'] . '" does not exist and this database user cannot create it. '
-                            . 'Create it in phpMyAdmin/cPanel first, or use an account with CREATE DATABASE permission. No changes were made.';
+                        $i = $setup->inspectConnection($cfg);
                     }
                 }
-
                 if ($errors === []) {
-                    $pdo = installer_pdo($d, $d['name']);
-                    $state = installer_db_state($pdo);
-                    $_SESSION['db_state'] = $state;
-
-                    if ($state['installed']) {
-                        $errors[] = 'An existing School ERP installation was found in database "' . $d['name'] . '" ('
-                            . (int) $state['users'] . ' user account(s)). To protect your data, the web installer will not '
-                            . 'reinstall over it. Use "php bin/console admin:recover" to recover an administrator, or choose a '
-                            . 'different, empty database.';
+                    if ($i['installed']) {
+                        $errors[] = 'An existing School ERP installation was found in database "' . $cfg->database . '" (' . (int) $i['users']
+                            . ' user account(s)). The web installer will not install over it. Use "php bin/console admin:recover" to recover an administrator, or choose a different, empty database.';
                     } else {
-                        if ($state['tables'] > 0) {
-                            $_SESSION['installer_notice'] = 'Database "' . $d['name'] . '" contains ' . (int) $state['tables']
-                                . ' table(s) but no users. Installation will resume additively; no tables will be dropped.';
-                        } elseif ($created) {
-                            $_SESSION['installer_notice'] = 'Database "' . $d['name'] . '" was created successfully.';
-                        }
+                        $_SESSION['db_cfg'] = $cfg->toArray();   // server-side session only; removed after install
+                        $_SESSION['installer_notice'] = $created
+                            ? 'Database "' . $cfg->database . '" was created. ' . $i['version']
+                            : ($i['tables'] > 0
+                                ? 'Database "' . $cfg->database . '" contains ' . (int) $i['tables'] . ' table(s) but no users. Installation resumes additively; no tables will be dropped.'
+                                : 'Connected to ' . $i['version'] . '.');
                         header('Location: ' . installer_url('/install.php?step=3'));
                         exit;
                     }
                 }
-            } catch (\Throwable $e) {
-                installer_log($e, 'db-' . substr(bin2hex(random_bytes(4)), 0, 8));
-                [, $message] = \Core\Database\DatabasePreflight::classify($e);
-                $errors[] = 'Database connection failed. ' . $message;
             }
+        } catch (InvalidArgumentException | SetupException $e) {
+            $errors[] = $e->getMessage();
+        } catch (\Throwable $e) {
+            installer_log($e, 'db-' . substr(bin2hex(random_bytes(4)), 0, 8));
+            $errors[] = 'Database connection failed. Check the settings and try again.';
         }
     } elseif ($action === 'install') {
         $a = [
@@ -416,165 +273,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'school' => trim((string) ($_POST['school_name'] ?? '')),
             'tz'     => trim((string) ($_POST['timezone'] ?? 'UTC')),
             'curr'   => trim((string) ($_POST['currency'] ?? '₹')),
+            'storage' => trim((string) ($_POST['storage_path'] ?? '')),
         ];
-        $_SESSION['admin'] = [
-            'name'   => $a['name'],
-            'email'  => $a['email'],
-            'school' => $a['school'],
-            'tz'     => $a['tz'],
-            'curr'   => $a['curr'],
-        ];
+        $_SESSION['admin'] = ['name' => $a['name'], 'email' => $a['email'], 'school' => $a['school'], 'tz' => $a['tz'], 'curr' => $a['curr'], 'storage' => $a['storage']];
         $step = 3;
-        $d = $_SESSION['db'] ?? null;
-
-        if (is_file($lockFile)) {
-            $errors[] = 'The installer was locked by another process. No changes were made.';
-        }
-        if (!is_array($d) || installer_validate_db($d) !== []) {
-            $errors[] = 'Please configure and test the database first.';
-        }
-        if (!filter_var($a['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Enter a valid administrator email address.';
-        }
-        if (strlen($a['pass']) < 8) {
-            $errors[] = 'The administrator password must be at least 8 characters.';
-        }
-        if (strlen($a['pass']) > 4096) {
-            $errors[] = 'The administrator password is too long.';
-        }
-        if ($a['name'] === '' || strlen($a['name']) > 150) {
-            $errors[] = 'Enter an administrator name (maximum 150 characters).';
-        }
-        if ($a['school'] === '' || strlen($a['school']) > 190) {
-            $errors[] = 'Enter a school name (maximum 190 characters).';
-        }
-        if (!in_array($a['tz'], timezone_identifiers_list(), true)) {
-            $errors[] = 'Choose a valid timezone.';
-        }
-        if ($a['curr'] === '' || strlen($a['curr']) > 8) {
-            $errors[] = 'Enter a currency symbol (maximum 8 characters).';
-        }
-
-        $envResult = null;
-        $dbTouched = false;
-        $protectedAbort = false;
-
-        if ($errors === [] && is_array($d)) {
-            $ref = substr(bin2hex(random_bytes(6)), 0, 12);
-
-            try {
-                // Re-check immediately before writing anything: another process
-                // may have installed into this database since the test step.
-                $pdo = installer_pdo($d, $d['name']);
-                $state = installer_db_state($pdo);
-                if ($state['installed']) {
-                    throw new InstallerException(
-                        'An existing installation was detected in this database. No files or data were changed.'
-                    );
-                }
-
-                $key = bin2hex(random_bytes(16));
-                $envResult = \Core\Support\EnvFile::update($envPath, [
-                    'APP_ENV'       => 'production',
-                    'APP_DEBUG'     => 'false',
-                    'APP_KEY'       => $key,
-                    'APP_TIMEZONE'  => $a['tz'],
-                    'DB_CONNECTION' => 'mysql',
-                    'DB_HOST'       => (string) $d['host'],
-                    'DB_PORT'       => (string) (int) $d['port'],
-                    'DB_DATABASE'   => (string) $d['name'],
-                    'DB_USERNAME'   => (string) $d['user'],
-                    'DB_PASSWORD'   => (string) $d['pass'],
-                ], $root . '/.env.example');
-
-                // Bootstrap the framework with the newly written configuration.
-                \Core\Support\Env::load($envPath);
-                \Core\Config\Config::load($root . '/config');
-                date_default_timezone_set($a['tz']);
-
-                $dbTouched = true;
-                (new \Database\Migrator())->migrate();
-
-                if ((new \App\Services\InstallService())->isInstalled()) {
-                    $protectedAbort = true;
-                    throw new InstallerException(
-                        'An existing installation was detected after migration. No seeding or administrator changes were made.'
-                    );
-                }
-
-                // Disable demo accounts for browser installations.
-                (new \Database\Seeds\DatabaseSeeder())->run(false);
-
-                // Always target the seeded superadmin on a fresh install. The
-                // recovery service verifies email conflicts and only touches
-                // this single account.
-                (new \App\Services\AdminRecoveryService())->resetOrCreate(
-                    $a['email'],
-                    $a['pass'],
-                    $a['name'],
-                    true,
-                    'superadmin',
-                    'installer'
-                );
-
-                // Persist the school profile (update or insert if a template
-                // migration did not create the keys).
-                foreach ([['school_name', $a['school']], ['currency', $a['curr']], ['timezone', $a['tz']]] as [$k, $v]) {
-                    $exists = \Core\Database\QueryBuilder::table('settings')->where('key', $k)->first();
-                    if ($exists !== null) {
-                        \Core\Database\QueryBuilder::table('settings')->where('key', $k)->update([
-                            'value'      => $v,
-                            'updated_at' => date('Y-m-d H:i:s'),
-                        ]);
-                    } else {
-                        \Core\Database\QueryBuilder::table('settings')->insert([
-                            'group'      => 'general',
-                            'key'        => $k,
-                            'value'      => $v,
-                            'type'       => 'string',
-                            'created_at' => date('Y-m-d H:i:s'),
-                            'updated_at' => date('Y-m-d H:i:s'),
-                        ]);
-                    }
-                }
-
-                $lockWarning = '';
-                if (@file_put_contents($lockFile, 'Installed at ' . date('c') . "\nVersion 1.6.18\n", LOCK_EX) === false) {
-                    $lockWarning = 'The database was installed, but storage/installed.lock could not be written. '
-                        . 'The database guard still prevents re-installation; fix storage permissions.';
-                }
-
-                unset($_SESSION['db'], $_SESSION['admin'], $_SESSION['db_state'], $_SESSION['installer_notice']);
-                $_SESSION['installer_complete'] = true;
-                $_SESSION['installer_lock_warning'] = $lockWarning;
-                $step = 4;
-            } catch (\Throwable $e) {
-                installer_log($e, $ref);
-
-                $safeMessage = ($e instanceof InstallerException
-                    || $e instanceof \InvalidArgumentException
-                    || $e instanceof \DomainException)
-                    ? $e->getMessage()
-                    : 'An unexpected error occurred while installing.';
-
-                $keepEnv = $dbTouched && !$protectedAbort;
-                if (!$keepEnv && $envResult !== null) {
-                    try {
-                        \Core\Support\EnvFile::restore($envPath, $envResult['backup']);
-                        $safeMessage .= ' Your previous .env configuration was restored.';
-                    } catch (\Throwable $restoreError) {
-                        installer_log($restoreError, $ref);
-                        $safeMessage .= ' The previous .env could not be restored automatically; restore it from '
-                            . ($envResult['backup'] ?? 'your backup') . '.';
-                    }
-                } elseif ($keepEnv) {
-                    $safeMessage .= ' The database was partially changed, so the new .env was kept. '
-                        . 'Re-run the installer or finish with: php bin/console install';
-                }
-
-                $errors[] = $safeMessage . ' Reference: ' . $ref . '. Details were written to storage/logs/install.log.';
-                $step = 3;
+        $ref = substr(bin2hex(random_bytes(6)), 0, 12);
+        try {
+            if (!isset($_SESSION['db_cfg']) || !is_array($_SESSION['db_cfg'])) {
+                throw new SetupException('Please configure and test the database first.');
             }
+            $steps = $setup->install(
+                DatabaseConfig::fromArray($_SESSION['db_cfg']),
+                ['name' => $a['name'], 'email' => $a['email'], 'password' => $a['pass']],
+                ['school' => $a['school'], 'timezone' => $a['tz'], 'currency' => $a['curr']],
+                ['create_database' => !empty($_SESSION['db_form']['create']), 'storage_path' => $a['storage']]
+            );
+            $_SESSION['installer_steps'] = $steps;
+            $_SESSION['installer_complete'] = true;
+            unset($_SESSION['db_cfg'], $_SESSION['db_form'], $_SESSION['admin'], $_SESSION['installer_notice']);
+            $step = 4;
+        } catch (SetupException $e) {
+            installer_log($e, $ref);
+            $errors[] = $e->getMessage() . ' Reference: ' . $ref . '.';
+        } catch (\Throwable $e) {
+            installer_log($e, $ref);
+            $errors[] = 'An unexpected error occurred while installing. Reference: ' . $ref . '. Details were written to storage/logs/install.log.';
         }
     } else {
         $errors[] = 'Unknown installer action. Reload the page and try again.';
@@ -594,7 +317,7 @@ if (isset($_SESSION['installer_notice']) && is_string($_SESSION['installer_notic
 
 $errorHtml = '';
 if ($errors) {
-    $errorHtml = '<div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">'
+    $errorHtml = '<div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">'
         . implode('<br>', array_map('h', $errors)) . '</div>';
 }
 
@@ -603,26 +326,28 @@ if ($step === 4) {
         header('Location: ' . installer_url('/install.php?step=1'));
         exit;
     }
-
-    $lockWarning = (string) ($_SESSION['installer_lock_warning'] ?? '');
-    unset($_SESSION['installer_lock_warning']);
-
+    $rows = '';
+    foreach ((array) ($_SESSION['installer_steps'] ?? []) as $r) {
+        $c = $r['status'] === 'ok' ? 'text-green-700' : 'text-amber-700';
+        $rows .= '<tr class="border-b border-slate-100"><td class="py-1.5 pr-3 text-sm">' . h((string) $r['step']) . '</td><td class="py-1.5 text-xs text-slate-500">'
+            . h((string) $r['detail']) . '</td><td class="py-1.5 text-right text-xs font-semibold ' . $c . '">' . h(strtoupper((string) $r['status'])) . '</td></tr>';
+    }
+    unset($_SESSION['installer_steps']);
     render('Installation complete', '<div class="text-center">'
         . '<span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl text-green-600"><i class="fa-solid fa-check"></i></span>'
         . '<h1 class="mt-4 text-xl font-bold text-slate-900">Installation complete!</h1>'
-        . '<p class="mt-2 text-slate-500">Your School ERP is ready. Demo accounts were not installed. For security, delete <code>public/install.php</code> now.</p>'
-        . ($lockWarning !== '' ? '<p class="mt-3 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">' . h($lockWarning) . '</p>' : '')
+        . '<p class="mt-2 text-slate-500">Your School ERP is ready. Demo accounts were not installed. For security, delete <code>public/install.php</code> now.</p></div>'
+        . '<table class="mt-5 w-full"><tbody>' . $rows . '</tbody></table>'
         . '<p class="mt-3 text-xs text-slate-500">Lost the administrator password later? Run <code>php bin/console admin:recover --email=...</code> on the server.</p>'
-        . '<a href="' . h(installer_url('/login')) . '" class="btn mt-6">Go to login</a></div>', 4);
+        . '<div class="text-center"><a href="' . h(installer_url('/login')) . '" class="btn mt-6">Go to login</a></div>', 4);
     exit;
 }
 
 if ($step === 3) {
-    if (!isset($_SESSION['db']) || !is_array($_SESSION['db'])) {
+    if (!isset($_SESSION['db_cfg']) || !is_array($_SESSION['db_cfg'])) {
         header('Location: ' . installer_url('/install.php?step=2'));
         exit;
     }
-
     $a = $_SESSION['admin'] ?? [];
     render('Administrator & school', $errorHtml . $notice
         . '<h1 class="text-lg font-bold text-slate-900">Administrator & school profile</h1>'
@@ -630,13 +355,18 @@ if ($step === 3) {
         . '<form method="POST" action="' . h(installer_url('/install.php?step=3')) . '">'
         . installer_csrf_field()
         . '<input type="hidden" name="action" value="install">'
-        . '<label class="lbl">School name</label><input class="inp" name="school_name" value="' . h((string) ($a['school'] ?? 'Greenfield International School')) . '" required>'
+        . '<label class="lbl">School name</label><input class="inp" name="school_name" value="' . h((string) ($a['school'] ?? '')) . '" placeholder="Your school name" required>'
         . '<div class="grid grid-cols-2 gap-3"><div><label class="lbl">Timezone</label><input class="inp" name="timezone" value="' . h((string) ($a['tz'] ?? 'Asia/Kolkata')) . '"></div>'
         . '<div><label class="lbl">Currency symbol</label><input class="inp" name="currency" value="' . h((string) ($a['curr'] ?? '₹')) . '"></div></div>'
-        . '<label class="lbl">Administrator name</label><input class="inp" name="admin_name" value="' . h((string) ($a['name'] ?? 'Super Admin')) . '" required>'
+        . '<label class="lbl">Administrator name</label><input class="inp" name="admin_name" value="' . h((string) ($a['name'] ?? 'Administrator')) . '" required>'
         . '<label class="lbl">Administrator email</label><input class="inp" type="email" name="admin_email" value="' . h((string) ($a['email'] ?? '')) . '" placeholder="admin@yourschool.com" required>'
-        . '<label class="lbl">Administrator password</label><input class="inp" type="password" name="admin_pass" placeholder="At least 8 characters" minlength="8" required>'
-        . '<p class="mt-2 text-xs text-slate-500">Existing data is never reset. If this database already contains users the installer stops before writing anything.</p>'
+        . '<label class="lbl">Administrator password</label><input class="inp" type="password" name="admin_pass" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password">'
+        . '<details class="mt-4 text-sm"><summary class="cursor-pointer font-medium text-slate-700">File storage (optional)</summary>'
+        . '<label class="lbl">Storage folder for uploads, documents and backups</label>'
+        . '<input class="inp" name="storage_path" value="' . h((string) ($a['storage'] ?? '')) . '" placeholder="Leave empty to use ' . h($root) . '/storage">'
+        . '<p class="mt-1 text-xs text-slate-500">Use an absolute path <strong>outside</strong> the web root (for example <code>/home/youruser/erp-storage</code>) on cPanel / VPS. '
+        . 'Amazon S3 / Cloudflare R2 can be enabled later in <code>.env</code> (see docs/STORAGE.md).</p></details>'
+        . '<p class="mt-3 text-xs text-slate-500">Existing data is never reset. If this database already contains users the installer stops before writing anything.</p>'
         . '<button class="btn mt-6" type="submit"><i class="fa-solid fa-rocket"></i> Install now</button>'
         . '</form>', 3);
     exit;
@@ -644,40 +374,68 @@ if ($step === 3) {
 
 if ($step === 2) {
     $env = \Core\Support\EnvFile::read($envPath);
-    $db = $_SESSION['db'] ?? [
-        'host' => (string) ($env['DB_HOST'] ?? '127.0.0.1'),
-        'port' => (int) ($env['DB_PORT'] ?? 3306),
-        'name' => (string) ($env['DB_DATABASE'] ?? 'school_erp'),
-        'user' => (string) ($env['DB_USERNAME'] ?? 'root'),
-        'pass' => '',
+    $f = $_SESSION['db_form'] ?? [
+        'method' => 'manual', 'engine' => (string) ($env['DB_CONNECTION'] ?? 'mysql'), 'host' => (string) ($env['DB_HOST'] ?? '127.0.0.1'),
+        'port' => (string) ($env['DB_PORT'] ?? '3306'), 'name' => (string) ($env['DB_DATABASE'] ?? 'school_erp'), 'user' => (string) ($env['DB_USERNAME'] ?? 'root'),
+        'socket' => '', 'ssl' => 'disable', 'schema' => '', 'create' => false,
     ];
+    $drivers = $setup->databaseDrivers();
+    $opt = static function (string $v, string $label, bool $ok) use ($f): string {
+        return '<option value="' . h($v) . '"' . (($f['engine'] ?? '') === $v ? ' selected' : '') . ($ok ? '' : ' disabled') . '>' . h($label . ($ok ? '' : ' (PHP driver not installed)')) . '</option>';
+    };
+    $ssl = '';
+    foreach (['disable' => 'Off', 'prefer' => 'Prefer', 'require' => 'Require', 'verify-ca' => 'Verify CA', 'verify-full' => 'Verify full'] as $v => $l) {
+        $ssl .= '<option value="' . $v . '"' . (($f['ssl'] ?? 'disable') === $v ? ' selected' : '') . '>' . $l . '</option>';
+    }
     render('Database configuration', $errorHtml . $notice
         . '<h1 class="text-lg font-bold text-slate-900">Database configuration</h1>'
-        . '<p class="mt-1 text-sm text-slate-500">Enter your MySQL credentials. The database will be created only if it does not exist and your user has permission.</p>'
+        . '<p class="mt-1 text-sm text-slate-500">Choose the database engine and enter its connection details, or paste a connection URL.</p>'
         . '<form method="POST" action="' . h(installer_url('/install.php?step=2')) . '">'
         . installer_csrf_field()
         . '<input type="hidden" name="action" value="testdb">'
-        . '<div class="grid grid-cols-2 gap-3"><div><label class="lbl">Host</label><input class="inp" name="db_host" value="' . h((string) ($db['host'] ?? '')) . '" required></div>'
-        . '<div><label class="lbl">Port</label><input class="inp" name="db_port" value="' . h((string) ($db['port'] ?? 3306)) . '" required></div></div>'
-        . '<label class="lbl">Database name</label><input class="inp" name="db_name" value="' . h((string) ($db['name'] ?? '')) . '" required>'
-        . '<label class="lbl">Username</label><input class="inp" name="db_user" value="' . h((string) ($db['user'] ?? '')) . '" required>'
+        . '<label class="lbl">Database engine</label><select class="inp" name="db_engine" id="db_engine">'
+        . $opt('mysql', 'MySQL', $drivers['pdo_mysql (MySQL / MariaDB)']) . $opt('mariadb', 'MariaDB', $drivers['pdo_mysql (MySQL / MariaDB)'])
+        . $opt('pgsql', 'PostgreSQL', $drivers['pdo_pgsql (PostgreSQL)']) . '</select>'
+        . '<fieldset class="mt-3"><legend class="lbl">Connection method</legend>'
+        . '<label class="mr-4 text-sm"><input type="radio" name="method" value="manual"' . (($f['method'] ?? 'manual') === 'manual' ? ' checked' : '') . '> Enter details</label>'
+        . '<label class="text-sm"><input type="radio" name="method" value="url"' . (($f['method'] ?? '') === 'url' ? ' checked' : '') . '> Connection URL</label></fieldset>'
+        . '<div class="grid grid-cols-2 gap-3"><div><label class="lbl">Host</label><input class="inp" name="db_host" value="' . h((string) $f['host']) . '"></div>'
+        . '<div><label class="lbl">Port</label><input class="inp" name="db_port" id="db_port" value="' . h((string) $f['port']) . '"></div></div>'
+        . '<label class="lbl">Database name</label><input class="inp" name="db_name" value="' . h((string) $f['name']) . '">'
+        . '<label class="lbl">Username</label><input class="inp" name="db_user" value="' . h((string) $f['user']) . '" autocomplete="off">'
         . '<label class="lbl">Password</label><input class="inp" type="password" name="db_pass" value="" placeholder="Re-enter to retry" autocomplete="new-password">'
+        . '<label class="lbl">…or connection URL</label><input class="inp" type="password" name="db_url" value="" placeholder="postgres://user:pass@host:5432/database?sslmode=require" autocomplete="off">'
+        . '<p class="mt-1 text-xs text-slate-500">Used only when "Connection URL" is selected. Percent-encode special characters in the password (@ becomes %40). It is never shown again.</p>'
+        . '<details class="mt-3 text-sm"><summary class="cursor-pointer font-medium text-slate-700">Advanced (socket, SSL, schema)</summary>'
+        . '<label class="lbl">Unix socket (optional, replaces host/port)</label><input class="inp" name="db_socket" value="' . h((string) ($f['socket'] ?? '')) . '" placeholder="/var/run/mysqld/mysqld.sock">'
+        . '<label class="lbl">SSL mode</label><select class="inp" name="db_ssl">' . $ssl . '</select>'
+        . '<label class="lbl">PostgreSQL schema (optional)</label><input class="inp" name="db_schema" value="' . h((string) ($f['schema'] ?? '')) . '" placeholder="public"></details>'
+        . '<label class="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" name="create_db" value="1"' . (!empty($f['create']) ? ' checked' : '') . '> Create the database if it does not exist (needs permission; never drops anything)</label>'
         . '<p class="mt-2 text-xs text-slate-500">If the database already has users, installation stops. Lost admin access is recovered with <code>php bin/console admin:recover</code>, never this page.</p>'
         . '<button class="btn mt-6" type="submit"><i class="fa-solid fa-plug"></i> Test connection & continue</button>'
-        . '</form>', 2);
+        . '</form>'
+        . '<script>document.getElementById("db_engine").addEventListener("change",function(){var p=document.getElementById("db_port");'
+        . 'if(p.value===""||p.value==="3306"||p.value==="5432"){p.value=this.value==="pgsql"?"5432":"3306";}});</script>', 2);
     exit;
 }
 
-/* Step 1 — requirements */
-$checks = requirementChecks($root);
-$allPass = array_reduce($checks, static fn ($carry, $c) => $carry && $c[1], true);
+/* Step 1 — environment & requirements */
+$checks = $setup->requirements();
+$allPass = $setup->requirementsMet();
 $rows = '';
-foreach ($checks as [$label, $ok, $detail]) {
-    $icon = $ok ? '<i class="fa-solid fa-check text-green-600"></i>' : '<i class="fa-solid fa-xmark text-red-600"></i>';
-    $rows .= '<tr class="border-b border-slate-100"><td class="py-2">' . h($label) . '</td>'
-        . '<td class="py-2 text-slate-400 text-sm">' . h($detail) . '</td>'
+foreach ($checks as $c) {
+    $icon = $c['status'] === 'pass' ? '<i class="fa-solid fa-check text-green-600"></i>'
+        : ($c['status'] === 'warn' ? '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>' : '<i class="fa-solid fa-xmark text-red-600"></i>');
+    $rows .= '<tr class="border-b border-slate-100"><td class="py-2">' . h($c['label']) . '</td>'
+        . '<td class="py-2 text-slate-400 text-sm">' . h($c['detail']) . '</td>'
         . '<td class="py-2 text-right">' . $icon . '</td></tr>';
 }
+$envInfo = $setup->environment($_SERVER);
+$info = '<dl class="mt-4 grid grid-cols-3 gap-x-3 gap-y-1 rounded-lg bg-slate-100 p-3 text-xs">';
+foreach (['os' => 'System', 'php' => 'PHP', 'web_server' => 'Web server', 'project_root' => 'Folder', 'base_path' => 'URL path', 'storage_path' => 'Storage'] as $k => $l) {
+    $info .= '<dt class="font-semibold text-slate-600">' . h($l) . '</dt><dd class="col-span-2 break-all text-slate-700">' . h((string) ($envInfo[$k] === '' ? '/ (site root)' : $envInfo[$k])) . '</dd>';
+}
+$info .= '</dl>';
 $next = $allPass
     ? '<a href="' . h(installer_url('/install.php?step=2')) . '" class="btn mt-6"><i class="fa-solid fa-arrow-right"></i> Continue</a>'
     : '<p class="mt-6 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800">Please resolve the failing checks above (install PHP extensions / fix folder permissions) and reload this page.</p>';
@@ -692,5 +450,5 @@ if ($current['configured'] && !$current['reachable']) {
 }
 
 render('Requirements', $preflight . '<h1 class="text-lg font-bold text-slate-900">System requirements</h1>'
-    . '<p class="mt-1 text-sm text-slate-500">Verifying your server meets the requirements.</p>'
-    . '<table class="mt-4 w-full text-sm"><tbody>' . $rows . '</tbody></table>' . $next, 1);
+    . '<p class="mt-1 text-sm text-slate-500">Detected environment and requirements. At least one database driver is needed.</p>'
+    . $info . '<table class="mt-4 w-full text-sm"><tbody>' . $rows . '</tbody></table>' . $next, 1);

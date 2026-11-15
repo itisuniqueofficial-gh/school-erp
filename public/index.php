@@ -44,6 +44,21 @@ if (($guardReason = \App\Support\StartupGuard::check()) !== null) {
     exit;
 }
 
+// Deploy safety: a release may ship migrations the database has not seen. Either apply them (opt-in
+// DB_AUTO_MIGRATE=true, after a verified backup) or hold the UI back instead of running against a stale schema.
+if (\App\Support\StartupGuard::pendingMigrations() !== []) {
+    if (\App\Support\StartupGuard::autoUpgradeEnabled()) {
+        $upgrade = (new \App\Services\Database\DatabaseUpgradeService())->upgrade();
+        if (!$upgrade['ok'] && \App\Support\StartupGuard::pendingMigrations() !== []) {
+            \App\Support\StartupGuard::respond('upgrade_failed');
+            exit;
+        }
+    } elseif (!\App\Support\StartupGuard::allowedWhilePending((string) ($_SERVER['REQUEST_URI'] ?? '/'))) {
+        \App\Support\StartupGuard::respond('pending');
+        exit;
+    }
+}
+
 /** @var Router $router */
 $router = $app->make(Router::class);
 

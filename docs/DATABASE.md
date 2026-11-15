@@ -5,7 +5,7 @@ foreign keys, indexes on all lookup/foreign-key columns, unique constraints on
 natural keys, and soft-delete columns (`deleted_at`) on primary entities.
 
 - Migrations: `database/migrations/*.sql` (run in filename order).
-- Optional starter schema: `database/schema.sql` (new empty databases only; migrations are authoritative).
+- Schema: migrations in `database/migrations/` are the only source; `database/schema-manifest.json` is the expected structure (docs/DATABASE_LIFECYCLE.md).
 - Seed data: `database/seeds/DatabaseSeeder.php`.
 - Runner/CLI: `php bin/console migrate` / `seed` / `migrate:status`.
 

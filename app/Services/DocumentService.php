@@ -35,7 +35,7 @@ final class DocumentService
 
     private function baseDir(): string
     {
-        return rtrim((string) config('paths.storage'), '/') . '/uploads/documents';
+        return rtrim((string) config('paths.uploads'), '/') . '/documents';
     }
 
     /**
@@ -77,8 +77,19 @@ final class DocumentService
         }
 
         $dir = $this->baseDir() . '/' . $studentId;
+        $disk = \Core\Storage\Storage::disk();
         try {
-            $stored = $file->store($dir);
+            if ($disk->name() === 'local') {
+                $stored = $file->store($dir);
+            } else {
+                // Object storage (S3 / Cloudflare R2): same relative key layout as the local disk.
+                $stored = $file->hashName();
+                $bytes = file_get_contents($file->path());
+                if ($bytes === false) {
+                    throw new \RuntimeException('Could not read the uploaded file.');
+                }
+                $disk->put('documents/' . $studentId . '/' . $stored, $bytes, $mime);
+            }
         } catch (\Throwable $e) {
             logger()->error('Document upload failed: ' . $e->getMessage());
             return ['ok' => false, 'message' => 'Could not store the file.', 'id' => null];
@@ -89,7 +100,8 @@ final class DocumentService
             'uid'        => (new IdSequenceService())->uidDocument(),
             'title'      => mb_substr($title !== '' ? $title : (self::TYPES[$type]), 0, 150),
             'type'       => $type,
-            'file_path'  => $studentId . '/' . $stored, // relative to baseDir()
+            'file_path'  => $studentId . '/' . $stored, // relative to baseDir() / the "documents/" key prefix
+            'storage_disk' => $disk->name(),
             'mime_type'  => $mime,
             'file_size'  => $file->size(),
             'uploaded_by'=> $userId,
@@ -145,11 +157,31 @@ final class DocumentService
         ];
     }
 
-    /** Absolute filesystem path for a stored document (or null if missing). */
+    /** Absolute filesystem path for a locally stored document (or null if missing / not local). */
     public function absolutePath(array $doc): ?string
     {
+        if (($doc['storage_disk'] ?? 'local') !== 'local') {
+            return null;
+        }
         $path = $this->baseDir() . '/' . ltrim((string) $doc['file_path'], '/');
         return is_file($path) ? $path : null;
+    }
+
+    /**
+     * The file's bytes from whichever disk holds it (each document remembers its
+     * own disk, so switching disks never orphans existing files). Null when missing.
+     */
+    public function contents(array $doc): ?string
+    {
+        try {
+            if (($doc['storage_disk'] ?? 'local') === 'local') {
+                $p = $this->absolutePath($doc);
+                return $p === null ? null : (string) file_get_contents($p);
+            }
+            return \Core\Storage\Storage::disk('s3')->get('documents/' . ltrim((string) $doc['file_path'], '/'));
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -177,9 +209,17 @@ final class DocumentService
         if ($doc === null) {
             return;
         }
-        $path = $this->absolutePath($doc);
-        if ($path !== null) {
-            @unlink($path);
+        if (($doc['storage_disk'] ?? 'local') === 'local') {
+            $path = $this->absolutePath($doc);
+            if ($path !== null) {
+                @unlink($path);
+            }
+        } else {
+            try {
+                \Core\Storage\Storage::disk('s3')->delete('documents/' . ltrim((string) $doc['file_path'], '/'));
+            } catch (\Throwable $e) {
+                logger()->warning('Could not delete object-storage file: ' . $e->getMessage());
+            }
         }
         QueryBuilder::table('student_documents')->where('id', $docId)->delete();
         AuditLogger::log('document.deleted', 'student_document', $docId, 'Deleted document');

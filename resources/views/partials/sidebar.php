@@ -87,6 +87,7 @@ $isStaff = (bool) array_intersect($roles, ['super_admin', 'school_admin', 'princ
             <?php if (auth()->can('settings.view')): ?><?= $link('/admin/audit', 'fa-clock-rotate-left', 'Audit Log') ?><?php endif; ?>
             <?php if (auth()->can('settings.view')): ?><?= $link('/admin/settings', 'fa-gear', 'Settings') ?><?php endif; ?>
             <?php if (auth()->can('settings.view')): ?><?= $link('/admin/system/status', 'fa-database', 'System Status') ?><?php endif; ?>
+            <?php if (auth()->can('database.manage')): ?><?= $link('/admin/database', 'fa-server', 'Database') ?><?php endif; ?>
         </div>
     </div>
     <?php endif; ?>

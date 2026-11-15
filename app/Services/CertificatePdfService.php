@@ -59,7 +59,8 @@ final class CertificatePdfService
         $pdf->Cell(148, 7, $pdf->tx(': ' . $s['name']), 0, 1, 'L');
         $pairRows = [
             ['Admission No', (string) $s['admission_no'], 'Student ID', (string) $s['uid']],
-            ['Class', (string) ($s['class'] !== '' ? $s['class'] : '-'), 'Academic Year', (string) ($s['year'] !== '' ? $s['year'] : '-')],
+            ['PRN', (string) (($s['prn'] ?? '') !== '' ? $s['prn'] : '-'), 'Class', (string) ($s['class'] !== '' ? $s['class'] : '-')],
+            ['Academic Year', (string) ($s['year'] !== '' ? $s['year'] : '-'), '', ''],
         ];
         foreach ($pairRows as $r) {
             $pdf->SetX($L);
@@ -70,7 +71,7 @@ final class CertificatePdfService
             $pdf->SetFont('Helvetica', 'B', 10);
             $pdf->Cell(32, 7, $pdf->tx($r[2]), 0, 0, 'L');
             $pdf->SetFont('Helvetica', '', 10);
-            $pdf->Cell(58, 7, $pdf->tx(': ' . $r[3]), 0, 1, 'L');
+            $pdf->Cell(58, 7, $r[2] !== '' ? $pdf->tx(': ' . $r[3]) : '', 0, 1, 'L');
         }
 
         if ($revoked) {

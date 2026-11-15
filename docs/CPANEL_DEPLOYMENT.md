@@ -24,8 +24,7 @@ No framework-specific server configuration is required.
    the installer create it in the next steps.
 9. **Writable directories** — set `storage/` and its subfolders to **0775**
    (File Manager → select → *Permissions*).
-10. **Import SQL** *(optional if using the wizard)* — phpMyAdmin → *Import* →
-    upload `database/schema.sql`.
+10. **No SQL import is needed** — the installer creates all tables itself.
 11. **Run the installer** — visit `https://your-domain/install.php` and complete
     the wizard (requirements → database → admin → finish).
 12. **Verify installation** — log in at `/login` with the admin account created.

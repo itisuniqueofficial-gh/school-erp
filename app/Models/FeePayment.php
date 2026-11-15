@@ -38,7 +38,7 @@ final class FeePayment extends Model
         return QueryBuilder::table('fee_payments')
             ->select([
                 'fee_payments.*',
-                'students.first_name', 'students.last_name', 'students.admission_no',
+                'students.first_name', 'students.last_name', 'students.admission_no', 'students.prn',
                 'fee_invoices.invoice_no',
             ])
             ->leftJoin('students', 'fee_payments.student_id', '=', 'students.id')

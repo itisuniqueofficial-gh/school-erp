@@ -39,6 +39,7 @@ $idRow = static function (string $label, ?string $val, bool $copy = false): stri
             <span class="badge <?= ($s['status'] ?? '') === 'active' ? 'badge-green' : 'badge-slate' ?> mt-2"><?= e(ucfirst((string) ($s['status'] ?? '—'))) ?></span>
         </div>
         <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-left">
+            <?= $idRow('PRN', (string) ($s['prn'] ?? ''), true) ?>
             <?= $idRow('Student ID', (string) ($s['uid'] ?? ''), true) ?>
             <?= $idRow('User ID', $userUid, true) ?>
             <?= $idRow('Admission No', (string) ($s['admission_no'] ?? ''), true) ?>

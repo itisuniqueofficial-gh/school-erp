@@ -11,6 +11,7 @@ declare(strict_types=1);
  *   php bin/console migrate          Run pending migrations
  *   php bin/console migrate:fresh    Drop all tables and re-run migrations
  *   php bin/console migrate:status   Show migration status
+ *   php bin/console students:backfill-identifiers [--dry-run]  Issue missing PRNs / roll numbers
  *   php bin/console seed             Seed baseline data
  *   php bin/console key:generate     Generate & write APP_KEY into .env
  *   php bin/console backup           Dump the database to storage/backups
@@ -76,9 +77,70 @@ $readHidden = static function (string $prompt): string {
     return trim((string) fgets(STDIN));
 };
 
+/**
+ * Resolve database settings for installer-style commands. Precedence: --url, individual
+ * --engine/--host/... flags, then the settings already loaded from .env / DATABASE_URL / DB_*.
+ *
+ * @param callable(string,string=):string $ask interactive prompt (returns the default when non-interactive)
+ */
+$consoleDbConfig = static function (callable $ask, bool $interactive) use ($option, $readHidden): \Core\Database\DatabaseConfig {
+    $url = $option('url');
+    if ($url !== null && $url !== '') {
+        return \Core\Database\DatabaseConfig::fromUrl($url);
+    }
+    $flagged = false;
+    foreach (['engine', 'host', 'port', 'database', 'user', 'password', 'socket', 'ssl-mode', 'charset', 'schema'] as $k) {
+        $flagged = $flagged || $option($k) !== null;
+    }
+    $envCfg = null;
+    try {
+        $envCfg = \Core\Database\DatabaseConfig::fromEnv(static fn (string $k, mixed $d = null): mixed => \Core\Support\Env::get($k, $d));
+    } catch (\Throwable) {
+    }
+    $base = $envCfg !== null && $envCfg->database !== '' ? $envCfg->toArray() : [];
+    if (!$flagged && !$interactive && $base !== []) {
+        return \Core\Database\DatabaseConfig::fromArray($base);
+    }
+    $engine = (string) ($option('engine') ?? ($interactive ? $ask('Database engine (mysql, mariadb, pgsql)', (string) ($base['engine'] ?? 'mysql')) : ($base['engine'] ?? 'mysql')));
+    $pg = \Core\Database\DatabaseConfig::normalizeEngine($engine) === 'pgsql';
+    $get = static fn (string $flag, string $label, string $default) => $option($flag) ?? ($interactive ? $ask($label, $default) : $default);
+    return \Core\Database\DatabaseConfig::fromArray([
+        'engine'   => $engine,
+        'host'     => $get('host', 'Host', (string) ($base['host'] ?? '127.0.0.1')),
+        'port'     => $get('port', 'Port', (string) ($base['port'] ?? ($pg ? 5432 : 3306))),
+        'database' => $get('database', 'Database name', (string) ($base['database'] ?? 'school_erp')),
+        'username' => $get('user', 'Username', (string) ($base['username'] ?? ($pg ? 'postgres' : 'root'))),
+        'password' => $option('password') ?? (getenv('DB_PASSWORD') ?: ($interactive ? $readHidden('Password: ') : (string) ($base['password'] ?? ''))),
+        'socket'   => $option('socket') ?? ($base['socket'] ?? ''),
+        'ssl_mode' => $option('ssl-mode') ?? ($base['ssl_mode'] ?? 'disable'),
+        'charset'  => $option('charset') ?? ($base['charset'] ?? null),
+        'schema'   => $option('schema') ?? ($base['schema'] ?? ''),
+    ]);
+};
+
 try {
     switch ($command) {
         case 'migrate':
+            if ($flag('pretend')) {
+                foreach ((new Migrator())->pretend() as $name => $stmts) {
+                    $out("-- {$name} (" . count($stmts) . ' statements)', 'cyan');
+                    foreach ($stmts as $st) {
+                        $out('   ' . preg_replace('/\s+/', ' ', mb_substr($st, 0, 160)));
+                    }
+                }
+                $out('Pretend mode: nothing was executed.', 'yellow');
+                break;
+            }
+            $pf = (new Migrator())->preflight();
+            foreach ($pf['warnings'] as $w) {
+                $out('  warning: ' . $w, 'yellow');
+            }
+            if ($pf['errors'] !== []) {
+                foreach ($pf['errors'] as $e) {
+                    $out('  ERROR: ' . $e, 'red');
+                }
+                exit(1);
+            }
             $ran = (new Migrator())->migrate();
             if ($ran === []) {
                 $out('Nothing to migrate. Database is up to date.', 'yellow');
@@ -122,6 +184,21 @@ try {
             $out('Fresh migration complete.', 'green');
             break;
 
+        case 'students:backfill-identifiers':
+            // Idempotent: issues missing PRNs, creates missing enrollments/roll numbers,
+            // reports (never guesses at) anything unresolved. Use --dry-run to preview.
+            $report = (new \App\Services\StudentIdentifierService())->backfill($flag('dry-run'));
+            $unresolved = $report['unresolved'];
+            unset($report['unresolved']);
+            foreach ($report as $k => $v) {
+                $out(sprintf('  %-26s %s', $k, is_bool($v) ? ($v ? 'yes' : 'no') : (string) $v));
+            }
+            foreach ($unresolved as $u) {
+                $out('  ! student #' . $u['student_id'] . ': ' . $u['issue'], 'yellow');
+            }
+            $out($flag('dry-run') ? 'Dry run only: nothing was written.' : 'Backfill complete.', 'green');
+            break;
+
         case 'migrate:status':
             $status = (new Migrator())->status();
             $out('Applied migrations:', 'cyan');
@@ -138,40 +215,162 @@ try {
             break;
 
         case 'upgrade':
-            // Zero-data-loss production upgrade: back up first, then apply ONLY
-            // pending (additive) migrations. Never drops/truncates/seeds.
+            // detect -> preflight -> verified backup (policy) -> migrate under lock -> schema check
             $out('=== Safe Upgrade ===', 'cyan');
-            $ping = \Core\Database\Connection::instance()->ping();
-            if (!$ping['ok']) {
-                $out('Database not reachable — aborting upgrade (no changes made).', 'red');
-                exit(1);
+            $res = (new \App\Services\Database\DatabaseUpgradeService())->upgrade(['no_backup' => $flag('no-backup'), 'pretend' => $flag('pretend')]);
+            foreach ($res['warnings'] as $w) {
+                $out('  warning: ' . $w, 'yellow');
             }
-            $status = (new Migrator())->status();
-            if ($status['pending'] === []) {
-                $out('Already up to date (' . count($status['applied']) . ' migrations). Nothing to do.', 'green');
-                break;
+            foreach ($res['steps'] as $st) {
+                $out('  ' . $st);
             }
-            $out(count($status['pending']) . ' pending migration(s). Creating a safety backup first...', 'yellow');
-            $backup = (new \App\Services\BackupService())->create();
-            if ($backup !== null) {
-                $out("Backup written to: {$backup}", 'green');
-            } else {
-                $out('WARNING: automatic backup failed (mysqldump missing?). Continuing — migrations are additive and non-destructive.', 'yellow');
+            $out($res['message'], $res['ok'] ? 'green' : 'red');
+            foreach (($res['schema']['issues'] ?? []) as $i) {
+                $out('  schema: ' . $i['detail'], 'yellow');
+            }
+            exit($res['ok'] ? 0 : 1);
+
+        case 'migrate:rollback':
+            // Reverse the last batch where a rollback script exists. Guards refuse anything that would discard data.
+            $svc = new Migrator();
+            if (!$flag('yes')) {
+                fwrite(STDOUT, 'Type ROLLBACK to reverse the last ' . (int) ($option('batches') ?: 1) . ' batch(es): ');
+                if (strtoupper(trim((string) fgets(STDIN))) !== 'ROLLBACK') {
+                    $out('Aborted. No changes were made.', 'yellow');
+                    exit(1);
+                }
             }
             try {
-                $ran = (new Migrator())->migrate();
-                foreach ($ran as $m) {
-                    $out("Migrated: {$m}", 'green');
+                if (!$flag('no-backup')) {
+                    $b = (new \App\Services\Database\BackupManager())->create('pre_migration');
+                    $out('Verified backup first: ' . $b['filename'], 'green');
                 }
-                $out('Upgrade complete. ' . count($ran) . ' migration(s) applied; existing data preserved.', 'green');
+                foreach ($svc->rollback((int) ($option('batches') ?: 1), $flag('allow-data-loss')) as $r) {
+                    $out(sprintf('  %-12s %s  %s', $r['status'], $r['migration'], $r['detail']), 'green');
+                }
             } catch (\Throwable $e) {
-                $out('Migration FAILED: ' . $e->getMessage(), 'red');
-                if ($backup !== null) {
-                    $out("Restore the pre-upgrade backup with: php bin/console — or via Admin > Backups ({$backup})", 'yellow');
-                }
+                $out('Rollback refused: ' . \App\Services\Setup\SetupService::redact($e->getMessage()), 'red');
                 exit(1);
             }
             break;
+
+        case 'migrate:repair':
+            // Re-apply every migration idempotently: creates what is missing, skips what exists, removes nothing.
+            if (!$flag('yes')) {
+                fwrite(STDOUT, 'Type REPAIR to re-apply migrations additively (a backup is taken first): ');
+                if (strtoupper(trim((string) fgets(STDIN))) !== 'REPAIR') {
+                    $out('Aborted. No changes were made.', 'yellow');
+                    exit(1);
+                }
+            }
+            try {
+                if (!$flag('no-backup') && (int) \Core\Database\Connection::instance()->scalar('SELECT COUNT(*) FROM `users`') > 0) {
+                    $b = (new \App\Services\Database\BackupManager())->create('pre_migration');
+                    $out('Verified backup first: ' . $b['filename'], 'green');
+                }
+                $done = (new Migrator())->reapplyAll();
+            } catch (\Throwable $e) {
+                $out('Repair failed: ' . \App\Services\Setup\SetupService::redact($e->getMessage()), 'red');
+                exit(1);
+            }
+            $v = (new \App\Services\Database\SchemaManifest())->validate();
+            $out(count($done) . ' migration(s) re-applied. ' . $v['message'], $v['ok'] ? 'green' : 'red');
+            foreach ($v['issues'] as $i) {
+                $out('  ' . $i['detail'], 'yellow');
+            }
+            exit($v['ok'] ? 0 : 1);
+
+        case 'db:schema:dump':
+            // Maintainers: regenerate database/schema-manifest.json from a freshly migrated database.
+            $st = (new Migrator())->status();
+            if ($st['pending'] !== []) {
+                $out('Apply pending migrations first.', 'red');
+                exit(1);
+            }
+            $n = (new \App\Services\Database\SchemaManifest())->dump((string) end($st['applied']));
+            $out("Wrote database/schema-manifest.json ({$n} bytes) for schema version " . end($st['applied']) . '. Commit it with the migration.', 'green');
+            break;
+
+        case 'db:schema:validate':
+            $v = (new \App\Services\Database\SchemaManifest())->validate();
+            $out($v['message'], $v['ok'] ? 'green' : 'red');
+            foreach ($v['issues'] as $i) {
+                $out('  [' . $i['type'] . '] ' . $i['detail'], 'yellow');
+            }
+            if (!$v['ok']) {
+                $out('Repair additively with: php bin/console migrate:repair', 'cyan');
+            }
+            exit($v['ok'] ? 0 : 1);
+
+        case 'db:health':
+            $h = (new \App\Services\Database\DatabaseHealthService())->report();
+            $out(sprintf('%s  %s  %s  latency %s ms', strtoupper($h['status']), $h['engine'], $h['version'] ?? '-', $h['latency_ms'] ?? '-'), $h['status'] === 'ok' ? 'green' : ($h['status'] === 'warn' ? 'yellow' : 'red'));
+            $out(sprintf('  database %s, %d tables, %s, schema version %s, %d pending', $h['database'], $h['tables'], $h['size_bytes'] !== null ? round($h['size_bytes'] / 1048576, 1) . ' MB' : 'size n/a', $h['schema_version'] ?? '-', count($h['pending'])));
+            foreach ($h['problems'] as $p) {
+                $out('  ! ' . $p, 'yellow');
+            }
+            foreach ($h['recent_errors'] as $e) {
+                $out('  error: ' . $e, 'red');
+            }
+            exit($h['status'] === 'fail' ? 1 : 0);
+
+        case 'backup:run':
+            // Cron-friendly: php bin/console backup:run [--kind=scheduled] [--if-older-than=24] [--passphrase=...]
+            $bm = new \App\Services\Database\BackupManager();
+            $maxAge = $option('if-older-than');
+            if ($maxAge !== null) {
+                $sum = $bm->summary();
+                if ($sum['last_age_hours'] !== null && $sum['last_age_hours'] < (int) $maxAge) {
+                    $out("Newest verified backup is {$sum['last_age_hours']}h old (< {$maxAge}h). Nothing to do.", 'yellow');
+                    break;
+                }
+            }
+            try {
+                $b = $bm->create((string) ($option('kind') ?: 'scheduled'), null, $option('passphrase') ?: null);
+            } catch (\Throwable $e) {
+                $out('Backup failed: ' . \App\Services\Setup\SetupService::redact($e->getMessage()), 'red');
+                exit(1);
+            }
+            $out(sprintf('Backup %s verified (%d tables, %s rows, sha256 %s…).', $b['filename'], $b['tables'], number_format($b['rows']), substr($b['sha256'], 0, 12)), 'green');
+            break;
+
+        case 'backup:list':
+            foreach ((new \App\Services\Database\BackupManager())->list(30) as $b) {
+                $out(sprintf('  %-6s %-13s %-14s %9s B  %s%s', $b['id'], $b['kind'], $b['status'], number_format((int) $b['size_bytes']), $b['filename'], $b['exists'] ? '' : '  (FILE MISSING)'), $b['exists'] ? '' : 'red');
+            }
+            break;
+
+        case 'backup:check':
+            $file = (string) ($argv[2] ?? '');
+            $res = (new \App\Services\Database\BackupManager())->verify($file, $option('passphrase') ?: null);
+            $out($res['message'], $res['ok'] ? 'green' : 'red');
+            exit($res['ok'] ? 0 : 1);
+
+        case 'backup:prune':
+            $gone = (new \App\Services\Database\BackupManager())->prune($option('keep') !== null ? (int) $option('keep') : null);
+            $out(count($gone) . ' old backup(s) removed per retention policy.', 'green');
+            break;
+
+        case 'backup:test':
+            // Restore verification in an isolated scratch database (never the live one):
+            //   php bin/console backup:test <file> --scratch-database=erp_restore_check   (same server and user)
+            //   php bin/console backup:test <file> --scratch-url=postgres://u:p@host/db
+            $file = (string) ($argv[2] ?? '');
+            try {
+                $active = (array) config('database.connections.' . config('database.default'));
+                $scratch = $option('scratch-url')
+                    ? \Core\Database\DatabaseConfig::fromUrl((string) $option('scratch-url'))
+                    : \Core\Database\DatabaseConfig::fromArray(array_merge($active, ['database' => (string) $option('scratch-database')]));
+                $res = (new \App\Services\Database\BackupManager())->restoreTest($file, $scratch, $option('passphrase') ?: null);
+            } catch (\App\Services\Setup\SetupException | \InvalidArgumentException $e) {
+                $out('Restore test not run: ' . $e->getMessage(), 'red');
+                exit(1);
+            }
+            foreach ($res['steps'] as $st) {
+                $out('  ' . $st);
+            }
+            $out($res['message'], $res['ok'] ? 'green' : 'red');
+            exit($res['ok'] ? 0 : 1);
 
         case 'health':
             $out('=== School ERP Health Check ===', 'cyan');
@@ -446,22 +645,225 @@ try {
             break;
 
         case 'install':
-            // Deployment-safe install. Detects fresh vs existing so a redeploy
-            // can never reseed or reset a live database.
+            // Same backend as the browser installer (App\Services\Setup\SetupService).
+            //   interactive:      php bin/console install
+            //   non-interactive:  php bin/console install --non-interactive --url=postgres://u:p@host/db \
+            //                       --admin-email=a@b.c --admin-password=... --school="My School" [--create-database]
+            // Existing installations are never reinstalled: they are only migrated.
+            $setup = new \App\Services\Setup\SetupService($root);
             $installer = new \App\Services\InstallService();
-            if ($installer->isInstalled()) {
-                $out('Existing installation detected — production data is preserved.', 'yellow');
-                $out('Skipping seed/admin creation. Applying pending migrations only (safe).', 'yellow');
+            if ($setup->isLocked() || $installer->isInstalled()) {
+                $out('Existing installation detected. Production data is preserved.', 'yellow');
+                $out('Skipping seed and administrator creation. Applying pending migrations only (additive).', 'yellow');
                 $ran = (new Migrator())->migrate();
-                $out($ran ? 'Pending migrations applied.' : 'Database already up to date. Nothing changed.', 'green');
-                $out('Tip: use "php bin/console upgrade" for a backup-first production upgrade.', 'cyan');
+                $out($ran ? 'Pending migrations applied: ' . implode(', ', $ran) : 'Database already up to date. Nothing changed.', 'green');
+                $out('Tip: "php bin/console upgrade" takes a backup first.', 'cyan');
                 break;
             }
-            $out('Fresh installation detected. Running migrations...', 'cyan');
-            (new Migrator())->migrate();
-            $out('Seeding baseline data...', 'cyan');
-            (new DatabaseSeeder())->run();
-            $out('Installation complete. Default login: superadmin@school.test / Password123!', 'green');
+            $interactive = !$flag('non-interactive') && function_exists('posix_isatty') && @posix_isatty(STDIN);
+            $ask = static function (string $label, string $default = '') use ($interactive): string {
+                if (!$interactive) {
+                    return $default;
+                }
+                fwrite(STDOUT, $label . ($default !== '' ? " [{$default}]" : '') . ': ');
+                $v = trim((string) fgets(STDIN));
+                return $v === '' ? $default : $v;
+            };
+
+            $out('School ERP installer', 'cyan');
+            $checks = $setup->requirements();
+            foreach ($checks as $c) {
+                if ($c['status'] !== 'pass') {
+                    $out(sprintf('  [%s] %s: %s', strtoupper($c['status']), $c['label'], $c['detail']), $c['status'] === 'fail' ? 'red' : 'yellow');
+                }
+            }
+            if (!$setup->requirementsMet()) {
+                $out('Fix the failed requirements above and run the installer again. Nothing was changed.', 'red');
+                exit(1);
+            }
+
+            try {
+                $dbCfg = $consoleDbConfig($ask, $interactive);
+                $i = $setup->inspectConnection($dbCfg);
+                $out('Database: ' . $i['message'] . ($i['version'] ? ' (' . $i['version'] . ')' : ''), $i['ok'] ? 'green' : 'red');
+                if (!$i['ok']) {
+                    exit(1);
+                }
+                $create = $flag('create-database');
+                if (!$i['database_exists'] && !$create && $interactive) {
+                    $create = strtolower($ask('Database does not exist. Create it? (yes/no)', 'no')) === 'yes';
+                }
+                $schoolName = $option('school') ?? getenv('ERP_SCHOOL_NAME') ?: $ask('School name', 'My School');
+                $adminName = $option('admin-name') ?? getenv('ERP_ADMIN_NAME') ?: $ask('Administrator name', 'Administrator');
+                $adminEmail = $option('admin-email') ?? getenv('ERP_ADMIN_EMAIL') ?: $ask('Administrator email', '');
+                $adminPass = (string) ($option('admin-password') ?? (getenv('ERP_ADMIN_PASSWORD') ?: ''));
+                $generated = false;
+                if ($adminPass === '') {
+                    $adminPass = $interactive ? $readHidden('Administrator password (blank = generate): ') : '';
+                    if ($adminPass === '') {
+                        $adminPass = bin2hex(random_bytes(9));
+                        $generated = true;
+                    }
+                }
+                $report = $setup->install(
+                    $dbCfg,
+                    ['name' => $adminName, 'email' => strtolower($adminEmail), 'password' => $adminPass],
+                    ['school' => $schoolName, 'timezone' => (string) ($option('timezone') ?? 'UTC'), 'currency' => (string) ($option('currency') ?? '₹')],
+                    ['create_database' => $create]
+                );
+            } catch (\App\Services\Setup\SetupException | \InvalidArgumentException $e) {
+                $out('Installation stopped: ' . $e->getMessage(), 'red');
+                exit(1);
+            }
+            foreach ($report as $r) {
+                $out(sprintf('  %-5s %-22s %s', strtoupper($r['status']), $r['step'], $r['detail']), $r['status'] === 'ok' ? 'green' : 'yellow');
+            }
+            $out('Installation complete.', 'green');
+            $out('  Administrator: ' . strtolower($adminEmail));
+            if ($generated) {
+                $out('  One-time password: ' . $adminPass . '   (store it now; it is not shown again)', 'yellow');
+            }
+            if ($flag('demo')) {
+                (new DatabaseSeeder())->run(true);
+                $out('Demo accounts added (--demo). Do not use --demo on a production server.', 'yellow');
+            }
+            break;
+
+        case 'check':
+            // Environment + connectivity diagnostics; exit 1 when a required item fails.
+            $setup = new \App\Services\Setup\SetupService($root);
+            $env = $setup->environment($_SERVER);
+            $out('Environment', 'cyan');
+            foreach (['os' => 'OS', 'php' => 'PHP', 'web_server' => 'Web server', 'project_root' => 'Project root', 'storage_path' => 'Storage path', 'env_file' => '.env'] as $k => $label) {
+                $out(sprintf('  %-14s %s', $label, $env[$k]));
+            }
+            foreach ($env['database_drivers'] as $d => $ok) {
+                $out(sprintf('  %-14s %s', 'Driver', $d . ($ok ? '  available' : '  NOT available')), $ok ? 'green' : 'yellow');
+            }
+            $bad = 0;
+            $out('Requirements', 'cyan');
+            foreach ($setup->requirements() as $c) {
+                $bad += $c['status'] === 'fail' ? 1 : 0;
+                $out(sprintf('  %-5s %-52s %s', strtoupper($c['status']), $c['label'], $c['detail']), ['pass' => 'green', 'warn' => 'yellow', 'fail' => 'red'][$c['status']]);
+            }
+            $st = $setup->status();
+            $out('Installation', 'cyan');
+            $out(sprintf('  engine=%s reachable=%s installed=%s migrations applied/pending=%d/%d users=%d locked=%s',
+                $st['engine'] ?? '-', $st['reachable'] ? 'yes' : 'no', $st['installed'] ? 'yes' : 'no', $st['migrations_applied'], $st['migrations_pending'], $st['users'], $st['locked'] ? 'yes' : 'no'));
+            if (!empty($st['message'])) {
+                $out('  ' . $st['message'], 'yellow');
+            }
+            exit($bad > 0 ? 1 : 0);
+
+        case 'db:test':
+            // Test the configured database, or settings given on the command line / --url, without changing anything.
+            $setup = new \App\Services\Setup\SetupService($root);
+            try {
+                $dbCfg = $consoleDbConfig(static fn (string $l, string $d = '') => $d, false);
+            } catch (\InvalidArgumentException $e) {
+                $out('Invalid settings: ' . $e->getMessage(), 'red');
+                exit(1);
+            }
+            $i = $setup->inspectConnection($dbCfg);
+            foreach ($dbCfg->describe() as $k => $v) {
+                $out(sprintf('  %-10s %s', $k, is_scalar($v) || $v === null ? (string) $v : json_encode($v)));
+            }
+            $out('Result: ' . $i['message'], $i['ok'] ? 'green' : 'red');
+            if ($i['ok']) {
+                $out('  server version : ' . $i['version']);
+                $out('  database exists: ' . ($i['database_exists'] ? 'yes' : 'no'));
+                $out('  tables / users : ' . $i['tables'] . ' / ' . $i['users'] . ($i['installed'] ? '  (existing installation)' : ''));
+            }
+            exit($i['ok'] ? 0 : 1);
+
+        case 'config:database':
+            // Safely switch the application to different database settings: the new credentials
+            // are tested first, then .env is replaced atomically (previous file kept as .env.bak.*).
+            $setup = new \App\Services\Setup\SetupService($root);
+            try {
+                $dbCfg = $consoleDbConfig(static fn (string $l, string $d = '') => $d, false);
+                if (!$flag('yes')) {
+                    fwrite(STDOUT, 'Type SWITCH to point the application at ' . $dbCfg->database . ' on ' . $dbCfg->host . ': ');
+                    if (strtoupper(trim((string) fgets(STDIN))) !== 'SWITCH') {
+                        $out('Aborted. No changes were made.', 'yellow');
+                        exit(1);
+                    }
+                }
+                $res = $setup->switchDatabase($dbCfg);
+            } catch (\App\Services\Setup\SetupException | \InvalidArgumentException $e) {
+                $out($e->getMessage(), 'red');
+                exit(1);
+            }
+            $out('Database settings updated. Previous .env saved as ' . basename((string) $res['backup']), 'green');
+            $out('Data is NOT copied between databases. Use db:export / db:import to move data.', 'yellow');
+            break;
+
+        case 'db:export':
+            // Engine-neutral, checksummed backup: php bin/console db:export [--out=file] [--passphrase=...]
+            $svc = new \App\Services\Portability\PortableDumpService();
+            $pass = $option('passphrase') ?? (getenv('ERP_BACKUP_PASSPHRASE') ?: null);
+            $dest = $option('out') ?: rtrim((string) config('paths.backups'), '/') . '/erp-' . \Core\Database\Connection::instance()->engine() . '-' . date('Ymd-His') . '.erpdump' . ($pass ? '.enc' : '');
+            try {
+                $r = $svc->export($dest, $pass ?: null);
+            } catch (\Throwable $e) {
+                $out('Export failed: ' . \App\Services\Setup\SetupService::redact($e->getMessage()), 'red');
+                exit(1);
+            }
+            $out('Backup written and re-verified.', 'green');
+            $out(sprintf('  file     : %s', $r['path']));
+            $out(sprintf('  size     : %s bytes, %d tables, %s rows%s', number_format($r['bytes']), $r['tables'], number_format($r['rows']), $r['encrypted'] ? ', AES-256-GCM encrypted' : ''));
+            $out('  sha256   : ' . $r['sha256']);
+            break;
+
+        case 'db:verify':
+            $file = (string) ($argv[2] ?? '');
+            if ($file === '' || str_starts_with($file, '--')) {
+                $out('Usage: php bin/console db:verify <file> [--passphrase=...]', 'yellow');
+                exit(1);
+            }
+            $v = (new \App\Services\Portability\PortableDumpService())->verify($file, $option('passphrase') ?? (getenv('ERP_BACKUP_PASSPHRASE') ?: null));
+            $out($v['message'], $v['ok'] ? 'green' : 'red');
+            exit($v['ok'] ? 0 : 1);
+
+        case 'db:import':
+            // Import a dump into a NEW, migrated, empty database (never over school data).
+            $file = (string) ($argv[2] ?? '');
+            if ($file === '' || str_starts_with($file, '--')) {
+                $out('Usage: php bin/console db:import <file> [--passphrase=...] [--yes]', 'yellow');
+                $out('Point DB_* / DATABASE_URL at the NEW database, run "php bin/console migrate" there first, then import.', 'yellow');
+                exit(1);
+            }
+            $tgt = \Core\Database\Connection::instance();
+            $out('Target: ' . $tgt->engine() . ' database "' . (string) config('database.connections.' . config('database.default') . '.database') . '"', 'cyan');
+            if (!$flag('yes')) {
+                fwrite(STDOUT, 'Type IMPORT to load the backup into this database: ');
+                if (strtoupper(trim((string) fgets(STDIN))) !== 'IMPORT') {
+                    $out('Aborted. No changes were made.', 'yellow');
+                    exit(1);
+                }
+            }
+            $res = (new \App\Services\Portability\PortableDumpService())->import($file, $option('passphrase') ?? (getenv('ERP_BACKUP_PASSPHRASE') ?: null));
+            $out($res['message'], $res['ok'] ? 'green' : 'red');
+            foreach ($res['count_mismatches'] as $m) {
+                $out('  count mismatch: ' . $m, 'red');
+            }
+            foreach ($res['orphans'] as $k => $n) {
+                $out("  orphaned rows: {$k} = {$n}", 'red');
+            }
+            if ($res['zero_dates'] > 0) {
+                $out('  ' . $res['zero_dates'] . ' invalid zero-dates (0000-00-00) were stored as NULL.', 'yellow');
+            }
+            exit($res['ok'] ? 0 : 1);
+
+        case 'db:inspect':
+            $r = (new \App\Services\Portability\PortableDumpService())->inspect();
+            $out(sprintf('Engine %s (%s): %d tables, %s rows', $r['engine'], $r['server'], $r['tables'], number_format($r['rows'])), 'cyan');
+            foreach ($r['non_portable'] as $kind => $names) {
+                $out(sprintf('  %-9s %s', $kind, $names === [] ? 'none' : implode(', ', $names)));
+            }
+            foreach ($r['notes'] as $n) {
+                $out('  note: ' . $n, 'yellow');
+            }
             break;
 
         case 'admin:recover':
@@ -592,9 +994,43 @@ try {
             break;
 
         case 'help':
+            $out('School ERP console. Usage: php bin/console <command> [options]', 'cyan');
+            $sections = [
+                'Install & diagnose' => [
+                    'check' => 'Environment, PHP extensions, drivers, writable folders, install state (exit 1 on failure)',
+                    'install' => 'Interactive or --non-interactive install (--url=… or --engine/--host/--port/--database/--user/--password, --admin-email, --create-database)',
+                    'db:test' => 'Test a connection (current settings, --url=… or flags) without changing anything',
+                    'config:database' => 'Test new database settings, then update .env atomically (keeps a backup)',
+                    'install:status' => 'Is this a fresh or an existing installation?',
+                    'admin:recover' => 'Reset or create a super administrator (local, confirmed)',
+                ],
+                'Schema' => [
+                    'migrate' => 'Apply pending migrations (additive; MySQL, MariaDB and PostgreSQL)',
+                    'migrate:status' => 'Applied / pending migrations',
+                    'upgrade' => 'Backup first, then migrate an existing installation',
+                    'migrate:fresh' => 'DESTRUCTIVE, test databases only (refused on live data without --force)',
+                ],
+                'Backup, restore, move between engines' => [
+                    'db:export' => 'Engine-neutral checksummed backup (--out=, --passphrase= for AES-256-GCM)',
+                    'db:verify <file>' => 'Re-read a backup and compare every checksum',
+                    'db:import <file>' => 'Load a backup into a NEW migrated empty database (never over school data)',
+                    'db:inspect' => 'Portability report: engine, counts, objects that do not travel',
+                    'backup / backup:verify / restore' => 'Native mysqldump backups (MySQL / MariaDB)',
+                    'db:info, db:status, db:drivers' => 'Connection and driver information',
+                ],
+                'Other' => ['seed' => 'Seed baseline data (and demo accounts on dev machines)', 'health' => 'System health check', 'students:backfill-identifiers' => 'Issue missing PRNs / roll numbers'],
+            ];
+            foreach ($sections as $title => $cmds) {
+                $out($title, 'yellow');
+                foreach ($cmds as $c => $d) {
+                    $out(sprintf('  %-34s %s', $c, $d));
+                }
+            }
+            break;
+
         default:
             $out('Unknown command: ' . $command, 'red');
-            $out('Run php bin/console for usage.');
+            $out('Run: php bin/console help');
             exit(1);
     }
 } catch (\Throwable $e) {

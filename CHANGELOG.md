@@ -4,6 +4,57 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 Semantic Versioning.
 
+## [Unreleased]
+
+### Added (portable installation and databases)
+- MySQL, MariaDB and PostgreSQL through one `DatabaseConfig` (manual, `.env`, `DATABASE_URL`, socket, SSL, timeout, schema),
+  a SQL `Dialect` layer, automatic MySQL->PostgreSQL migration translation (`database/migrations_pgsql/` for native overrides).
+- `SetupService`, the single backend of the browser wizard and `php bin/console install`; new `check`, `db:test`,
+  `config:database`, `db:export`, `db:verify`, `db:import`, `db:inspect`, `help`.
+- Engine-neutral, checksummed, optionally AES-256-GCM encrypted backups; `upgrade` now takes a verified backup first and stops if it fails.
+- `STORAGE_PATH`, S3/R2-compatible storage driver (documents), migration 032 `student_documents.storage_disk`.
+- docs/PORTABILITY.md, docs/STORAGE.md.
+
+### Added (automatic database lifecycle)
+- Migration engine v2: SHA-256 checksums, `migration_log`, database lock against concurrent migrators, preflight,
+  `--pretend`, guarded rollback scripts (`database/rollbacks/`), idempotent repair, PHP migrations on a portable
+  schema builder (`Blueprint`/`Schema`), backup register (`database_backups`, migration 034).
+- `database/schema-manifest.json` + `db:schema:dump|validate`; `migrate:repair`; `migrate:rollback`; `db:health`;
+  `backup:run|list|check|prune|test`; `upgrade` (verified backup first, schema check after).
+- Admin > Database dashboard (permission `database.manage`); deploy guard (503 while migrations are pending,
+  or `DB_AUTO_MIGRATE=true`); migration 033 makes history-bearing foreign keys RESTRICT.
+- docs/DATABASE_LIFECYCLE.md.
+
+### Fixed
+- `DATABASE_URL` bypassed the APP_TESTING `_test` database isolation (a test run could target the real database).
+- MariaDB rejected re-using a constraint name inside one ALTER (033 swaps constraints under a new name).
+
+### Removed
+- `DatabaseMigrationService` (unused scaffold that issued `DROP TABLE IF EXISTS` on the target).
+
+
+### Added
+- **Permanent Roll Number (PRN)** `YYYYMMDD` + admission sequence (e.g. `202611150001`), issued automatically
+  in `Student::create()`, unique (DB index + append-only `prn_registry`), immutable, never reused.
+  New admission numbers are `ADM-YYYY-NNNN`, reserved from `id_sequences` (prefix `ADMN`) under a row lock.
+- **Class-wise roll numbers** are issued 1,2,3... per academic year/class/section under a lock on `roll_counters`.
+  Promotion, section transfer, withdrawal/reactivation, manual change (permission `students.manage_roll`,
+  reason required) and explicit resequencing all write `student_roll_history` and the audit log.
+- Migration `031_prn_and_roll_numbers.sql` and `php bin/console students:backfill-identifiers [--dry-run]`
+  (also run automatically after the migration) for existing students.
+- PRN shown in student profile/list/CSV export, ID card, attendance, marks, fees, hall tickets, report cards,
+  certificates and the student portal; PRN searchable. Integrity checks for missing/mismatched PRNs.
+
+### Changed
+- `Connection::transaction()` joins an already-open transaction (commit/rollback stay with the outermost caller).
+- Roll numbers are sorted numerically (they were sorted as text: 10 before 2).
+- The student form no longer accepts a roll number or PRN; class/section edits go through `EnrollmentService`.
+
+### Fixed
+- Admission form saved the string `Array` in `students.photo`.
+- Editing a student's class/section or status left `student_enrollments` out of sync.
+- Same-year bulk promotion changed `students.class_id` without touching the enrollment or roll number.
+
 ## [1.6.18] - 2026-10-27
 
 ### Added

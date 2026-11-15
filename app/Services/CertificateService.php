@@ -138,6 +138,7 @@ final class CertificateService
             'name'          => $name,
             'uid'           => (string) $student['uid'],
             'admission_no'  => (string) $student['admission_no'],
+            'prn'           => (string) ($student['prn'] ?? ''),
             'roll_no'       => (string) ($student['roll_no'] ?? ''),
             'class'         => (string) ($student['class_name'] ?? ''),
             'section'       => $section,
@@ -208,7 +209,7 @@ final class CertificateService
         $cert = QueryBuilder::table('certificates')
             ->select([
                 'certificates.*',
-                'students.first_name', 'students.last_name', 'students.admission_no', 'students.uid AS student_uid',
+                'students.first_name', 'students.last_name', 'students.admission_no', 'students.uid AS student_uid', 'students.prn AS student_prn',
                 'classes.name AS class_name', 'academic_years.name AS year_name',
             ])
             ->join('students', 'certificates.student_id', '=', 'students.id')
@@ -243,6 +244,7 @@ final class CertificateService
                 'name'         => trim((string) ($cert['first_name'] . ' ' . $cert['last_name'])),
                 'admission_no' => (string) $cert['admission_no'],
                 'uid'          => (string) $cert['student_uid'],
+                'prn'          => (string) ($cert['student_prn'] ?? ''),
                 'class'        => (string) ($cert['class_name'] ?? ''),
                 'year'         => (string) ($cert['year_name'] ?? ''),
             ],

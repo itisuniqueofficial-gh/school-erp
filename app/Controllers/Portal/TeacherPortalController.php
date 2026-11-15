@@ -111,7 +111,7 @@ final class TeacherPortalController extends Controller
     private function roster(int $yearId, int $classId, ?int $sectionId): array
     {
         $q = QueryBuilder::table('student_enrollments')
-            ->select(['students.id', 'student_enrollments.roll_no', 'students.first_name', 'students.last_name', 'students.admission_no', 'students.public_id'])
+            ->select(['students.id', 'student_enrollments.roll_no', 'students.first_name', 'students.last_name', 'students.admission_no', 'students.public_id', 'students.prn'])
             ->join('students', 'student_enrollments.student_id', '=', 'students.id')
             ->where('student_enrollments.academic_year_id', $yearId)
             ->where('student_enrollments.class_id', $classId)
@@ -125,11 +125,11 @@ final class TeacherPortalController extends Controller
         }
 
         $fb = QueryBuilder::table('students')
-            ->select(['id', 'roll_no', 'first_name', 'last_name', 'admission_no', 'public_id'])
+            ->select(['id', 'roll_no', 'first_name', 'last_name', 'admission_no', 'public_id', 'prn'])
             ->where('class_id', $classId)
             ->whereNull('deleted_at')->where('status', 'active');
         $fb = $sectionId ? $fb->where('section_id', $sectionId) : $fb->whereNull('section_id');
-        return $fb->orderBy('roll_no')->orderBy('first_name')->get();
+        return $fb->orderBy('CAST(`roll_no` AS UNSIGNED)')->orderBy('first_name')->get();
     }
 
     // ===================================================================
