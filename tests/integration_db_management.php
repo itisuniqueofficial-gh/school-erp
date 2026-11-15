@@ -357,7 +357,11 @@ $_POST = [];
 
 // ---------------------------------------------------------------------------
 section('Dashboard error list: real errors only, test output kept separate');
-check('test runs log to their own folder (never the live app log)', str_ends_with(rtrim((string) config('paths.logs'), '/'), '/logs/testing') && str_ends_with(rtrim((string) config('paths.backups'), '/'), '/backups/testing'));
+if (getenv('APP_TESTING') === '1') {
+    check('test runs log to their own folder (never the live app log)', str_ends_with(rtrim((string) config('paths.logs'), '/'), '/logs/testing') && str_ends_with(rtrim((string) config('paths.backups'), '/'), '/backups/testing'));
+} else {
+    skip('log-folder separation applies to APP_TESTING=1 runs on a developer machine; this is a disposable APP_ENV=testing environment');
+}
 $logFile = rtrim((string) config('paths.logs'), '/') . '/erp-' . date('Y-m-d') . '.log';
 $marker = 'probe' . bin2hex(random_bytes(4));
 file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . "] WARNING: Roll number change failed: SQLSTATE[23000]: Duplicate entry {$marker}-w for key 'uq_enroll_rollno'\n", FILE_APPEND);

@@ -76,5 +76,6 @@ release/
 storage/tmp/
 
 # Database backups contain school data: never commit them
-storage/backups/*.erpdump
-storage/backups/*.erpdump.enc
+storage/backups/**/*.erpdump
+storage/backups/**/*.erpdump.enc
+storage/backups/testing/
